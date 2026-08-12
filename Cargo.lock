@@ -1924,6 +1924,14 @@ version = "0.0.1"
 [[package]]
 name = "kokin-blob"
 version = "0.0.1"
+dependencies = [
+ "blake3",
+ "chacha20poly1305",
+ "getrandom 0.4.3",
+ "kokin-keys",
+ "thiserror 2.0.20",
+ "zeroize",
+]
 
 [[package]]
 name = "kokin-export"
