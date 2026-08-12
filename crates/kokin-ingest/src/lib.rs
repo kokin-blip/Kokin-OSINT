@@ -26,10 +26,12 @@ use kokin_keys::CaseMasterKey;
 use kokin_net::http::{HttpCapability, HttpRequest};
 use kokin_net::url_norm;
 use rusqlite::Connection;
+use std::path::Path;
 
 /// Identifies the code that produced a row, so a rerun after an upgrade is
 /// distinguishable from the original (ADR-0006).
-pub const TRANSFORM_NAME: &str = "ingest.http_fetch";
+pub const TRANSFORM_HTTP_FETCH: &str = "ingest.http_fetch";
+pub const TRANSFORM_FILE_IMPORT: &str = "ingest.file_import";
 pub const TRANSFORM_VERSION: &str = "1";
 
 #[derive(Debug, thiserror::Error)]
@@ -57,6 +59,9 @@ pub enum IngestError {
 
     #[error("blob {content_hash} is stored but has no row in this case, and its key cannot be recovered")]
     BlobOrphaned { content_hash: String },
+
+    #[error("{path} could not be read: {reason}")]
+    FileUnreadable { path: String, reason: String },
 }
 
 pub type Result<T> = std::result::Result<T, IngestError>;
@@ -87,10 +92,6 @@ pub struct IngestContext<'a> {
 }
 
 /// Fetch a URL and record it as provenance.
-///
-/// Everything happens in one database transaction: if any step fails, the case
-/// is left exactly as it was rather than holding a capture with no artifact or
-/// an artifact with no blob.
 pub fn ingest_url(
     conn: &mut Connection,
     blobs: &BlobStore,
@@ -100,13 +101,109 @@ pub fn ingest_url(
     ctx: &IngestContext<'_>,
 ) -> Result<Ingested> {
     let normalised = url_norm::normalise(url)?;
+    let params = params_hash(&normalised.canonical_locator);
 
+    with_run(conn, TRANSFORM_HTTP_FETCH, &params, |conn, run_id| {
+        let request = HttpRequest::get(&normalised.raw_locator);
+        let response = http.send(&request)?;
+
+        if !(200..300).contains(&response.status) {
+            return Err(IngestError::NotSuccessful {
+                status: response.status,
+            });
+        }
+
+        // Bytes go to the blob store before the transaction opens: it writes to
+        // the filesystem, which cannot participate in a SQL transaction anyway.
+        let bytes = response.body.as_bytes();
+        let stored = store_stream(conn, blobs, cmk, || Ok(bytes))?;
+
+        let retrieved = Retrieved {
+            source_kind: "url",
+            raw_locator: normalised.raw_locator.clone(),
+            canonical_locator: normalised.canonical_locator.clone(),
+            http_status: Some(i64::from(response.status)),
+            request_json: serde_json::to_string(&request).unwrap_or_else(|_| "{}".into()),
+            response_headers_json: serde_json::to_string(&response.headers)
+                .unwrap_or_else(|_| "{}".into()),
+            // Phase 1 fetches static HTML only. Recording this on every capture
+            // is what stops a partial snapshot of a JavaScript-heavy page being
+            // mistaken for what a user would have seen.
+            completeness: "static_html_only",
+            from_fixture: response.from_fixture,
+            media_type: media_type_of(&response.headers),
+        };
+
+        record(conn, &retrieved, &stored, ctx, run_id)
+    })
+}
+
+/// Import a local file and record it as provenance.
+///
+/// Takes no [`HttpCapability`], so a file import structurally cannot reach the
+/// network — the same reasoning that keeps `ReplayHttp` free of a client.
+pub fn ingest_file(
+    conn: &mut Connection,
+    blobs: &BlobStore,
+    cmk: &CaseMasterKey,
+    path: &Path,
+    ctx: &IngestContext<'_>,
+) -> Result<Ingested> {
+    // Verbatim, as given. The canonical form below is what identity rests on;
+    // this is what was actually asked for, and editing it would falsify the
+    // record (increment 5b, applied to paths instead of URLs).
+    let raw_locator = path.display().to_string();
+    let canonical_locator = canonical_file_locator(path)?;
+    let params = params_hash(&canonical_locator);
+
+    with_run(conn, TRANSFORM_FILE_IMPORT, &params, |conn, run_id| {
+        // Streamed rather than read into memory, so the blob store's byte cap is
+        // enforced *as* the file is read (A-011). A file larger than the cap
+        // must not become an allocation that size before anything checks it.
+        let stored = store_stream(conn, blobs, cmk, || {
+            std::fs::File::open(path).map_err(|e| IngestError::FileUnreadable {
+                path: raw_locator.clone(),
+                reason: e.to_string(),
+            })
+        })?;
+
+        let retrieved = Retrieved {
+            source_kind: "file",
+            raw_locator: raw_locator.clone(),
+            canonical_locator: canonical_locator.clone(),
+            // There was no request and no server, so these stay empty rather
+            // than being filled with something that looks like an HTTP exchange.
+            http_status: None,
+            request_json: "{}".to_string(),
+            response_headers_json: "{}".to_string(),
+            // Unlike a static-HTML fetch, every byte of the file was read.
+            completeness: "complete",
+            from_fixture: false,
+            media_type: media_type_of_path(path),
+        };
+
+        record(conn, &retrieved, &stored, ctx, run_id)
+    })
+}
+
+/// Open a `transform_run`, do the work, and close the run either way.
+///
+/// The run row is written and committed **before** the work starts, so a crash
+/// mid-ingest leaves a visible `running` row rather than no evidence that
+/// anything was attempted. A pipeline that records only its successes cannot be
+/// audited, and "nothing happened" must not look like "something happened and
+/// failed".
+fn with_run<F>(
+    conn: &mut Connection,
+    transform_name: &str,
+    params_hash: &str,
+    work: F,
+) -> Result<Ingested>
+where
+    F: FnOnce(&mut Connection, &str) -> Result<Ingested>,
+{
     let run_id = new_id()?;
-    let started = now_utc();
 
-    // Opened outside the transaction below, and committed immediately, so that
-    // a crash mid-fetch leaves a visible 'running' row. Recording only
-    // completed work would make a pipeline that silently drops failures.
     conn.execute(
         "INSERT INTO transform_run
             (id, transform_name, transform_version, code_version, params_hash,
@@ -114,22 +211,22 @@ pub fn ingest_url(
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, 'running', NULL, NULL)",
         rusqlite::params![
             run_id,
-            TRANSFORM_NAME,
+            transform_name,
             TRANSFORM_VERSION,
             code_version(),
-            params_hash(&normalised.canonical_locator),
-            started,
+            params_hash,
+            now_utc(),
         ],
     )?;
 
-    match ingest_inner(conn, blobs, http, cmk, &normalised, ctx, &run_id) {
+    match work(conn, &run_id) {
         Ok(ingested) => {
             complete_run(conn, &run_id, "succeeded", None, None)?;
             Ok(ingested)
         }
         Err(e) => {
             // The failure is recorded on the run before it is returned, so a
-            // failed fetch leaves a trace an analyst can find later.
+            // failed attempt leaves a trace an analyst can find later.
             let (code, detail) = classify(&e);
             let _ = complete_run(conn, &run_id, "failed", Some(code), Some(&detail));
             Err(e)
@@ -137,35 +234,42 @@ pub fn ingest_url(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn ingest_inner(
+/// One retrieval, in the form the L0 tables need.
+///
+/// Shared by both ingest paths so that a file and a URL cannot drift into
+/// writing provenance with different shapes.
+struct Retrieved {
+    source_kind: &'static str,
+    raw_locator: String,
+    canonical_locator: String,
+    http_status: Option<i64>,
+    request_json: String,
+    response_headers_json: String,
+    completeness: &'static str,
+    from_fixture: bool,
+    media_type: String,
+}
+
+/// Write the provenance and lineage rows for one retrieval.
+///
+/// Everything happens in one database transaction: if any step fails, the case
+/// is left exactly as it was rather than holding a capture with no artifact or
+/// an artifact with no blob.
+fn record(
     conn: &mut Connection,
-    blobs: &BlobStore,
-    http: &dyn HttpCapability,
-    cmk: &CaseMasterKey,
-    normalised: &url_norm::NormalisedUrl,
+    retrieved: &Retrieved,
+    stored: &StoredBytes,
     ctx: &IngestContext<'_>,
     run_id: &str,
 ) -> Result<Ingested> {
-    let request = HttpRequest::get(&normalised.raw_locator);
-    let response = http.send(&request)?;
-
-    if !(200..300).contains(&response.status) {
-        return Err(IngestError::NotSuccessful {
-            status: response.status,
-        });
-    }
-
-    // Bytes go to the blob store before the transaction opens: it writes to the
-    // filesystem, which cannot participate in a SQL transaction anyway.
     let StoredBytes {
         content_hash,
         size,
         wrapped,
         deduplicated,
-    } = store_bytes(conn, blobs, cmk, response.body.as_bytes())?;
+    } = stored;
 
-    let source_id = new_id()?;
+    let new_source_id = new_id()?;
     let capture_id = new_id()?;
     let artifact_id = new_id()?;
     let now = now_utc();
@@ -178,7 +282,7 @@ fn ingest_inner(
     let existing: Option<String> = tx
         .query_row(
             "SELECT id FROM source WHERE canonical_locator = ?1",
-            [&normalised.canonical_locator],
+            [&retrieved.canonical_locator],
             |r| r.get(0),
         )
         .ok();
@@ -188,15 +292,16 @@ fn ingest_inner(
         None => {
             tx.execute(
                 "INSERT INTO source (id, kind, raw_locator, canonical_locator, first_seen_utc)
-                 VALUES (?1, 'url', ?2, ?3, ?4)",
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
                 rusqlite::params![
-                    source_id,
-                    normalised.raw_locator,
-                    normalised.canonical_locator,
+                    new_source_id,
+                    retrieved.source_kind,
+                    retrieved.raw_locator,
+                    retrieved.canonical_locator,
                     now
                 ],
             )?;
-            source_id
+            new_source_id
         }
     };
 
@@ -204,7 +309,7 @@ fn ingest_inner(
         tx.execute(
             "INSERT INTO blob (content_hash, size_bytes, wrapped_key, wrapped_nonce, stored_utc, shredded_utc)
              VALUES (?1, ?2, ?3, ?4, ?5, NULL)",
-            rusqlite::params![content_hash, size as i64, ciphertext, nonce, now],
+            rusqlite::params![content_hash, *size as i64, ciphertext, nonce, now],
         )?;
     }
 
@@ -219,14 +324,11 @@ fn ingest_inner(
             source_id,
             content_hash,
             now,
-            response.status as i64,
-            serde_json::to_string(&request).unwrap_or_else(|_| "{}".into()),
-            serde_json::to_string(&response.headers).unwrap_or_else(|_| "{}".into()),
-            // Phase 1 fetches static HTML only. Recording this on every capture
-            // is what stops a partial snapshot of a JavaScript-heavy page being
-            // mistaken for what a user would have seen.
-            "static_html_only",
-            i64::from(response.from_fixture),
+            retrieved.http_status,
+            retrieved.request_json,
+            retrieved.response_headers_json,
+            retrieved.completeness,
+            i64::from(retrieved.from_fixture),
             ctx.connector,
             ctx.job_id,
         ],
@@ -238,8 +340,8 @@ fn ingest_inner(
         rusqlite::params![
             artifact_id,
             content_hash,
-            media_type_of(&response.headers),
-            size as i64,
+            retrieved.media_type,
+            *size as i64,
             now
         ],
     )?;
@@ -276,9 +378,9 @@ fn ingest_inner(
             subject_id: Some(&capture_id),
             payload_json: &format!(
                 "{{\"canonical_locator\":{},\"from_fixture\":{}}}",
-                serde_json::to_string(&normalised.canonical_locator)
+                serde_json::to_string(&retrieved.canonical_locator)
                     .unwrap_or_else(|_| "\"\"".into()),
-                response.from_fixture
+                retrieved.from_fixture
             ),
         },
     )?;
@@ -290,10 +392,10 @@ fn ingest_inner(
         source_id,
         capture_id,
         artifact_id,
-        content_hash,
-        size_bytes: size,
-        deduplicated,
-        from_fixture: response.from_fixture,
+        content_hash: content_hash.clone(),
+        size_bytes: *size,
+        deduplicated: *deduplicated,
+        from_fixture: retrieved.from_fixture,
     })
 }
 
@@ -321,13 +423,24 @@ struct StoredBytes {
 /// the orphan is discarded and the bytes are stored again under a fresh key.
 /// That recovery is safe precisely because the store is content-addressed: the
 /// bytes are identical either way, and only the unreadable copy is lost.
-fn store_bytes(
+///
+/// `open` yields the bytes and may be called **twice**, since recovering from an
+/// orphan means storing them again. It takes a factory rather than a reader for
+/// exactly that reason: a consumed `Read` cannot be replayed, and a file that
+/// changed between the two calls would produce a different hash — which the
+/// second `put` would then store under its own name, leaving the first one's
+/// row to be written for content that is no longer there.
+fn store_stream<R, F>(
     conn: &Connection,
     blobs: &BlobStore,
     cmk: &CaseMasterKey,
-    bytes: &[u8],
-) -> Result<StoredBytes> {
-    let (content_hash, size) = match blobs.put(bytes, cmk)? {
+    open: F,
+) -> Result<StoredBytes>
+where
+    R: std::io::Read,
+    F: Fn() -> Result<R>,
+{
+    let (content_hash, size) = match blobs.put(open()?, cmk)? {
         PutOutcome::Stored(b) => return Ok(newly_stored(b)),
         PutOutcome::AlreadyPresent { content_hash, size } => (content_hash, size),
     };
@@ -342,7 +455,7 @@ fn store_bytes(
     }
 
     blobs.remove(&content_hash, cmk)?;
-    match blobs.put(bytes, cmk)? {
+    match blobs.put(open()?, cmk)? {
         PutOutcome::Stored(b) => Ok(newly_stored(b)),
         // The file was removed a line ago, so reaching this means something
         // outside this process is writing the same blob store concurrently.
@@ -399,6 +512,7 @@ fn classify(e: &IngestError) -> (&'static str, String) {
         IngestError::Blob(kokin_blob::BlobError::TooLarge { .. }) => "blob.too_large",
         IngestError::Blob(_) => "blob.failed",
         IngestError::BlobOrphaned { .. } => "blob.orphaned",
+        IngestError::FileUnreadable { .. } => "file.unreadable",
         IngestError::Store(_) | IngestError::Sqlite(_) => "store.failed",
         IngestError::Random(_) => "random.failed",
     };
@@ -421,6 +535,63 @@ fn media_type_of(headers: &std::collections::BTreeMap<String, String>) -> String
                 .to_ascii_lowercase()
         })
         .unwrap_or_else(|| "application/octet-stream".to_string())
+}
+
+/// The identity of a file on disk.
+///
+/// `canonicalize` resolves `.`, `..` and symlinks, so two paths that reach the
+/// same file are one source with two captures rather than two unrelated sources.
+/// The Windows extended-length `\\?\` prefix is stripped and separators are
+/// normalised to `/`, so a case bundle carries the same locator no matter which
+/// platform wrote it.
+///
+/// **Case is deliberately not folded.** Windows paths are case-insensitive, so
+/// `C:/A/x.txt` and `c:/a/X.TXT` are one file but become two sources. Folding
+/// would be wrong on Linux and would make case files non-portable between
+/// platforms, so the failure is left visible and benign — identity fragments,
+/// evidence is not corrupted. Same tradeoff as the tracking-parameter list in
+/// increment 5b.
+fn canonical_file_locator(path: &Path) -> Result<String> {
+    let resolved = std::fs::canonicalize(path).map_err(|e| IngestError::FileUnreadable {
+        path: path.display().to_string(),
+        reason: e.to_string(),
+    })?;
+
+    let shown = resolved.display().to_string();
+    let trimmed = shown.strip_prefix(r"\\?\").unwrap_or(shown.as_str());
+    let slashed = trimmed.replace('\\', "/");
+
+    Ok(format!("file:///{}", slashed.trim_start_matches('/')))
+}
+
+/// Media type for a file, from its extension.
+///
+/// This is the **filename's claim**, not an observation: a file named `.html`
+/// may hold anything at all. It is recorded because the extractor needs a
+/// routing hint and Phase 1 has no content sniffer, and the table is
+/// deliberately narrow — anything unrecognised stays `application/octet-stream`
+/// rather than becoming a guess. Detection from the bytes belongs with the
+/// extractor, which is the code that actually looks at them.
+fn media_type_of_path(path: &Path) -> String {
+    let extension = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+
+    match extension.as_str() {
+        "html" | "htm" => "text/html",
+        "txt" => "text/plain",
+        "json" => "application/json",
+        "csv" => "text/csv",
+        "pdf" => "application/pdf",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        _ => "application/octet-stream",
+    }
+    .to_string()
 }
 
 /// The build identity recorded on every run.
@@ -533,6 +704,30 @@ mod tests {
                 url,
                 &ctx,
             )
+        }
+
+        /// Lower the blob ceiling, so the streaming cap can be tested without
+        /// writing a file the size of the real one.
+        fn with_max_blob_bytes(mut self, limit: u64) -> Self {
+            self.blobs = self.blobs.clone().with_max_blob_bytes(limit);
+            self
+        }
+
+        fn write_file(&self, name: &str, contents: &str) -> PathBuf {
+            let path = self.dir.join(name);
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).unwrap();
+            }
+            std::fs::write(&path, contents).unwrap();
+            path
+        }
+
+        fn import(&mut self, path: &Path) -> Result<Ingested> {
+            let ctx = IngestContext {
+                connector: "file_import",
+                job_id: "job-002",
+            };
+            ingest_file(&mut self.conn, &self.blobs, &self.cmk, path, &ctx)
         }
 
         fn count(&self, sql: &str) -> i64 {
@@ -818,6 +1013,203 @@ mod tests {
         };
         let plaintext = h.blobs.get(&blob_ref, &h.cmk).unwrap();
         assert_eq!(String::from_utf8(plaintext).unwrap(), BODY);
+
+        h.cleanup();
+    }
+
+    /// The file half of the increment: a local file becomes the same shape of
+    /// provenance as a fetch, without going near the network.
+    #[test]
+    fn a_local_file_becomes_provenance_and_lineage() {
+        let mut h = Harness::new("file");
+        let path = h.write_file("evidence.html", BODY);
+
+        let ingested = h.import(&path).unwrap();
+
+        assert!(!ingested.from_fixture, "a real file read is not a fixture");
+        assert_eq!(ingested.size_bytes, BODY.len() as u64);
+
+        assert_eq!(h.count("SELECT count(*) FROM source"), 1);
+        assert_eq!(h.count("SELECT count(*) FROM blob"), 1);
+        assert_eq!(h.count("SELECT count(*) FROM capture"), 1);
+        assert_eq!(h.count("SELECT count(*) FROM artifact"), 1);
+
+        let (kind, canonical): (String, String) = h
+            .conn
+            .query_row(
+                "SELECT kind, canonical_locator FROM source WHERE id = ?1",
+                [&ingested.source_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(kind, "file");
+        assert!(
+            canonical.starts_with("file:///") && !canonical.contains('\\'),
+            "a file locator must be platform-neutral, got: {canonical}"
+        );
+
+        // There was no server, so nothing pretends there was one.
+        let (status, completeness, from_fixture, connector): (Option<i64>, String, i64, String) = h
+            .conn
+            .query_row(
+                "SELECT http_status, capture_completeness, from_fixture, connector
+                   FROM capture WHERE id = ?1",
+                [&ingested.capture_id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(status, None, "a file read has no HTTP status");
+        assert_eq!(completeness, "complete");
+        assert_eq!(from_fixture, 0);
+        assert_eq!(connector, "file_import");
+
+        // The run is attributed to the file transform, not the fetch one.
+        let (name, run_status): (String, String) = h
+            .conn
+            .query_row(
+                "SELECT transform_name, status FROM transform_run WHERE id = ?1",
+                [&ingested.run_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(name, TRANSFORM_FILE_IMPORT);
+        assert_eq!(run_status, "succeeded");
+
+        // Lineage has the same shape as the URL path.
+        assert_eq!(
+            h.count(&format!(
+                "SELECT count(*) FROM derivation WHERE run_id = '{}'",
+                ingested.run_id
+            )),
+            2
+        );
+
+        h.cleanup();
+    }
+
+    /// Two paths that reach the same file are one source. Without resolving
+    /// `..`, the same evidence imported from a different working directory
+    /// would fragment into two unrelated sources.
+    #[test]
+    fn two_paths_to_the_same_file_are_one_source() {
+        let mut h = Harness::new("samefile");
+        let direct = h.write_file("nested/evidence.html", BODY);
+        let indirect = h.dir.join("nested").join("..").join("nested/evidence.html");
+
+        let first = h.import(&direct).unwrap();
+        let second = h.import(&indirect).unwrap();
+
+        assert_eq!(first.source_id, second.source_id);
+        assert_eq!(h.count("SELECT count(*) FROM source"), 1);
+        assert_eq!(h.count("SELECT count(*) FROM capture"), 2);
+        assert!(second.deduplicated);
+
+        // The raw locator still records what was actually asked for, verbatim.
+        let raw: String = h
+            .conn
+            .query_row(
+                "SELECT raw_locator FROM source WHERE id = ?1",
+                [&first.source_id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(raw, direct.display().to_string());
+
+        h.cleanup();
+    }
+
+    /// The same bytes reached two different ways are stored once, but remain
+    /// two sources — where evidence came from is not the same question as what
+    /// it contains.
+    #[test]
+    fn a_file_and_a_url_with_the_same_bytes_share_one_blob() {
+        let mut h = Harness::new("crosspath");
+        h.record(URL, 200, "text/html", BODY);
+        let path = h.write_file("same.html", BODY);
+
+        let fetched = h.ingest(URL).unwrap();
+        let imported = h.import(&path).unwrap();
+
+        assert_eq!(fetched.content_hash, imported.content_hash);
+        assert!(imported.deduplicated);
+        assert_ne!(fetched.source_id, imported.source_id);
+
+        assert_eq!(h.count("SELECT count(*) FROM blob"), 1);
+        assert_eq!(h.count("SELECT count(*) FROM source"), 2);
+        assert_eq!(h.count("SELECT count(*) FROM artifact"), 2);
+
+        h.cleanup();
+    }
+
+    /// A path that is not there must fail by name, and leave the attempt on the
+    /// record like any other failure.
+    #[test]
+    fn a_missing_file_leaves_a_failed_run_and_no_evidence() {
+        let mut h = Harness::new("nofile");
+        let missing = h.dir.join("not-here.html");
+
+        let err = h.import(&missing).unwrap_err();
+        assert!(
+            matches!(err, IngestError::FileUnreadable { .. }),
+            "expected a named unreadable-file error, got: {err}"
+        );
+
+        assert_eq!(h.count("SELECT count(*) FROM source"), 0);
+        assert_eq!(h.count("SELECT count(*) FROM capture"), 0);
+
+        h.cleanup();
+    }
+
+    /// The byte cap is enforced during the read, so an oversized file is
+    /// stopped rather than stored and then measured (A-011).
+    #[test]
+    fn an_oversized_file_is_refused_and_recorded_as_such() {
+        let mut h = Harness::new("toobig").with_max_blob_bytes(64);
+        let path = h.write_file("big.txt", &"x".repeat(4096));
+
+        let err = h.import(&path).unwrap_err();
+        assert!(
+            matches!(
+                err,
+                IngestError::Blob(kokin_blob::BlobError::TooLarge { .. })
+            ),
+            "expected the cap to refuse it, got: {err}"
+        );
+
+        let code: Option<String> = h
+            .conn
+            .query_row("SELECT error_code FROM transform_run", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(code.as_deref(), Some("blob.too_large"));
+
+        // Nothing was kept: not the bytes, not a row claiming them.
+        assert_eq!(h.count("SELECT count(*) FROM blob"), 0);
+        assert_eq!(h.count("SELECT count(*) FROM artifact"), 0);
+
+        h.cleanup();
+    }
+
+    /// The media type is the filename's claim and is labelled narrowly. An
+    /// unrecognised extension must not become a guess.
+    #[test]
+    fn an_unknown_extension_is_not_guessed_at() {
+        let mut h = Harness::new("mediatype");
+        let known = h.write_file("page.HTM", BODY);
+        let unknown = h.write_file("mystery.qqq", "some other bytes");
+
+        let a = h.import(&known).unwrap();
+        let b = h.import(&unknown).unwrap();
+
+        let media_of = |id: &str| -> String {
+            h.conn
+                .query_row("SELECT media_type FROM artifact WHERE id = ?1", [id], |r| {
+                    r.get(0)
+                })
+                .unwrap()
+        };
+
+        assert_eq!(media_of(&a.artifact_id), "text/html", "extension is cased");
+        assert_eq!(media_of(&b.artifact_id), "application/octet-stream");
 
         h.cleanup();
     }
