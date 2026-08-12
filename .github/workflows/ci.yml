@@ -95,9 +95,22 @@ jobs:
       # macOS artifacts are ad-hoc signed only. There is no Apple Developer
       # account (owner decision, 2026-08-12), so distributed builds trip
       # Gatekeeper — documented in docs/limitations/platforms.md.
+      # Invoked through node rather than the .bin/tauri shim, and WITHOUT
+      # shell: bash. This is not a style preference - it is the failure that
+      # broke run 31596323365.
+      #
+      # `shell: bash` on a windows-latest runner is msys2/Git bash, which puts
+      # /usr/bin/perl (cygwin perl) ahead of Strawberry Perl on PATH. Vendored
+      # OpenSSL's Configure then aborts, because it explicitly rejects cygwin
+      # perls for VC-WIN64A. The Test step above passed in the same run because
+      # it uses the default shell and therefore the correct perl.
+      #
+      # The .bin/tauri shim is a /bin/sh script, so invoking it would drag bash
+      # back in. tauri.js is the shim's real target and node runs it identically
+      # on both runners. It must run from the repository root: the Tauri CLI
+      # resolves src-tauri/tauri.conf.json by searching downward.
       - name: Build application bundle
-        shell: bash
-        run: ./ui/node_modules/.bin/tauri build --ci
+        run: node ui/node_modules/@tauri-apps/cli/tauri.js build --ci
 
       - name: Upload bundle
         uses: actions/upload-artifact@v4

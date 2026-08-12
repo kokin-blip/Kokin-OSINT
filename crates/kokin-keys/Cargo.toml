@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "kokin-keys"
 version.workspace = true
 edition.workspace = true
@@ -10,3 +10,9 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+argon2 = "0.5.3"
+chacha20poly1305 = "0.11.0"
+getrandom = "0.4.3"
+subtle = "2.6.1"
+thiserror = "2.0.20"
+zeroize = { version = "1.9.0", features = ["derive"] }
