@@ -35,6 +35,12 @@ us the "a collector failure cannot corrupt the case" guarantee directly.
 
 ## Decision
 
+> **Superseded in part by ADR-0016.** The text below is kept as the original
+> record. "One encrypted file per case" is no longer accurate: a case is a
+> bundle directory holding `header.json`, `case.db`, and `blobs/`. Everything
+> here about SQLite, FTS5, and the index carrying `(subject_kind, subject_id,
+> case_id)` still stands.
+
 SQLite, one encrypted file per case, FTS5 as an external-content index over
 observations, entities, analyst notes, and claims.
 
