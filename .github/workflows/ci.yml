@@ -153,6 +153,12 @@ jobs:
           fi
           echo "OK: no secret patterns in fixtures"
 
+      # The spec requires inferred conclusions to be labelled as such. Prose
+      # saying so is aspirational; this makes an unattributed research claim a
+      # build failure, and checks that every cited source_id actually resolves.
+      - name: Research claims are sourced or labelled inferred
+        run: python3 scripts/lint_research.py
+
   # ---------------------------------------------------------------------------
   # Licence compatibility. Kokin-OSINT ships source-available/proprietary, so a
   # GPL or AGPL dependency entering the tree is a legal problem, not a style
