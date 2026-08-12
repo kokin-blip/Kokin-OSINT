@@ -240,6 +240,74 @@ const MIGRATIONS: &[&str] = &[
         SELECT RAISE(ABORT, 'a transform_run may only be completed, not rewritten');
     END;
     "#,
+    // 3: the rest of L1 — the observation itself (ADR-0006).
+    //
+    // Migration 2 recorded that a transform ran and what it consumed. This
+    // records what it *said*. Kept separate because it shipped separately, and
+    // an applied migration is never edited.
+    r#"
+    -- A single extracted value, and exactly where in the artifact it came
+    -- from. locator_json is what makes an observation checkable by a human:
+    -- without it the value is an assertion, with it the reader can go and look.
+    --
+    -- value is stored verbatim, including hostile content. Nothing in the
+    -- storage layer sanitises it, because sanitising on write would destroy the
+    -- evidence; escaping is the renderer's job, at the point of display.
+    CREATE TABLE observation (
+        id            TEXT PRIMARY KEY NOT NULL,
+        artifact_id   TEXT NOT NULL REFERENCES artifact(id),
+        run_id        TEXT NOT NULL REFERENCES transform_run(id),
+        kind          TEXT NOT NULL,
+        value         TEXT NOT NULL,
+        locator_json  TEXT NOT NULL,
+        observed_utc  TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX observation_artifact ON observation(artifact_id);
+    CREATE INDEX observation_run ON observation(run_id);
+    CREATE INDEX observation_kind ON observation(kind, value);
+
+    -- Rerunning a parser after an upgrade emits NEW observations; the old ones
+    -- gain a row here (ADR-0006). They are never edited or deleted, because an
+    -- upgrade must not be able to silently rewrite the basis of a conclusion an
+    -- analyst already accepted.
+    --
+    -- superseded_by is nullable on purpose: a newer extractor that no longer
+    -- makes an observation the old one made is withdrawing it, and "this is no
+    -- longer observed" is a different fact from "this was replaced by that".
+    CREATE TABLE observation_supersession (
+        superseded_id  TEXT PRIMARY KEY NOT NULL REFERENCES observation(id),
+        superseded_by  TEXT REFERENCES observation(id),
+        run_id         TEXT NOT NULL REFERENCES transform_run(id),
+        recorded_utc   TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX observation_supersession_by ON observation_supersession(superseded_by);
+
+    -- Observations are L1 facts about what a parser saw, so they are
+    -- append-only for the same reason provenance is.
+    CREATE TRIGGER observation_is_append_only BEFORE UPDATE ON observation
+    BEGIN
+        SELECT RAISE(ABORT, 'observation is append-only: rerun the extractor, do not edit what it saw');
+    END;
+
+    CREATE TRIGGER observation_no_delete BEFORE DELETE ON observation
+    BEGIN
+        SELECT RAISE(ABORT, 'observation is append-only: supersede it, do not delete it');
+    END;
+
+    CREATE TRIGGER observation_supersession_is_append_only
+    BEFORE UPDATE ON observation_supersession
+    BEGIN
+        SELECT RAISE(ABORT, 'a supersession is a historical fact and cannot be edited');
+    END;
+
+    CREATE TRIGGER observation_supersession_no_delete
+    BEFORE DELETE ON observation_supersession
+    BEGIN
+        SELECT RAISE(ABORT, 'a supersession is a historical fact and cannot be deleted');
+    END;
+    "#,
 ];
 
 /// The schema version this build writes and understands.

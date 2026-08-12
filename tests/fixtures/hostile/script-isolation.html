@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+<title>Real Title</title>
+<meta property="og:site_name" content="Real Site">
+
+<script>
+// Everything in here is script data, not markup. A tokeniser that leaks it
+// would hand an investigator links and metadata that the page never presented.
+var payload = '<a href="https://attacker.example/harvest">click</a>';
+var meta = '<meta property="og:site_name" content="Attacker Site">';
+document.write('<a href="mailto:victim@attacker.example">mail</a>');
+</script>
+
+<style>
+/* Raw text, same problem. */
+body::after { content: '<a href="https://css.attacker.example/">x</a>'; }
+</style>
+
+<noscript>
+<a href="https://noscript.attacker.example/">only without scripting</a>
+</noscript>
+</head>
+<body>
+<!-- <a href="https://comment.attacker.example/">commented out</a> -->
+<a href="https://real.example/page">a real link</a>
+<textarea><a href="https://textarea.attacker.example/">in a textarea</a></textarea>
+</body>
+</html>

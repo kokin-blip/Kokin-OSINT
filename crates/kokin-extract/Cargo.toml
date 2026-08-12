@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "kokin-extract"
 version.workspace = true
 edition.workspace = true
@@ -10,3 +10,17 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+kokin-store = { path = "../kokin-store" }
+kokin-blob = { path = "../kokin-blob" }
+kokin-keys = { path = "../kokin-keys" }
+rusqlite = { version = "0.40.2", features = ["bundled-sqlcipher-vendored-openssl"] }
+thiserror = "2.0.20"
+getrandom = "0.4.3"
+lol_html = "3.0.1"
+url = "2.5.8"
+html-escape = "0.2.15"
+
+[dev-dependencies]
+# The composition being tested is ingest -> extract, so the tests build their
+# artifacts with the real pipeline rather than by hand-writing rows.
+kokin-ingest = { path = "../kokin-ingest" }

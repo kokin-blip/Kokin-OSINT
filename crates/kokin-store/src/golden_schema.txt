@@ -4,6 +4,10 @@ index	audit_event_occurred	CREATE INDEX audit_event_occurred ON audit_event(occu
 index	capture_source	CREATE INDEX capture_source ON capture(source_id)
 index	derivation_input	CREATE INDEX derivation_input ON derivation(input_kind, input_id)
 index	derivation_output	CREATE INDEX derivation_output ON derivation(output_kind, output_id)
+index	observation_artifact	CREATE INDEX observation_artifact ON observation(artifact_id)
+index	observation_kind	CREATE INDEX observation_kind ON observation(kind, value)
+index	observation_run	CREATE INDEX observation_run ON observation(run_id)
+index	observation_supersession_by	CREATE INDEX observation_supersession_by ON observation_supersession(superseded_by)
 index	source_canonical	CREATE INDEX source_canonical ON source(canonical_locator)
 table	artifact	CREATE TABLE artifact ( id TEXT PRIMARY KEY NOT NULL, content_hash TEXT NOT NULL REFERENCES blob(content_hash), media_type TEXT NOT NULL, byte_length INTEGER NOT NULL, created_utc TEXT NOT NULL ) STRICT
 table	audit_event	CREATE TABLE audit_event ( id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_utc TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, subject_kind TEXT, subject_id TEXT, payload_json TEXT NOT NULL DEFAULT '{}', prev_event_hash BLOB NOT NULL, event_hash BLOB NOT NULL ) STRICT
@@ -11,6 +15,8 @@ table	blob	CREATE TABLE blob ( content_hash TEXT PRIMARY KEY NOT NULL, size_byte
 table	capture	CREATE TABLE capture ( id TEXT PRIMARY KEY NOT NULL, source_id TEXT NOT NULL REFERENCES source(id), content_hash TEXT REFERENCES blob(content_hash), requested_utc TEXT NOT NULL, http_status INTEGER, request_json TEXT NOT NULL DEFAULT '{}', response_headers_json TEXT NOT NULL DEFAULT '{}', redirect_chain_json TEXT NOT NULL DEFAULT '[]', capture_completeness TEXT NOT NULL, from_fixture INTEGER NOT NULL DEFAULT 0, connector TEXT NOT NULL, job_id TEXT NOT NULL ) STRICT
 table	case_meta	CREATE TABLE case_meta ( key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL ) STRICT
 table	derivation	CREATE TABLE derivation ( id TEXT PRIMARY KEY NOT NULL, run_id TEXT NOT NULL REFERENCES transform_run(id), input_kind TEXT NOT NULL, input_id TEXT NOT NULL, output_kind TEXT NOT NULL, output_id TEXT NOT NULL ) STRICT
+table	observation	CREATE TABLE observation ( id TEXT PRIMARY KEY NOT NULL, artifact_id TEXT NOT NULL REFERENCES artifact(id), run_id TEXT NOT NULL REFERENCES transform_run(id), kind TEXT NOT NULL, value TEXT NOT NULL, locator_json TEXT NOT NULL, observed_utc TEXT NOT NULL ) STRICT
+table	observation_supersession	CREATE TABLE observation_supersession ( superseded_id TEXT PRIMARY KEY NOT NULL REFERENCES observation(id), superseded_by TEXT REFERENCES observation(id), run_id TEXT NOT NULL REFERENCES transform_run(id), recorded_utc TEXT NOT NULL ) STRICT
 table	source	CREATE TABLE source ( id TEXT PRIMARY KEY NOT NULL, kind TEXT NOT NULL, raw_locator TEXT NOT NULL, canonical_locator TEXT NOT NULL, first_seen_utc TEXT NOT NULL ) STRICT
 table	transform_run	CREATE TABLE transform_run ( id TEXT PRIMARY KEY NOT NULL, transform_name TEXT NOT NULL, transform_version TEXT NOT NULL, code_version TEXT NOT NULL, params_hash TEXT NOT NULL, started_utc TEXT NOT NULL, finished_utc TEXT, status TEXT NOT NULL, error_code TEXT, error_detail TEXT ) STRICT
 trigger	artifact_is_append_only	CREATE TRIGGER artifact_is_append_only BEFORE UPDATE ON artifact BEGIN SELECT RAISE(ABORT, 'artifact is append-only: provenance cannot be edited'); END
@@ -21,6 +27,10 @@ trigger	capture_is_append_only	CREATE TRIGGER capture_is_append_only BEFORE UPDA
 trigger	capture_no_delete	CREATE TRIGGER capture_no_delete BEFORE DELETE ON capture BEGIN SELECT RAISE(ABORT, 'capture is append-only: provenance cannot be deleted'); END
 trigger	derivation_is_append_only	CREATE TRIGGER derivation_is_append_only BEFORE UPDATE ON derivation BEGIN SELECT RAISE(ABORT, 'derivation is append-only: lineage cannot be edited'); END
 trigger	derivation_no_delete	CREATE TRIGGER derivation_no_delete BEFORE DELETE ON derivation BEGIN SELECT RAISE(ABORT, 'derivation is append-only: lineage cannot be deleted'); END
+trigger	observation_is_append_only	CREATE TRIGGER observation_is_append_only BEFORE UPDATE ON observation BEGIN SELECT RAISE(ABORT, 'observation is append-only: rerun the extractor, do not edit what it saw'); END
+trigger	observation_no_delete	CREATE TRIGGER observation_no_delete BEFORE DELETE ON observation BEGIN SELECT RAISE(ABORT, 'observation is append-only: supersede it, do not delete it'); END
+trigger	observation_supersession_is_append_only	CREATE TRIGGER observation_supersession_is_append_only BEFORE UPDATE ON observation_supersession BEGIN SELECT RAISE(ABORT, 'a supersession is a historical fact and cannot be edited'); END
+trigger	observation_supersession_no_delete	CREATE TRIGGER observation_supersession_no_delete BEFORE DELETE ON observation_supersession BEGIN SELECT RAISE(ABORT, 'a supersession is a historical fact and cannot be deleted'); END
 trigger	source_is_append_only	CREATE TRIGGER source_is_append_only BEFORE UPDATE ON source BEGIN SELECT RAISE(ABORT, 'source is append-only: provenance cannot be edited'); END
 trigger	source_no_delete	CREATE TRIGGER source_no_delete BEFORE DELETE ON source BEGIN SELECT RAISE(ABORT, 'source is append-only: provenance cannot be deleted'); END
 trigger	transform_run_only_completes	CREATE TRIGGER transform_run_only_completes BEFORE UPDATE ON transform_run WHEN NOT ( NEW.id = OLD.id AND NEW.transform_name = OLD.transform_name AND NEW.transform_version = OLD.transform_version AND NEW.code_version = OLD.code_version AND NEW.params_hash = OLD.params_hash AND NEW.started_utc = OLD.started_utc AND OLD.status = 'running' ) BEGIN SELECT RAISE(ABORT, 'a transform_run may only be completed, not rewritten'); END
