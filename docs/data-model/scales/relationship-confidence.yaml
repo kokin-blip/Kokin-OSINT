@@ -1,0 +1,109 @@
+# How well supported is the edge between these two entities?
+#
+# Separate from identifier match: we can be certain who both parties are and
+# still have almost no basis for the line drawn between them.
+id: relationship_confidence
+version: 1
+title: Relationship confidence
+adr: ADR-0007
+status: active
+
+question: >
+  What does the evidence actually say about the connection between these two
+  entities, as opposed to what it is suggestive of?
+
+values:
+  - key: insufficient_information
+    label: Insufficient information
+    definition: >
+      The relationship exists in the case as a hypothesis with no evidence
+      link, or its supporting evidence is no longer readable.
+    calibration_examples:
+      - An analyst sketched a suspected connection to be checked later.
+
+  - key: stated_by_authority
+    label: Stated by an authority
+    definition: >
+      The relationship is asserted directly by a source that is the registrar
+      of, or party to, that relationship.
+    calibration_examples:
+      - A company registry naming a person as a current director.
+      - An RDAP record naming the registrant organisation of a domain.
+
+  - key: stated_by_source
+    label: Stated by a source
+    definition: >
+      A source asserts the relationship in so many words, but is neither the
+      authority on it nor a party to it.
+    calibration_examples:
+      - A news article describing someone as a company's founder.
+      - A biography page naming a person's employer.
+
+  - key: documented_interaction
+    label: Documented interaction
+    definition: >
+      No source states the relationship, but captured evidence shows the
+      parties interacting in a way that constitutes it.
+    calibration_examples:
+      - Two accounts replying to each other repeatedly across captured threads.
+      - A domain that links to another domain from its own published pages.
+
+  - key: co_occurrence
+    label: Co-occurrence
+    definition: >
+      The entities appear together, and nothing establishes that the
+      co-appearance means anything. The weakest edge that is still evidence.
+    calibration_examples:
+      - Two names in the same attendee list.
+      - Two domains sharing a hosting IP on a large shared host.
+      - An email address and a domain mentioned on the same captured page —
+        which is exactly what increment 7's extractor produces, and is why its
+        output is a lead rather than a finding.
+
+  - key: contradicted
+    label: Contradicted
+    definition: >
+      Evidence positively argues against the relationship. Recorded rather than
+      deleted, because knowing an edge was considered and refuted is part of
+      the case.
+    calibration_examples:
+      - A registry filing showing the directorship ended before the period the
+        relationship claims.
+
+threshold_rationale: |
+  Ordinal by *what kind of evidence exists*, not by strength of feeling, and no
+  numeric score at any point (ADR-0007). The ordering asks one question at each
+  step: who says so, and were they in a position to know?
+
+    stated_by_authority     the party responsible for the record says it
+    stated_by_source        someone says it
+    documented_interaction  nobody says it; the evidence shows it happening
+    co_occurrence           nobody says it and nothing shows it; they are
+                            merely both present
+
+  The `co_occurrence` / `documented_interaction` boundary is the one that
+  matters, because it is where investigations manufacture connections. Sharing
+  a hosting IP, appearing in one list, or being mentioned on one page are all
+  co-occurrence, however suggestive the pattern looks across many of them.
+  Volume of weak evidence does not promote a rating here; it may justify a
+  human raising review status, which is a different dimension on purpose.
+
+  Nothing above `co_occurrence` is machine-assignable in Phase 1. An automated
+  pass can observe that two entities appear together; it cannot establish that
+  the co-appearance means anything.
+
+known_failure_modes:
+  - Weak edges accumulate into strong-looking graphs. Fifty co-occurrences
+    render as a dense, convincing cluster, and the renderer does not weight
+    lines by this dimension.
+  - Shared infrastructure produces vast false clustering. A single shared host
+    or CDN can connect thousands of unrelated domains at `co_occurrence`.
+  - Relationships have lifetimes the rating does not carry. "Director of"
+    was true for a period; temporal consistency holds that, and the two are
+    easy to read separately and wrongly.
+  - "`stated_by_authority` inherits the authority's errors, including
+    fraudulent filings, which are common in exactly the investigations where
+    this matters most."
+  - Direction and role are not confidence. A correctly rated edge can still be
+    pointed the wrong way or typed with the wrong role, and this scale will not
+    notice.

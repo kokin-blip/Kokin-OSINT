@@ -1,0 +1,121 @@
+# Is this identifier the same identifier — and does it belong to the same actor?
+#
+# The dimension that decides whether two records are one person. It is where
+# investigations most often go wrong, and where a wrong answer merges two real
+# people into one fictional one.
+id: identifier_match
+version: 1
+title: Identifier match
+adr: ADR-0007
+status: partial   # the similarity tiers are unmeasured; see threshold_rationale
+
+question: >
+  What is the basis for believing that this identifier refers to the same actor
+  as that one?
+
+values:
+  - key: insufficient_information
+    label: Insufficient information
+    definition: >
+      No basis to compare. One side is missing, malformed, or the comparison
+      was never attempted.
+    calibration_examples:
+      - An entity with a display name and no identifiers of any kind.
+
+  - key: same_identifier
+    label: Same identifier
+    definition: >
+      Byte-identical after documented normalisation, in a namespace where the
+      identifier is globally unique and controlled by a registrar.
+    calibration_examples:
+      - The same email address, lowercased, on two authoritative sources.
+      - The same domain name after the canonicalisation in `url_norm`.
+      - The same company registration number in the same registry.
+    machine_assignable: true
+    # Uniqueness is a property of the namespace, not of the string. This value
+    # is only valid where a registrar guarantees it.
+
+  - key: controlled_by_same_actor
+    label: Demonstrably controlled by the same actor
+    definition: >
+      Different identifiers, with positive evidence of common control —
+      not similarity, but a demonstrated link.
+    calibration_examples:
+      - A domain whose published page states the email address in question.
+      - An account that posts a signed proof referencing another account.
+      - Two accounts that a registrar's own records tie to one registrant.
+    machine_assignable: false
+
+  - key: corroborated_by_context
+    label: Corroborated by context
+    definition: >
+      Different identifiers, tied by several independent contextual signals,
+      none of which alone would be sufficient.
+    calibration_examples:
+      - The same unusual handle, the same stated city, and the same employer
+        across two platforms, from separately captured sources.
+    machine_assignable: false
+
+  - key: similar_unverified
+    label: Similar, unverified
+    definition: >
+      Identifiers resemble each other and nothing has confirmed a link. The
+      normal state of a username sweep result.
+    calibration_examples:
+      - The same username string present on twenty platforms, with no evidence
+        that one person holds them.
+      - Two spellings of a common personal name in the same city.
+    machine_assignable: true
+
+  - key: distinct
+    label: Distinct
+    definition: >
+      Positive evidence that these are different actors, not merely absence of
+      evidence that they are the same.
+    calibration_examples:
+      - Two registrations under one name with different national ID numbers.
+      - Simultaneous activity from the same handle in ways one actor could not
+        produce.
+    machine_assignable: false
+
+threshold_rationale: |
+  The top of this scale is definitional and the middle is not, and the file says
+  so rather than papering over the difference.
+
+  `same_identifier` needs no measurement: it is exact equality within a
+  registrar-governed namespace, and the normalisation applied is recorded.
+
+  Everything between `controlled_by_same_actor` and `similar_unverified` is
+  where a similarity score would be tempting and where ADR-0007's rule bites —
+  thresholds are derived empirically and then written here, never invented and
+  labelled "high confidence". Those numbers do not exist yet:
+
+    - PoC P8 measures the false-positive rate of the WhatsMyName username sweep
+      across 20 sites against fixtures. Until it has run, a username present on
+      many platforms is `similar_unverified` and nothing better, no matter how
+      unusual the string looks.
+    - No string-similarity metric is used for names in Phase 1. A Levenshtein
+      cutoff chosen by taste is exactly the invented threshold this project is
+      meant not to ship.
+
+  Until those measurements exist, the machine may assign only the two ends —
+  `same_identifier` and `similar_unverified`. Every value that asserts a real
+  link requires a human, because ADR-0008 makes merging a projection rather
+  than a destructive act precisely so that this judgement stays reversible.
+
+known_failure_modes:
+  - Common names and common handles collide constantly. `similar_unverified`
+    is correct for them and reads as disappointing, which creates steady
+    pressure to promote matches on thin evidence.
+  - Normalisation itself can create false matches. Aggressive lowercasing or
+    unicode folding can map two distinct identifiers onto one string, and the
+    match will then look exact.
+  - "`distinct` is rarely established, so most non-matches sit at
+    `similar_unverified` forever. Absence of a link is not evidence of
+    separateness, and the scale cannot make it one."
+  - Identifiers are transferred. An email address, a handle, and a domain can
+    all change hands, so `controlled_by_same_actor` is a statement about a
+    moment that the schema records without expiring.
+  - Contextual corroboration is vulnerable to shared context. Two colleagues
+    share an employer and a city, and those signals are not independent even
+    though they were captured separately.

@@ -1,0 +1,108 @@
+# How much weight does the origin of this evidence carry?
+#
+# About the source, never about the specific value. A generally reliable source
+# can be wrong about one fact, and a hostile source can state a true one.
+id: source_reliability
+version: 1
+title: Source reliability
+adr: ADR-0007
+status: active
+
+question: >
+  Independent of what this particular item says, what track record and what
+  incentives does the place it came from have?
+
+# Deliberately close to the Admiralty/NATO A–F reliability grading, which is the
+# vocabulary intelligence and OSINT practitioners already share. Reusing it
+# means an analyst does not have to learn a private scale, and it keeps us from
+# inventing distinctions we cannot defend.
+values:
+  - key: insufficient_information
+    label: Insufficient information
+    definition: >
+      The source has no history with us and no external basis for judging it.
+      Not the same as untrustworthy.
+    calibration_examples:
+      - A domain seen for the first time in this case, with no registration
+        history checked and no prior captures.
+      - A file imported from a drive with no recorded chain of custody.
+
+  - key: authoritative
+    label: Authoritative
+    definition: >
+      The source is the subject of the record, or the official registrar of it.
+      Errors are possible but are the exception and are usually correctable.
+    calibration_examples:
+      - A company registry stating that company's own filing details.
+      - An RDAP response from the registry responsible for the domain.
+      - A person's own verified account stating their own employer.
+
+  - key: usually_reliable
+    label: Usually reliable
+    definition: >
+      A track record of accuracy, editorial process or accountability, but not
+      the authority on the fact and capable of error.
+    calibration_examples:
+      - An established news organisation with published corrections policy.
+      - A well-maintained public dataset with documented provenance.
+
+  - key: mixed
+    label: Mixed
+    definition: >
+      Demonstrated accuracy in some areas and error or bias in others. Requires
+      corroboration before a claim rests on it.
+    calibration_examples:
+      - An aggregator that republishes other sources without verifying them.
+      - A partisan outlet accurate on facts and selective in what it reports.
+
+  - key: unreliable
+    label: Unreliable
+    definition: >
+      A track record of inaccuracy, or an incentive structure that rewards it.
+      Evidence from here is a lead, not support for a conclusion.
+    calibration_examples:
+      - A site that has previously published fabricated records in this case.
+      - Content farms and scraped-data resellers with no stated provenance.
+
+  - key: adversarial
+    label: Adversarial
+    definition: >
+      There is reason to believe the source is targeting this investigation or
+      this class of investigation. Content may be shaped for the reader.
+    calibration_examples:
+      - A page whose content changes based on the requesting IP or user agent.
+      - A page containing instruction-shaped text addressed at automated
+        readers (see the hostile corpus and A-005).
+    # Adversarial is not "very unreliable". An adversarial source may state
+    # true things precisely to establish credibility, so the response is
+    # different in kind: corroborate everything, and record the manipulation
+    # attempt itself as a finding.
+
+threshold_rationale: |
+  Ordinal, not numeric, and no composite with any other dimension (ADR-0007). A
+  number here would have to be a probability of correctness that nobody has
+  measured for any real source.
+
+  `adversarial` is separated from `unreliable` because they call for different
+  actions rather than different amounts of caution. Collapsing them is how a
+  deliberate manipulation attempt gets filed as ordinary low quality and stops
+  being investigated as an event in its own right.
+
+  This scale is never machine-assigned in Phase 1. Nothing in the pipeline knows
+  a source's track record; a default of `insufficient_information` is honest and
+  a guessed default is not.
+
+known_failure_modes:
+  - Reliability attaches to a source, but analysts read it as attaching to the
+    claim in front of them. An authoritative registry can hold a stale or
+    fraudulent filing, and the rating will not say so.
+  - A source is not a fixed thing. A domain changes ownership, an account is
+    compromised, a publication changes editors. A rating made months ago may
+    describe a source that no longer exists, and nothing currently expires it.
+  - Aggregators inherit unearned credibility. Content is rated on where it was
+    fetched from, not on where it originated, so laundering through a reputable
+    republisher raises the rating without changing the evidence.
+  - Rating an entire domain is coarse. A single site can host an authoritative
+    filings section and an unmoderated forum.
+  - "`adversarial` requires noticing manipulation. A source that is targeting us
+    successfully is, by construction, one we have not rated adversarial."

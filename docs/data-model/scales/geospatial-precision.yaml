@@ -1,0 +1,126 @@
+# How precisely is this location known, and from what?
+#
+# Rated by the provenance of the coordinate rather than by the number of
+# decimal places on it. A coordinate printed to six decimals is not precise;
+# it is merely written down precisely.
+id: geospatial_precision
+version: 1
+title: Geospatial precision
+adr: ADR-0007
+status: active
+
+question: >
+  What produced this location, and what area does it therefore actually
+  describe?
+
+values:
+  - key: insufficient_information
+    label: Insufficient information
+    definition: >
+      No location, or a place name that was never resolved to anything.
+    calibration_examples:
+      - A profile listing a city we did not geocode.
+      - An image with no location metadata of any kind.
+
+  - key: device_measured
+    label: Device-measured
+    definition: >
+      A coordinate recorded by a positioning device at the time of capture,
+      carried in the artifact's own metadata.
+    calibration_examples:
+      - EXIF GPS tags in a photograph, with the accuracy fields the device
+        wrote alongside them.
+    # The stated accuracy comes from the device and is recorded as-is. We do
+    # not add an accuracy figure of our own, and we do not assume one when the
+    # device did not write it.
+
+  - key: precise_address
+    label: Precise address
+    definition: >
+      A specific street address stated by a source, resolved to a rooftop or
+      parcel-level match by a geocoder that reported it as such.
+    calibration_examples:
+      - A registered office address in a company filing, geocoded to the
+        building.
+
+  - key: locality
+    label: Locality
+    definition: >
+      Resolved no finer than a settlement — a town, city, or urban district.
+      The area covered varies by orders of magnitude between localities.
+    calibration_examples:
+      - A profile stating "Berlin".
+      - An address whose geocoder returned only a locality-level match.
+
+  - key: region
+    label: Region
+    definition: >
+      Resolved to a sub-national administrative area: a state, province,
+      oblast, or county.
+    calibration_examples:
+      - A filing giving only a state of incorporation.
+
+  - key: country
+    label: Country
+    definition: >
+      Resolved only to a national boundary. Includes most IP-derived location.
+    calibration_examples:
+      - A country stated on a profile with no finer detail.
+      - Geolocation of an IP address, which is a claim about network
+        registration rather than about where anyone is.
+
+  - key: contested
+    label: Contested
+    definition: >
+      Sources disagree about the location, or the place itself is subject to
+      competing territorial claims and naming.
+    calibration_examples:
+      - Two filings giving different registered addresses for one period.
+      - A place whose country attribution depends on the map publisher.
+
+threshold_rationale: |
+  Rated by provenance, not by radius in metres, and this is a deliberate
+  departure from what a geospatial scale usually looks like.
+
+  Attaching metre figures to these tiers would mean inventing them. "Locality
+  means 5 km" is false for a village and false for Chongqing by two orders of
+  magnitude; the honest statement is that the coordinate denotes a named
+  administrative area whose extent is a property of that area and can be looked
+  up. So the tiers name what resolved the location, and any uncertainty radius
+  displayed must come from the geocoder or the device, carried through as data
+  rather than derived from the tier.
+
+  Decimal places are never evidence of precision. A locality centroid arrives
+  with as many digits as a rooftop match, and a UI that infers precision from
+  digit count will be wrong on every centroid it displays.
+
+  ADR-0007's rule that thresholds are measured rather than invented is the
+  reason PoC P7's numbers are absent from this file: P7 measures pHash and CLIP
+  separation for near-duplicate images, which is a different scale entirely and
+  is not one of the seven. Nothing here is waiting on a measurement, because
+  nothing here is numeric.
+
+  `country` explicitly absorbs IP geolocation, which is frequently presented as
+  city-level and is not. An IP address locates a network registration, not a
+  person, and treating a data-centre city as someone's location is a
+  well-documented way to accuse the wrong person.
+
+known_failure_modes:
+  - Centroids look like addresses. A locality resolved to its geometric centre
+    plots as a precise point, and on a map it is indistinguishable from a
+    rooftop match unless the tier is rendered too.
+  - Device-measured does not mean truthful. EXIF GPS is trivially editable and
+    is stripped or rewritten by most platforms; a coordinate surviving in a
+    file says something about the file's history, not only about a camera.
+  - Geocoders report match quality inconsistently, and a fallback from address
+    to locality is often silent. A rating derived from a geocoder response is
+    only as honest as that response.
+  - VPNs, proxies, and mobile carrier NAT make IP-derived location arbitrary,
+    not merely coarse, so `country` can be confidently wrong rather than
+    imprecise.
+  - A location is a moment, not a property. Registered addresses change, people
+    move, and this scale carries no time — temporal consistency does, and the
+    two must be read together to mean anything.
+  - "`contested` covers two very different situations, a factual disagreement
+    between sources and a political dispute over territory, and collapsing them
+    may prove to be a mistake."

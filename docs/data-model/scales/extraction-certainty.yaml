@@ -1,0 +1,119 @@
+# How sure are we that this value is what the artifact actually says?
+#
+# Not "is the claim true" — only whether we read the bytes correctly. A page
+# can state a falsehood with perfect extraction certainty.
+id: extraction_certainty
+version: 1
+title: Extraction certainty
+adr: ADR-0007
+status: active
+
+question: >
+  Given the artifact, how confident are we that this value is what it contains,
+  independent of whether the artifact is telling the truth?
+
+values:
+  - key: insufficient_information
+    label: Insufficient information
+    definition: >
+      No basis to judge. The observation arrived without a locator, or the
+      artifact it points at is no longer readable (crypto-shredded, or a blob
+      whose row is gone).
+    calibration_examples:
+      - An imported observation from an external tool that reports values
+        without saying where in the document it found them.
+      - An observation whose artifact has been shredded, so the locator can no
+        longer be checked against anything.
+    # This is deliberately NOT "low". "We cannot check this" and "we checked and
+    # it is weak" send an analyst to different places.
+
+  - key: exact
+    label: Exact
+    definition: >
+      The value was read from a structured position in a machine-readable
+      format, and a byte-range locator resolves to it. Re-running the extractor
+      on the same artifact reproduces it exactly.
+    calibration_examples:
+      - "`page.title` from a well-formed `<title>` element, locator slices back
+        to the same string."
+      - "`meta:og:title` from a `<meta property=… content=…>` attribute."
+      - "`link.href` read verbatim from an `a[href]` attribute."
+    machine_assignable: true
+
+  - key: derived
+    label: Derived
+    definition: >
+      The value did not appear literally in the artifact but follows from a
+      value that did, by a documented, deterministic rule. The locator points at
+      the source value, not at the derived one.
+    calibration_examples:
+      - "`domain.mention` — the host component of an absolute href. The artifact
+        contains `https://acme.example/about`; `acme.example` is a parse of it."
+      - "`email.address` — the address parsed out of a `mailto:` URL, discarding
+        headers and additional recipients."
+    machine_assignable: true
+    # Separated from `exact` because the derivation rule can be wrong even when
+    # the reading is perfect, and because a reader following the locator will
+    # find the source value rather than the one being asserted.
+
+  - key: reconstructed
+    label: Reconstructed
+    definition: >
+      The value required interpreting a malformed, ambiguous, or partially
+      readable artifact, and a different parser could reasonably disagree.
+    calibration_examples:
+      - A title read from a document whose `<title>` element is never closed, so
+        the tokeniser treated the rest of the page as title text.
+      - A value from a document that specified an encoding we did not honour.
+      - An attribute recovered from an unquoted or unterminated tag.
+    machine_assignable: true
+
+  - key: inferred
+    label: Inferred
+    definition: >
+      A model or heuristic produced the value. Nothing in the artifact states
+      it. Requires a recorded basis — for AI output, `model@version`,
+      `prompt_hash`, and the cited observation ids (ADR-0012).
+    calibration_examples:
+      - A language model reading a biography paragraph and reporting an
+        employer that the page never names as such.
+      - A heuristic guessing that a string is a person's name from its shape.
+    machine_assignable: false
+    # Never assignable by the thing making the inference. An extractor that can
+    # rate its own guesses as trustworthy is the failure this scale exists to
+    # prevent.
+
+threshold_rationale: |
+  The boundaries are structural, not numeric, so no measurement is needed to
+  justify them and none is being smuggled in. The dividing question at each step
+  is what a reader following the locator would find:
+
+    exact          they find the value itself
+    derived        they find something the value follows from, by a stated rule
+    reconstructed  they find something a different parser might read differently
+    inferred       they find nothing that states the value at all
+
+  This is why no percentages appear. A number here would imply a measured error
+  rate we do not have, and ADR-0007 forbids inventing thresholds and calling
+  them confidence.
+
+  `kokin-extract` assigns `exact`, `derived`, and `reconstructed` mechanically
+  from which handler produced an observation. `inferred` is reserved for
+  producers that carry a model attribution, and no extractor may assign it to
+  itself.
+
+known_failure_modes:
+  - Perfect extraction of a lie reads as high confidence. This scale says
+    nothing about whether the page is truthful — that is source reliability,
+    and the two are routinely confused when they are shown side by side.
+  - "`exact` on a well-formed document that is nonetheless adversarial: a page
+    can put a false value in a `<title>` and we will read it flawlessly."
+  - A locator is only verifiable while the artifact is readable. After
+    crypto-shredding, an `exact` rating cannot be re-checked by anyone,
+    including us, and the rating outlives the evidence for it.
+  - "`reconstructed` currently depends on the extractor noticing it was in a
+    degraded state. A malformed document that parses cleanly by accident will
+    be rated `exact`, because nothing signalled otherwise."
+  - The `derived` rules are only as good as their documentation. A domain parsed
+    from a URL with an obscure userinfo or IDN form may not be the host a reader
+    would expect, and the rating will not reflect that.

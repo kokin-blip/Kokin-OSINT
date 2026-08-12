@@ -1,0 +1,117 @@
+# Has a human looked at this, and what did they decide?
+#
+# The one dimension that is about the investigation rather than the evidence.
+# It exists so that "nobody has checked this" is never mistaken for "this is
+# fine", which is what an absent review field always ends up meaning.
+id: review_status
+version: 1
+title: Review status
+adr: ADR-0007
+status: active
+
+question: >
+  What is the human decision state of this item, and who made it?
+
+values:
+  - key: insufficient_information
+    label: Insufficient information
+    definition: >
+      A review was attempted and could not be concluded, because what the
+      decision depends on is not available.
+    calibration_examples:
+      - An analyst opened a claim whose supporting artifact has been shredded
+        and could not verify what it rests on.
+      - A relationship whose corroborating source is offline and uncaptured.
+    # Distinct from `unreviewed`: someone looked and was blocked. That is a
+    # finding about the case, and it should not silently decay back into
+    # "nobody has looked yet".
+
+  - key: unreviewed
+    label: Unreviewed
+    definition: >
+      No human has assessed this. The default for everything the pipeline
+      produces, without exception.
+    calibration_examples:
+      - Every observation the extractor writes, at the moment it is written.
+      - Every entity created by an automated pass.
+    machine_assignable: true
+
+  - key: accepted
+    label: Accepted
+    definition: >
+      A human examined the item and its evidence and judged it sound. Requires
+      an `audit_event` naming the actor and the moment.
+    calibration_examples:
+      - An analyst opened the lineage panel, followed the locator to the
+        artifact, confirmed the value, and accepted it.
+    machine_assignable: false
+
+  - key: rejected
+    label: Rejected
+    definition: >
+      A human examined the item and judged it wrong or unsupported. The item is
+      not deleted — a rejected finding is part of the record of what was
+      considered.
+    calibration_examples:
+      - An identifier match that turned out to be two different people sharing
+        a common name.
+    machine_assignable: false
+
+  - key: disputed
+    label: Disputed
+    definition: >
+      Reviewed, and the evidence genuinely conflicts. Not a way of deferring a
+      decision — a positive finding that two sources disagree.
+    calibration_examples:
+      - Two authoritative registries listing different incorporation dates for
+        the same company.
+    machine_assignable: false
+
+  - key: needs_review
+    label: Needs review
+    definition: >
+      Previously reviewed, and something underneath it has since changed. Set
+      automatically when a claim's supporting observation is superseded
+      (ADR-0006).
+    calibration_examples:
+      - An accepted claim whose supporting observation was superseded by a
+        re-extraction that read the value differently.
+      - An accepted claim whose supporting observation was withdrawn entirely
+        by a newer extractor.
+    machine_assignable: true
+    # The only value the machine may raise on a human decision, and it can only
+    # ever ask for attention — never overturn one. An upgrade must not be able
+    # to change what a person concluded without telling them.
+
+threshold_rationale: |
+  These are workflow states, not degrees of anything, so there is no threshold
+  to derive and nothing empirical to measure.
+
+  The load-bearing rule is the direction of travel: automation may move an item
+  from `unreviewed` to nothing else, and may move a reviewed item only to
+  `needs_review`. Every other transition requires a human and produces an
+  `audit_event`. Without that asymmetry, a re-processing pass could quietly
+  ratify its own output as accepted.
+
+  `disputed` is a terminal state, not a pending one. An investigation that
+  cannot express "these sources disagree and both are recorded" pushes analysts
+  into picking a winner early, which is the specific failure the three-layer
+  model exists to prevent.
+
+known_failure_modes:
+  - Acceptance is a snapshot of a moment. The world moves on and nothing
+    expires an accepted claim, so an old review reads exactly like a current
+    one. Only supersession triggers `needs_review`, and only when the
+    underlying observation changed — not when reality did.
+  - Bulk review defeats the mechanism. Accepting many items at once produces
+    the same audit trail as considering each, and the log cannot tell them
+    apart.
+  - Single-analyst cases have no independent check. `accepted` means one person
+    was satisfied, which is weaker than it sounds when that person also formed
+    the hypothesis.
+  - "`needs_review` can flood. A re-extraction that shifts byte offsets
+    supersedes everything at once, flagging a large number of claims whose
+    values did not actually change — see limitation 5 of increment 7."
+  - Rejected items remain visible by design, and a reader skimming a case can
+    mistake a rejected finding for a supported one if the status is not shown
+    everywhere the item is.

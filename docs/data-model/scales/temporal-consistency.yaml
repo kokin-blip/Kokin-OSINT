@@ -1,0 +1,113 @@
+# Do the times line up, and how well do we know them?
+#
+# Covers two things that are usually conflated: how precisely a moment is
+# known, and whether the moments in a claim are mutually consistent.
+id: temporal_consistency
+version: 1
+title: Temporal consistency
+adr: ADR-0007
+status: active
+
+question: >
+  Are the times this claim depends on known well enough, and do they fit
+  together without contradiction?
+
+values:
+  - key: insufficient_information
+    label: Insufficient information
+    definition: >
+      No usable time information. Not the same as a claim whose times conflict.
+    calibration_examples:
+      - An undated page with no capture-independent timestamp anywhere on it.
+      - A relationship asserted with no period attached.
+
+  - key: consistent_precise
+    label: Consistent and precise
+    definition: >
+      All times are known to at least day precision from the evidence itself,
+      and nothing conflicts.
+    calibration_examples:
+      - A registry filing with an explicit appointment date, and a resignation
+        date after it.
+
+  - key: consistent_imprecise
+    label: Consistent but imprecise
+    definition: >
+      Nothing conflicts, but at least one time is known only to a coarse span,
+      so the claim survives only because the span is wide.
+    calibration_examples:
+      - A biography saying "since 2019" against an event in 2021.
+      - A page whose only date is a copyright year.
+
+  - key: capture_bounded_only
+    label: Bounded only by capture
+    definition: >
+      The evidence carries no time of its own. All we know is that the page
+      said this when we fetched it — an upper bound on the observation, and
+      nothing at all about the fact.
+    calibration_examples:
+      - A profile page listing a current employer with no "since" date. The
+        capture time says when we looked, not when the job started.
+      - Every observation `kokin-extract` produces today, absent a dateline.
+    machine_assignable: true
+    # The honest default for most web evidence, and the one most likely to be
+    # silently upgraded by a reader who sees a timestamp on the row and assumes
+    # it dates the fact rather than the fetch.
+
+  - key: conflicting
+    label: Conflicting
+    definition: >
+      The times cannot all be true. A positive finding, recorded rather than
+      resolved by picking a favourite.
+    calibration_examples:
+      - Two authoritative registries giving different incorporation dates.
+      - A relationship whose start post-dates its documented end.
+
+  - key: anachronistic
+    label: Anachronistic
+    definition: >
+      A time is not merely in tension with another but impossible in itself.
+      Often a sign of fabrication or of a systematic processing error.
+    calibration_examples:
+      - A document referencing an organisation that did not yet exist.
+      - A timestamp before the platform it appears on launched.
+      - An epoch-zero or far-future date from a broken parser.
+
+threshold_rationale: |
+  Two axes, deliberately not multiplied together: precision (how well a moment
+  is known) and consistency (whether the moments fit). A single ordering is
+  possible only because the interesting cases sit at the ends —
+  `conflicting` and `anachronistic` are findings regardless of precision, and
+  they are placed last so they cannot be read as "worse versions of imprecise".
+
+  `capture_bounded_only` exists as its own value because it is the most common
+  real state of web evidence and the easiest to overstate. Every capture has a
+  `requested_utc`, so every row shows a date; treating that date as evidence
+  about the fact is a mistake the schema should make hard rather than
+  convenient. Naming the state is what makes it visible in a UI.
+
+  No durations, tolerances, or fuzzy-match windows are specified, because none
+  have been measured. "Within 30 days counts as consistent" is exactly the
+  invented threshold ADR-0007 forbids, and it would silently reclassify
+  conflicts as agreements.
+
+  Time zones are not a precision level. An offset-free local timestamp is
+  imprecise by at most a day and is handled by `consistent_imprecise`; it is
+  not a separate finding.
+
+known_failure_modes:
+  - The capture timestamp is authoritative about our fetch and about nothing
+    else, yet it is the most prominent date on the row. This is the single
+    likeliest misreading in the whole schema.
+  - Page-stated dates are unverified assertions and are trivially editable by
+    whoever controls the page. A precise date is not a true one.
+  - Absent conflict reads as agreement. Two sources that both say nothing about
+    timing rate as consistent, having established nothing.
+  - Coarse spans hide real conflicts. Two "2019" claims can describe events ten
+    months apart, one of which contradicts a third source.
+  - Timezone-naive comparison can manufacture both conflicts and agreements at
+    day boundaries, and nothing currently records which zone a stated time was
+    interpreted in.
+  - "`anachronistic` is often our bug rather than the source's lie — a parser
+    emitting epoch zero looks identical to a fabricated document, and the
+    difference matters enormously."
