@@ -47,9 +47,17 @@ plaintext and lacks the `SQLite format 3\0` header.** The third is the one that
 matters — it is the only check that catches a build which silently linked plain
 SQLite, a failure every functional test would pass.
 
-CI, run `31596323365`: `privacy lints` ✅, `dependency licences & advisories` ✅,
-`build & test (macos-14)` ✅. **`build & test (windows-latest)` has not yet
-completed on any run** — see known limitations.
+**CI run `31600285791`: all four jobs green on both platforms**, producing
+installable artifacts — `kokin-osint-x86_64-pc-windows-msvc` (3.75 MB NSIS) and
+`kokin-osint-aarch64-apple-darwin` (4.81 MB). This is the increment's exit
+criterion: the macOS build works without a Mac, and the Windows installer
+builds.
+
+Getting there took four runs. The first three had their Windows leg cancelled
+by `cancel-in-progress` when I pushed again mid-build, which also meant
+`rust-cache` never reached its save step, so every Windows run paid the full
+cold OpenSSL compile. The fourth completed and failed for a real reason — see
+`docs/increments/002-key-hierarchy.md`, which fixed it.
 
 ### Checks verified by negative control
 
@@ -91,12 +99,11 @@ store tests run in 0.61s; the frontend bundle is 33.56 kB.
 
 ## Known limitations
 
-1. **The Windows build has never completed in CI.** Every run so far was
-   cancelled by `cancel-in-progress` when I pushed again mid-build. A side
-   effect: `rust-cache` never reached its save step, so every Windows run has
-   paid the full cold OpenSSL compile. The code builds and tests clean on
-   Windows locally, but the *release bundle and NSIS installer* are unverified.
-   This is the single outstanding item for this increment.
+1. **Pushing during a run cancels it.** `cancel-in-progress` is correct for PR
+   churn but means the slowest leg never finishes if a commit lands mid-build,
+   and the cache is never saved. The working practice is to hold pushes while a
+   Windows build is running; if that proves too restrictive, exempt the build
+   job from cancellation.
 2. macOS artifacts are ad-hoc signed only; Gatekeeper will block them
    (R-002, accepted).
 3. Eight of nine crates are stubs. The architecture is documented, not built.
