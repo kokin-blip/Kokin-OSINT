@@ -122,7 +122,7 @@ cargo test -p kokin-store            # 3 tests must pass
 cargo deny check bans licenses sources advisories
 python scripts/lint_research.py && python scripts/lint_crossrefs.py
 cd ui && npm ci && npm run check && cd ..
-./ui/node_modules/.bin/tauri build   # requires Strawberry Perl on Windows
+node ui/node_modules/@tauri-apps/cli/tauri.js build   # Strawberry Perl must be first on PATH
 ```
 
 Then launch the built app: the window must state which cipher backend is linked.
@@ -139,5 +139,4 @@ into SQLCipher's `PRAGMA key`, which is fine for proving the round-trip and
 wrong for a product: it gives no key rotation, no recovery path, and no
 separation between the passphrase and the key that actually encrypts the data.
 
-**Blocking first:** the Windows CI build must complete once, without me pushing
-over it.
+That blocker is now cleared: run `31600285791` is green on both platforms.
