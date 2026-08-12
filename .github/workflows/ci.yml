@@ -159,6 +159,12 @@ jobs:
       - name: Research claims are sourced or labelled inferred
         run: python3 scripts/lint_research.py
 
+      # A doc citing D-011 when it means D-010 is this project's own thesis
+      # failing in its own output, and it stays invisible until someone follows
+      # the link. Caught one such error on the day it was written.
+      - name: Internal cross-references resolve
+        run: python3 scripts/lint_crossrefs.py
+
   # ---------------------------------------------------------------------------
   # Licence compatibility. Kokin-OSINT ships source-available/proprietary, so a
   # GPL or AGPL dependency entering the tree is a legal problem, not a style
