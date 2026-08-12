@@ -25,18 +25,25 @@ const MIGRATIONS: &[&str] = &[
         value TEXT NOT NULL
     ) STRICT;
 
-    -- Append-only record of what happened in this case. The hash chain that
-    -- makes it tamper-evident is added in the next increment; the table exists
-    -- now so that increment does not have to migrate rows that already exist.
+    -- Append-only record of what happened in this case, chained by
+    -- BLAKE3(prev_event_hash || canonical_cbor(payload)). Tamper-EVIDENT only:
+    -- see crates/kokin-store/src/audit.rs and ADR-0014 for what that does and
+    -- does not mean.
     CREATE TABLE audit_event (
-        id            INTEGER PRIMARY KEY AUTOINCREMENT,
-        occurred_utc  TEXT NOT NULL,
-        actor         TEXT NOT NULL,
-        action        TEXT NOT NULL,
-        subject_kind  TEXT,
-        subject_id    TEXT,
-        payload_json  TEXT NOT NULL DEFAULT '{}'
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        occurred_utc    TEXT NOT NULL,
+        actor           TEXT NOT NULL,
+        action          TEXT NOT NULL,
+        subject_kind    TEXT,
+        subject_id      TEXT,
+        payload_json    TEXT NOT NULL DEFAULT '{}',
+        prev_event_hash BLOB NOT NULL,
+        event_hash      BLOB NOT NULL
     ) STRICT;
+
+    -- The chain is only meaningful if hashes are unique; a duplicate would
+    -- make two different histories verify.
+    CREATE UNIQUE INDEX audit_event_hash ON audit_event(event_hash);
 
     CREATE INDEX audit_event_occurred ON audit_event(occurred_utc);
     "#,
@@ -176,7 +183,8 @@ mod tests {
     }
 
     const GOLDEN_SCHEMA: &str = "\
+index\taudit_event_hash\tCREATE UNIQUE INDEX audit_event_hash ON audit_event(event_hash)
 index\taudit_event_occurred\tCREATE INDEX audit_event_occurred ON audit_event(occurred_utc)
-table\taudit_event\tCREATE TABLE audit_event ( id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_utc TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, subject_kind TEXT, subject_id TEXT, payload_json TEXT NOT NULL DEFAULT '{}' ) STRICT
+table\taudit_event\tCREATE TABLE audit_event ( id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_utc TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, subject_kind TEXT, subject_id TEXT, payload_json TEXT NOT NULL DEFAULT '{}', prev_event_hash BLOB NOT NULL, event_hash BLOB NOT NULL ) STRICT
 table\tcase_meta\tCREATE TABLE case_meta ( key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL ) STRICT";
 }

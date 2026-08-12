@@ -59,6 +59,22 @@ Deferred to Phase 3.
 Recorded in `docs/decision-log.csv` as needing owner input, and deliberately not
 answered here.
 
+## Verification
+
+Implemented in `crates/kokin-store/src/audit.rs`. Nine tests, including:
+
+- modifying an event breaks the chain, reported at the modified event
+- deleting an event breaks the chain, reported at the event after the hole, and
+  distinguished from a modification so the diagnosis says which happened
+- **`anyone_who_can_write_can_forge_a_valid_chain`** — deletes the whole log,
+  rebuilds it, and asserts it verifies as `Intact`. This test exists so the
+  limitation above is demonstrably true rather than merely asserted, and so
+  anyone tempted to upgrade the claim has to delete a test that contradicts them.
+
+The lifecycle is actually recorded: `case.created`, `case.opened` (carrying
+**which key unlocked it**, since an unexpected recovery-key unlock is the event
+worth noticing), and `case.passphrase_rotated`.
+
 ## Consequences
 
 - Verification is cheap and local; export `verify` walks the chain.

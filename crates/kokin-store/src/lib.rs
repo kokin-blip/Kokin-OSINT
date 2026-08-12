@@ -14,6 +14,7 @@
 //! Page-level encryption covers the FTS5 index for free — see ADR-0004 for why
 //! application-level field encryption was rejected.
 
+pub mod audit;
 pub mod header;
 pub mod migrations;
 
@@ -21,6 +22,7 @@ use std::path::Path;
 
 use rusqlite::Connection;
 
+pub use audit::{append as append_audit_event, verify_chain, ChainStatus, NewAuditEvent};
 pub use header::{
     create_header, read_header, rotate_passphrase, unlock_with_passphrase,
     unlock_with_recovery_key, write_header, CaseHeader, CasePaths, NewCase,
@@ -101,6 +103,17 @@ pub fn create_case(
     let conn = open_database(&paths, &new_case.cmk)?;
     migrations::migrate(&conn)?;
 
+    audit::append(
+        &conn,
+        &NewAuditEvent {
+            actor: "user:local",
+            action: "case.created",
+            subject_kind: Some("case"),
+            subject_id: Some(case_id),
+            payload_json: "{}",
+        },
+    )?;
+
     // Written last: if anything above fails, no header exists and the directory
     // is not mistaken for a valid case.
     write_header(&paths, &new_case.header)?;
@@ -113,9 +126,7 @@ pub fn open_case(root: impl AsRef<Path>, passphrase: &str) -> Result<(Connection
     let paths = CasePaths::new(root);
     let header = read_header(&paths)?;
     let cmk = unlock_with_passphrase(&header, passphrase)?;
-    let conn = open_database(&paths, &cmk)?;
-    migrations::migrate(&conn)?;
-    Ok((conn, paths))
+    finish_open(&paths, &header, &cmk, "passphrase")
 }
 
 /// Open an existing case with the recovery key, for a forgotten passphrase.
@@ -126,9 +137,36 @@ pub fn open_case_with_recovery_key(
     let paths = CasePaths::new(root);
     let header = read_header(&paths)?;
     let cmk = unlock_with_recovery_key(&header, recovery_key)?;
-    let conn = open_database(&paths, &cmk)?;
+    finish_open(&paths, &header, &cmk, "recovery_key")
+}
+
+/// Shared tail of both open paths.
+///
+/// Records **which key opened the case**. An investigator reviewing activity
+/// history should be able to see that a case was opened with the recovery key
+/// rather than the passphrase, because that is exactly the event worth noticing
+/// if it was not them.
+fn finish_open(
+    paths: &CasePaths,
+    header: &CaseHeader,
+    cmk: &CaseMasterKey,
+    unlocked_with: &str,
+) -> Result<(Connection, CasePaths)> {
+    let conn = open_database(paths, cmk)?;
     migrations::migrate(&conn)?;
-    Ok((conn, paths))
+
+    audit::append(
+        &conn,
+        &NewAuditEvent {
+            actor: "user:local",
+            action: "case.opened",
+            subject_kind: Some("case"),
+            subject_id: Some(&header.case_id),
+            payload_json: &format!("{{\"unlocked_with\":\"{unlocked_with}\"}}"),
+        },
+    )?;
+
+    Ok((conn, paths.clone()))
 }
 
 /// Change a case's passphrase.
@@ -145,7 +183,38 @@ pub fn change_passphrase(
     let paths = CasePaths::new(root);
     let header = read_header(&paths)?;
     let updated = rotate_passphrase(&header, old_passphrase, new_passphrase)?;
+
+    // Unlock before the header changes; the CMK is the same either way, but
+    // deriving from the old passphrase is what proves the caller knew it.
+    let cmk = unlock_with_passphrase(&header, old_passphrase)?;
+
+    // The header is written first, then the event recorded. The header and the
+    // database are separate files, so there is no atomic option here, and the
+    // ordering decides which way an interrupted rotation fails:
+    //
+    //   header first -> a crash leaves a real rotation unlogged.
+    //   audit first  -> a crash leaves a log entry for a rotation that never
+    //                   happened.
+    //
+    // An incomplete log is recoverable; a log that asserts something false is
+    // not, and it is precisely the failure this project exists to avoid. If the
+    // append below fails, the error is returned rather than swallowed, so the
+    // caller learns the rotation succeeded but was not recorded.
     write_header(&paths, &updated)?;
+
+    let conn = open_database(&paths, &cmk)?;
+    migrations::migrate(&conn)?;
+    audit::append(
+        &conn,
+        &NewAuditEvent {
+            actor: "user:local",
+            action: "case.passphrase_rotated",
+            subject_kind: Some("case"),
+            subject_id: Some(&header.case_id),
+            payload_json: "{}",
+        },
+    )?;
+
     Ok(())
 }
 
@@ -406,6 +475,62 @@ mod tests {
             ),
             "expected the unknown profile to be rejected, got: {err}"
         );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// The audit chain must record the case lifecycle and still verify. An
+    /// audit mechanism nothing writes to is decorative.
+    #[test]
+    fn the_case_lifecycle_is_recorded_in_a_verifiable_chain() {
+        let dir = temp_case_dir("auditlifecycle");
+
+        let (conn, _paths, recovery) = create_case(&dir, "case-010", "old passphrase").unwrap();
+        drop(conn);
+
+        change_passphrase(&dir, "old passphrase", "new passphrase").unwrap();
+
+        let (conn, _paths) = open_case(&dir, "new passphrase").unwrap();
+        drop(conn);
+
+        let (conn, _paths) = open_case_with_recovery_key(&dir, &recovery).unwrap();
+
+        let actions: Vec<String> = {
+            let mut stmt = conn
+                .prepare("SELECT action FROM audit_event ORDER BY id")
+                .unwrap();
+            let rows = stmt.query_map([], |r| r.get::<_, String>(0)).unwrap();
+            rows.map(|r| r.unwrap()).collect()
+        };
+        assert_eq!(
+            actions,
+            vec![
+                "case.created",
+                "case.passphrase_rotated",
+                "case.opened",
+                "case.opened",
+            ]
+        );
+
+        // Which key opened the case is recorded, because an unexpected
+        // recovery-key unlock is exactly the event worth noticing.
+        let last_payload: String = conn
+            .query_row(
+                "SELECT payload_json FROM audit_event ORDER BY id DESC LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(
+            last_payload.contains("recovery_key"),
+            "expected the recovery-key unlock to be recorded, got: {last_payload}"
+        );
+
+        assert_eq!(
+            verify_chain(&conn).unwrap(),
+            ChainStatus::Intact { events: 4 }
+        );
+        drop(conn);
 
         std::fs::remove_dir_all(&dir).unwrap();
     }

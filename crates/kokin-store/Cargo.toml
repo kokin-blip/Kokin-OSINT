@@ -10,6 +10,8 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+blake3 = "1.8.6"
+ciborium = "0.2.2"
 kokin-keys = { version = "0.0.1", path = "../kokin-keys" }
 rusqlite = { version = "0.40.2", features = ["bundled-sqlcipher-vendored-openssl"] }
 serde = { version = "1.0.229", features = ["derive"] }

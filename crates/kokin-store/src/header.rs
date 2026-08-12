@@ -283,7 +283,7 @@ fn from_hex(s: &str) -> Result<Vec<u8>> {
 /// `chrono` or `time` would be a dependency carried solely for a display string
 /// in one file. Ordering and arithmetic on case timestamps are not needed here;
 /// when they are, that is the moment to take the dependency deliberately.
-fn now_utc_rfc3339() -> String {
+pub(crate) fn now_utc_rfc3339() -> String {
     let secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
