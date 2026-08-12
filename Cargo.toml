@@ -1,0 +1,36 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/kokin-store",
+    "crates/kokin-crypto",
+    "crates/kokin-blob",
+    "crates/kokin-net",
+    "crates/kokin-extract",
+    "crates/kokin-search",
+    "crates/kokin-export",
+    "crates/kokin-ai",
+    "src-tauri",
+]
+# poc/ is deliberately NOT a workspace member. Proof-of-concept code must never
+# be reachable from a release build (review gate 4).
+exclude = ["poc"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.85"
+license = "LicenseRef-Kokin-Source-Available"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+# A panic in a parser must become an error code, never a lost case.
+unwrap_used = "warn"
+expect_used = "warn"
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1

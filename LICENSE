@@ -1,0 +1,32 @@
+Copyright (c) 2026 kokin-blip. All rights reserved.
+
+This source code is made available for reference, review, and personal use by
+the copyright holder. No licence is granted to copy, modify, distribute,
+sublicense, or create derivative works, whether in source or binary form,
+except with the prior written permission of the copyright holder.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+NOTE FOR THE PROJECT OWNER
+
+This is a placeholder notice reflecting the "proprietary / source-available"
+decision recorded on 2026-08-12, chosen because it is the most constraining
+case and therefore keeps every option open.
+
+Before distributing this software to anyone else, replace this file with a
+licence you have actually chosen deliberately — for example the Business Source
+License 1.1, the PolyForm licences, Elastic License 2.0, or a conventional
+open-source licence. Each has meaningfully different consequences for
+contributions, forks, and commercial use.
+
+Third-party dependencies retain their own licences. See docs/dependencies.csv
+for the current inventory and deny.toml for the enforced allowlist. Note in
+particular that this project deliberately avoids GPL and AGPL dependencies
+because they would be incompatible with the licence choice above.

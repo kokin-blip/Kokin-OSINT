@@ -1,0 +1,23 @@
+# Normalise line endings so that a Windows and a macOS checkout produce
+# byte-identical files. This matters more than usual here: content hashes and
+# canonical serialisation are load-bearing in the evidence model, and fixture
+# files are compared by hash.
+* text=auto eol=lf
+
+# Batch files genuinely need CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets must never be line-ending-converted.
+*.png binary
+*.ico binary
+*.icns binary
+*.jpg binary
+*.pdf binary
+*.onnx binary
+*.gguf binary
+*.pmtiles binary
+*.kokincase binary
+
+# Recorded connector fixtures are compared byte-for-byte during replay.
+tests/fixtures/** -text

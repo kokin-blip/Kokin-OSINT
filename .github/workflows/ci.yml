@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  # Every test in this repository must pass with no network access. Connectors
+  # are exercised through recorded fixtures only (see docs/connector-sdk/).
+  KOKIN_NETWORK: deny
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # The load-bearing job. Risk P1: this project targets macOS but is developed
+  # on Windows with no Mac available, so CI is the ONLY macOS verification path.
+  # It runs from the first commit precisely so a broken macOS build is found on
+  # day one rather than in month three.
+  # ---------------------------------------------------------------------------
+  build:
+    name: build & test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-14 # Apple Silicon
+            target: aarch64-apple-darwin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      # SQLCipher is built from source against vendored OpenSSL, whose Configure
+      # script is Perl. Both runner images ship a usable perl (Strawberry on
+      # Windows, system perl on macOS) — this step fails loudly if that ever
+      # stops being true, rather than surfacing as a confusing C build error.
+      # NOTE: deliberately uses the runner's default shell (pwsh on Windows,
+      # bash on macOS) rather than forcing bash. On a Windows runner, `bash`
+      # resolves Git's cygwin perl — which OpenSSL rejects — while the actual
+      # cargo build sees Strawberry Perl. Forcing bash here would validate a
+      # different binary than the one the build uses, i.e. a false green.
+      - name: Verify perl is available (vendored OpenSSL prerequisite)
+        run: perl -e "print qq(perl OK: $^X\n$^V\n)"
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # Proves the encrypted case round-trip, the wrong-passphrase path, and
+      # that the binary is genuinely linked against SQLCipher rather than plain
+      # SQLite. A build that silently dropped encryption would pass every other
+      # check in this file.
+      - name: Test
+        run: cargo test --workspace --all-targets
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ui
+        run: npm ci
+
+      - name: Frontend type check
+        working-directory: ui
+        run: npm run check
+
+      # The Tauri CLI resolves src-tauri/tauri.conf.json by searching downward,
+      # so it must run from the repository root, not from ui/. It builds the
+      # frontend itself via beforeBuildCommand.
+      #
+      # macOS artifacts are ad-hoc signed only. There is no Apple Developer
+      # account (owner decision, 2026-08-12), so distributed builds trip
+      # Gatekeeper — documented in docs/limitations/platforms.md.
+      - name: Build application bundle
+        shell: bash
+        run: ./ui/node_modules/.bin/tauri build --ci
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kokin-osint-${{ matrix.target }}
+          path: |
+            target/release/bundle/nsis/*.exe
+            target/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Privacy invariants enforced as build failures rather than as prose in a doc.
+  # ---------------------------------------------------------------------------
+  privacy-lints:
+    name: privacy lints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # kokin-net is the sole egress path (ADR-0010). Any other crate opening a
+      # socket would bypass the SSRF guard, the rate limiter, the byte caps, the
+      # per-connector attribution, and offline mode simultaneously.
+      - name: No network crates outside kokin-net
+        shell: bash
+        run: |
+          set -euo pipefail
+          violations=$(grep -rnE '\b(reqwest|hyper|ureq|std::net|tokio::net)\b' \
+            --include='*.rs' crates/ src-tauri/ \
+            | grep -v '^crates/kokin-net/' || true)
+          if [ -n "$violations" ]; then
+            echo "::error::Network access outside kokin-net bypasses the egress broker:"
+            echo "$violations"
+            exit 1
+          fi
+          echo "OK: no network usage outside kokin-net"
+
+      # Fixtures are recorded from live services and then sanitised. A leaked
+      # cookie or API key in a fixture would be committed forever.
+      - name: Fixture secret hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -d tests/fixtures ]; then
+            echo "no fixtures yet — skipping"; exit 0
+          fi
+          hits=$(grep -rniE '(set-cookie|authorization:|bearer |api[_-]?key|secret[_-]?key|password)' \
+            tests/fixtures/ || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Possible secret in a recorded fixture — the sanitiser missed something:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "OK: no secret patterns in fixtures"
+
+  # ---------------------------------------------------------------------------
+  # Licence compatibility. Kokin-OSINT ships source-available/proprietary, so a
+  # GPL or AGPL dependency entering the tree is a legal problem, not a style
+  # preference. Notably: Neo4j is AGPL and is the common reflex for graph work.
+  # ---------------------------------------------------------------------------
+  licences:
+    name: dependency licences & advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check bans licenses sources advisories
