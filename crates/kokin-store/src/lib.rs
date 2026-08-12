@@ -29,6 +29,23 @@ pub use header::{
 };
 pub use kokin_keys::{CaseMasterKey, KdfProfile, RecoveryKey};
 
+/// Lowercase hex BLAKE3.
+///
+/// Shared from here so the crates that compose this one need not each take a
+/// direct hashing dependency for a single call, and so they cannot drift onto a
+/// different digest than the one the audit chain and blob names already use.
+pub fn blake3_hex(bytes: &[u8]) -> String {
+    blake3::hash(bytes).to_hex().to_string()
+}
+
+/// RFC 3339 UTC timestamp, in the single format every `_utc` column holds.
+///
+/// Shared for the same reason: two crates formatting timestamps independently
+/// is how a case ends up with two timestamp formats in one column.
+pub fn now_utc_rfc3339() -> String {
+    header::now_utc_rfc3339()
+}
+
 /// Errors this crate can produce.
 ///
 /// The distinctions here are the ones a user-facing message depends on. "Wrong

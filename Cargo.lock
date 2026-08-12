@@ -1942,6 +1942,20 @@ name = "kokin-extract"
 version = "0.0.1"
 
 [[package]]
+name = "kokin-ingest"
+version = "0.0.1"
+dependencies = [
+ "getrandom 0.4.3",
+ "kokin-blob",
+ "kokin-keys",
+ "kokin-net",
+ "kokin-store",
+ "rusqlite",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "kokin-keys"
 version = "0.0.1"
 dependencies = [

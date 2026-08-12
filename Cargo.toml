@@ -5,6 +5,7 @@ members = [
     "crates/kokin-keys",
     "crates/kokin-blob",
     "crates/kokin-net",
+    "crates/kokin-ingest",
     "crates/kokin-extract",
     "crates/kokin-search",
     "crates/kokin-export",
