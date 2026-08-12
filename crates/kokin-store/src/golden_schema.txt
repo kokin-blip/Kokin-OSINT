@@ -1,0 +1,26 @@
+index	artifact_hash	CREATE INDEX artifact_hash ON artifact(content_hash)
+index	audit_event_hash	CREATE UNIQUE INDEX audit_event_hash ON audit_event(event_hash)
+index	audit_event_occurred	CREATE INDEX audit_event_occurred ON audit_event(occurred_utc)
+index	capture_source	CREATE INDEX capture_source ON capture(source_id)
+index	derivation_input	CREATE INDEX derivation_input ON derivation(input_kind, input_id)
+index	derivation_output	CREATE INDEX derivation_output ON derivation(output_kind, output_id)
+index	source_canonical	CREATE INDEX source_canonical ON source(canonical_locator)
+table	artifact	CREATE TABLE artifact ( id TEXT PRIMARY KEY NOT NULL, content_hash TEXT NOT NULL REFERENCES blob(content_hash), media_type TEXT NOT NULL, byte_length INTEGER NOT NULL, created_utc TEXT NOT NULL ) STRICT
+table	audit_event	CREATE TABLE audit_event ( id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_utc TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, subject_kind TEXT, subject_id TEXT, payload_json TEXT NOT NULL DEFAULT '{}', prev_event_hash BLOB NOT NULL, event_hash BLOB NOT NULL ) STRICT
+table	blob	CREATE TABLE blob ( content_hash TEXT PRIMARY KEY NOT NULL, size_bytes INTEGER NOT NULL, wrapped_key BLOB, wrapped_nonce BLOB, stored_utc TEXT NOT NULL, shredded_utc TEXT ) STRICT
+table	capture	CREATE TABLE capture ( id TEXT PRIMARY KEY NOT NULL, source_id TEXT NOT NULL REFERENCES source(id), content_hash TEXT REFERENCES blob(content_hash), requested_utc TEXT NOT NULL, http_status INTEGER, request_json TEXT NOT NULL DEFAULT '{}', response_headers_json TEXT NOT NULL DEFAULT '{}', redirect_chain_json TEXT NOT NULL DEFAULT '[]', capture_completeness TEXT NOT NULL, from_fixture INTEGER NOT NULL DEFAULT 0, connector TEXT NOT NULL, job_id TEXT NOT NULL ) STRICT
+table	case_meta	CREATE TABLE case_meta ( key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL ) STRICT
+table	derivation	CREATE TABLE derivation ( id TEXT PRIMARY KEY NOT NULL, run_id TEXT NOT NULL REFERENCES transform_run(id), input_kind TEXT NOT NULL, input_id TEXT NOT NULL, output_kind TEXT NOT NULL, output_id TEXT NOT NULL ) STRICT
+table	source	CREATE TABLE source ( id TEXT PRIMARY KEY NOT NULL, kind TEXT NOT NULL, raw_locator TEXT NOT NULL, canonical_locator TEXT NOT NULL, first_seen_utc TEXT NOT NULL ) STRICT
+table	transform_run	CREATE TABLE transform_run ( id TEXT PRIMARY KEY NOT NULL, transform_name TEXT NOT NULL, transform_version TEXT NOT NULL, code_version TEXT NOT NULL, params_hash TEXT NOT NULL, started_utc TEXT NOT NULL, finished_utc TEXT, status TEXT NOT NULL, error_code TEXT, error_detail TEXT ) STRICT
+trigger	artifact_is_append_only	CREATE TRIGGER artifact_is_append_only BEFORE UPDATE ON artifact BEGIN SELECT RAISE(ABORT, 'artifact is append-only: provenance cannot be edited'); END
+trigger	artifact_no_delete	CREATE TRIGGER artifact_no_delete BEFORE DELETE ON artifact BEGIN SELECT RAISE(ABORT, 'artifact is append-only: provenance cannot be deleted'); END
+trigger	blob_no_delete	CREATE TRIGGER blob_no_delete BEFORE DELETE ON blob BEGIN SELECT RAISE(ABORT, 'blob rows survive shredding: delete the key, not the row'); END
+trigger	blob_only_shred	CREATE TRIGGER blob_only_shred BEFORE UPDATE ON blob WHEN NOT ( NEW.content_hash = OLD.content_hash AND NEW.size_bytes = OLD.size_bytes AND NEW.stored_utc = OLD.stored_utc AND NEW.wrapped_key IS NULL AND NEW.wrapped_nonce IS NULL ) BEGIN SELECT RAISE(ABORT, 'blob is append-only except for crypto-shredding'); END
+trigger	capture_is_append_only	CREATE TRIGGER capture_is_append_only BEFORE UPDATE ON capture BEGIN SELECT RAISE(ABORT, 'capture is append-only: provenance cannot be edited'); END
+trigger	capture_no_delete	CREATE TRIGGER capture_no_delete BEFORE DELETE ON capture BEGIN SELECT RAISE(ABORT, 'capture is append-only: provenance cannot be deleted'); END
+trigger	derivation_is_append_only	CREATE TRIGGER derivation_is_append_only BEFORE UPDATE ON derivation BEGIN SELECT RAISE(ABORT, 'derivation is append-only: lineage cannot be edited'); END
+trigger	derivation_no_delete	CREATE TRIGGER derivation_no_delete BEFORE DELETE ON derivation BEGIN SELECT RAISE(ABORT, 'derivation is append-only: lineage cannot be deleted'); END
+trigger	source_is_append_only	CREATE TRIGGER source_is_append_only BEFORE UPDATE ON source BEGIN SELECT RAISE(ABORT, 'source is append-only: provenance cannot be edited'); END
+trigger	source_no_delete	CREATE TRIGGER source_no_delete BEFORE DELETE ON source BEGIN SELECT RAISE(ABORT, 'source is append-only: provenance cannot be deleted'); END
+trigger	transform_run_only_completes	CREATE TRIGGER transform_run_only_completes BEFORE UPDATE ON transform_run WHEN NOT ( NEW.id = OLD.id AND NEW.transform_name = OLD.transform_name AND NEW.transform_version = OLD.transform_version AND NEW.code_version = OLD.code_version AND NEW.params_hash = OLD.params_hash AND NEW.started_utc = OLD.started_utc AND OLD.status = 'running' ) BEGIN SELECT RAISE(ABORT, 'a transform_run may only be completed, not rewritten'); END

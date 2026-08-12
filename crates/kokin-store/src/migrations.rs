@@ -47,6 +47,199 @@ const MIGRATIONS: &[&str] = &[
 
     CREATE INDEX audit_event_occurred ON audit_event(occurred_utc);
     "#,
+    // 2: layers L0 (provenance) and L1 (lineage) from ADR-0006.
+    //
+    // L0 rows are facts about what was collected and are APPEND-ONLY, enforced
+    // by triggers rather than by convention. L2 (entity, relationship, claim)
+    // is mutable and arrives with the increment that creates entities.
+    r#"
+    -- ---------------------------------------------------------------------
+    -- L0: provenance. Append-only. Never updated, never deleted.
+    -- ---------------------------------------------------------------------
+
+    -- Where evidence came from. canonical_locator is the identity used for
+    -- deduplication; raw_locator is verbatim and is never edited, because
+    -- editing it would falsify the record of what was actually fetched.
+    CREATE TABLE source (
+        id                TEXT PRIMARY KEY NOT NULL,
+        kind              TEXT NOT NULL,
+        raw_locator       TEXT NOT NULL,
+        canonical_locator TEXT NOT NULL,
+        first_seen_utc    TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX source_canonical ON source(canonical_locator);
+
+    -- Content-addressed bytes. The bytes live in blobs/ (kokin-blob); this row
+    -- carries the hash, the size, and the wrapped per-blob key.
+    --
+    -- wrapped_key is nullable ON PURPOSE: crypto-shredding sets it to NULL.
+    -- The row, hash, size, and every derivation edge survive, so the record
+    -- that this evidence existed is preserved while the bytes become
+    -- permanently unreadable. See docs/limitations/deletion.md.
+    CREATE TABLE blob (
+        content_hash    TEXT PRIMARY KEY NOT NULL,
+        size_bytes      INTEGER NOT NULL,
+        wrapped_key     BLOB,
+        wrapped_nonce   BLOB,
+        stored_utc      TEXT NOT NULL,
+        shredded_utc    TEXT
+    ) STRICT;
+
+    -- One retrieval. capture_completeness records what KIND of snapshot this
+    -- is, so a static-HTML-only fetch of a JavaScript-heavy page is never
+    -- mistaken for the full page a user would have seen.
+    CREATE TABLE capture (
+        id                   TEXT PRIMARY KEY NOT NULL,
+        source_id            TEXT NOT NULL REFERENCES source(id),
+        content_hash         TEXT REFERENCES blob(content_hash),
+        requested_utc        TEXT NOT NULL,
+        http_status          INTEGER,
+        request_json         TEXT NOT NULL DEFAULT '{}',
+        response_headers_json TEXT NOT NULL DEFAULT '{}',
+        redirect_chain_json  TEXT NOT NULL DEFAULT '[]',
+        capture_completeness TEXT NOT NULL,
+        from_fixture         INTEGER NOT NULL DEFAULT 0,
+        connector            TEXT NOT NULL,
+        job_id               TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX capture_source ON capture(source_id);
+
+    -- A typed thing derived from a capture or a file: an HTML document, an
+    -- image, a PDF. Media type is what was observed, not what was claimed.
+    CREATE TABLE artifact (
+        id            TEXT PRIMARY KEY NOT NULL,
+        content_hash  TEXT NOT NULL REFERENCES blob(content_hash),
+        media_type    TEXT NOT NULL,
+        byte_length   INTEGER NOT NULL,
+        created_utc   TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX artifact_hash ON artifact(content_hash);
+
+    -- ---------------------------------------------------------------------
+    -- L1: lineage. Which code produced what, from what.
+    -- ---------------------------------------------------------------------
+
+    -- One execution of one transform. code_version and params_hash are what
+    -- make a rerun after an upgrade distinguishable from the original run,
+    -- which is the whole basis of observation supersession (ADR-0006).
+    CREATE TABLE transform_run (
+        id              TEXT PRIMARY KEY NOT NULL,
+        transform_name  TEXT NOT NULL,
+        transform_version TEXT NOT NULL,
+        code_version    TEXT NOT NULL,
+        params_hash     TEXT NOT NULL,
+        started_utc     TEXT NOT NULL,
+        finished_utc    TEXT,
+        status          TEXT NOT NULL,
+        error_code      TEXT,
+        error_detail    TEXT
+    ) STRICT;
+
+    -- The lineage edge: this output came from that input, via that run.
+    CREATE TABLE derivation (
+        id             TEXT PRIMARY KEY NOT NULL,
+        run_id         TEXT NOT NULL REFERENCES transform_run(id),
+        input_kind     TEXT NOT NULL,
+        input_id       TEXT NOT NULL,
+        output_kind    TEXT NOT NULL,
+        output_id      TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX derivation_output ON derivation(output_kind, output_id);
+    CREATE INDEX derivation_input ON derivation(input_kind, input_id);
+
+    -- ---------------------------------------------------------------------
+    -- Append-only enforcement.
+    --
+    -- In the database, not in application code, because application code is
+    -- where this kind of guarantee quietly erodes. A future contributor who
+    -- "just needs to fix one row" gets an error naming the reason instead of
+    -- silently rewriting provenance.
+    --
+    -- blob is the deliberate exception: crypto-shredding must be able to clear
+    -- wrapped_key. The trigger below permits exactly that transition and
+    -- nothing else.
+    -- ---------------------------------------------------------------------
+
+    CREATE TRIGGER source_is_append_only BEFORE UPDATE ON source
+    BEGIN
+        SELECT RAISE(ABORT, 'source is append-only: provenance cannot be edited');
+    END;
+
+    CREATE TRIGGER source_no_delete BEFORE DELETE ON source
+    BEGIN
+        SELECT RAISE(ABORT, 'source is append-only: provenance cannot be deleted');
+    END;
+
+    CREATE TRIGGER capture_is_append_only BEFORE UPDATE ON capture
+    BEGIN
+        SELECT RAISE(ABORT, 'capture is append-only: provenance cannot be edited');
+    END;
+
+    CREATE TRIGGER capture_no_delete BEFORE DELETE ON capture
+    BEGIN
+        SELECT RAISE(ABORT, 'capture is append-only: provenance cannot be deleted');
+    END;
+
+    CREATE TRIGGER artifact_is_append_only BEFORE UPDATE ON artifact
+    BEGIN
+        SELECT RAISE(ABORT, 'artifact is append-only: provenance cannot be edited');
+    END;
+
+    CREATE TRIGGER artifact_no_delete BEFORE DELETE ON artifact
+    BEGIN
+        SELECT RAISE(ABORT, 'artifact is append-only: provenance cannot be deleted');
+    END;
+
+    CREATE TRIGGER derivation_is_append_only BEFORE UPDATE ON derivation
+    BEGIN
+        SELECT RAISE(ABORT, 'derivation is append-only: lineage cannot be edited');
+    END;
+
+    CREATE TRIGGER derivation_no_delete BEFORE DELETE ON derivation
+    BEGIN
+        SELECT RAISE(ABORT, 'derivation is append-only: lineage cannot be deleted');
+    END;
+
+    -- A blob row may only ever change by being shredded. Any other update is
+    -- rewriting the record of what was collected.
+    CREATE TRIGGER blob_only_shred BEFORE UPDATE ON blob
+    WHEN NOT (
+        NEW.content_hash = OLD.content_hash
+        AND NEW.size_bytes = OLD.size_bytes
+        AND NEW.stored_utc = OLD.stored_utc
+        AND NEW.wrapped_key IS NULL
+        AND NEW.wrapped_nonce IS NULL
+    )
+    BEGIN
+        SELECT RAISE(ABORT, 'blob is append-only except for crypto-shredding');
+    END;
+
+    CREATE TRIGGER blob_no_delete BEFORE DELETE ON blob
+    BEGIN
+        SELECT RAISE(ABORT, 'blob rows survive shredding: delete the key, not the row');
+    END;
+
+    -- transform_run is the one L1 table that legitimately mutates, because a
+    -- run starts as 'running' and later becomes 'succeeded' or 'failed'. Only
+    -- that completion is allowed; the identity of what ran is fixed.
+    CREATE TRIGGER transform_run_only_completes BEFORE UPDATE ON transform_run
+    WHEN NOT (
+        NEW.id = OLD.id
+        AND NEW.transform_name = OLD.transform_name
+        AND NEW.transform_version = OLD.transform_version
+        AND NEW.code_version = OLD.code_version
+        AND NEW.params_hash = OLD.params_hash
+        AND NEW.started_utc = OLD.started_utc
+        AND OLD.status = 'running'
+    )
+    BEGIN
+        SELECT RAISE(ABORT, 'a transform_run may only be completed, not rewritten');
+    END;
+    "#,
 ];
 
 /// The schema version this build writes and understands.
@@ -167,6 +360,119 @@ mod tests {
         );
     }
 
+    /// Seed one row in each L0 table so the triggers have something to refuse.
+    fn seed_l0(conn: &Connection) {
+        conn.execute_batch(
+            "INSERT INTO source VALUES ('s1','url','https://x/?utm_source=a','https://x/','2026-08-12T00:00:00Z');
+             INSERT INTO blob VALUES ('hash1', 10, x'00', x'01', '2026-08-12T00:00:00Z', NULL);
+             INSERT INTO capture VALUES ('c1','s1','hash1','2026-08-12T00:00:00Z',200,'{}','{}','[]','static_html_only',1,'http_fetch','job1');
+             INSERT INTO artifact VALUES ('a1','hash1','text/html',10,'2026-08-12T00:00:00Z');
+             INSERT INTO transform_run VALUES ('r1','fetch','1','abc','p1','2026-08-12T00:00:00Z',NULL,'running',NULL,NULL);
+             INSERT INTO derivation VALUES ('d1','r1','capture','c1','artifact','a1');",
+        )
+        .unwrap();
+    }
+
+    /// Append-only is enforced by the database, not by application discipline.
+    /// A trigger nobody attempts to violate is an untested trigger.
+    #[test]
+    fn provenance_tables_refuse_updates_and_deletes() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_l0(&conn);
+
+        let attempts = [
+            (
+                "UPDATE source SET raw_locator = 'edited' WHERE id = 's1'",
+                "source update",
+            ),
+            ("DELETE FROM source WHERE id = 's1'", "source delete"),
+            (
+                "UPDATE capture SET http_status = 404 WHERE id = 'c1'",
+                "capture update",
+            ),
+            ("DELETE FROM capture WHERE id = 'c1'", "capture delete"),
+            (
+                "UPDATE artifact SET media_type = 'text/plain' WHERE id = 'a1'",
+                "artifact update",
+            ),
+            ("DELETE FROM artifact WHERE id = 'a1'", "artifact delete"),
+            (
+                "UPDATE derivation SET output_id = 'other' WHERE id = 'd1'",
+                "derivation update",
+            ),
+            (
+                "DELETE FROM derivation WHERE id = 'd1'",
+                "derivation delete",
+            ),
+            (
+                "DELETE FROM blob WHERE content_hash = 'hash1'",
+                "blob delete",
+            ),
+        ];
+
+        for (sql, what) in attempts {
+            assert!(
+                conn.execute_batch(sql).is_err(),
+                "{what} was permitted - provenance can be rewritten"
+            );
+        }
+    }
+
+    /// Crypto-shredding is the single permitted mutation of a blob row: the
+    /// key is destroyed, everything that records the blob existed survives.
+    #[test]
+    fn a_blob_may_be_shredded_but_not_otherwise_changed() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_l0(&conn);
+
+        conn.execute_batch(
+            "UPDATE blob SET wrapped_key = NULL, wrapped_nonce = NULL,
+                             shredded_utc = '2026-08-12T01:00:00Z'
+             WHERE content_hash = 'hash1'",
+        )
+        .unwrap();
+
+        // The record that this evidence existed is intact.
+        let (size, key_is_null): (i64, bool) = conn
+            .query_row(
+                "SELECT size_bytes, wrapped_key IS NULL FROM blob WHERE content_hash = 'hash1'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(size, 10);
+        assert!(key_is_null);
+
+        // But the hash or size cannot be rewritten under cover of a shred.
+        assert!(conn
+            .execute_batch("UPDATE blob SET size_bytes = 999 WHERE content_hash = 'hash1'")
+            .is_err());
+    }
+
+    /// A run legitimately completes; it must not be able to change what ran.
+    #[test]
+    fn a_transform_run_may_complete_but_not_be_rewritten() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_l0(&conn);
+
+        conn.execute_batch(
+            "UPDATE transform_run SET status = 'succeeded',
+                    finished_utc = '2026-08-12T00:00:01Z' WHERE id = 'r1'",
+        )
+        .unwrap();
+
+        // Changing which code ran, or re-completing a finished run, is refused.
+        assert!(conn
+            .execute_batch("UPDATE transform_run SET code_version = 'xyz' WHERE id = 'r1'")
+            .is_err());
+        assert!(conn
+            .execute_batch("UPDATE transform_run SET status = 'failed' WHERE id = 'r1'")
+            .is_err());
+    }
+
     /// Golden-schema test.
     ///
     /// Pins the exact schema the migrations produce. It fails on any structural
@@ -179,12 +485,41 @@ mod tests {
         let conn = memory_db();
         migrate(&conn).unwrap();
 
-        assert_eq!(schema_fingerprint(&conn).unwrap(), GOLDEN_SCHEMA);
+        let actual = schema_fingerprint(&conn).unwrap();
+
+        if std::env::var("KOKIN_BLESS_SCHEMA").is_ok() {
+            let path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/golden_schema.txt");
+            std::fs::write(
+                path,
+                format!(
+                    "{actual}
+"
+                ),
+            )
+            .unwrap();
+            println!("blessed {path}");
+            return;
+        }
+
+        assert_eq!(
+            actual,
+            GOLDEN_SCHEMA.trim_end(),
+            "the schema changed. If that is intended, append a migration (never              edit a shipped one) and re-bless with KOKIN_BLESS_SCHEMA=1."
+        );
     }
 
-    const GOLDEN_SCHEMA: &str = "\
-index\taudit_event_hash\tCREATE UNIQUE INDEX audit_event_hash ON audit_event(event_hash)
-index\taudit_event_occurred\tCREATE INDEX audit_event_occurred ON audit_event(occurred_utc)
-table\taudit_event\tCREATE TABLE audit_event ( id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_utc TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, subject_kind TEXT, subject_id TEXT, payload_json TEXT NOT NULL DEFAULT '{}', prev_event_hash BLOB NOT NULL, event_hash BLOB NOT NULL ) STRICT
-table\tcase_meta\tCREATE TABLE case_meta ( key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL ) STRICT";
+    /// The expected schema, kept in a file rather than a string literal.
+    ///
+    /// Regenerate with:
+    ///
+    /// ```text
+    /// KOKIN_BLESS_SCHEMA=1 cargo test -p kokin-store schema_matches
+    /// ```
+    ///
+    /// The first version of this was a hand-written string literal, and it was
+    /// wrong - it listed a table SQLite does not create until the first
+    /// autoincrement insert. Hand-writing an expected value is exactly the
+    /// mistake a golden test exists to catch, so the expected value is now
+    /// copied from the database and never typed.
+    const GOLDEN_SCHEMA: &str = include_str!("golden_schema.txt");
 }
