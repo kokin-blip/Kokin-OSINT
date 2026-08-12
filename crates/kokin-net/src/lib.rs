@@ -27,13 +27,17 @@
 //! attacked before anything can depend on it.
 
 pub mod guard;
+pub mod http;
 pub mod resolver;
+pub mod url_norm;
 
 use std::net::IpAddr;
 use std::time::Instant;
 
 pub use guard::Refusal;
+pub use http::{HttpCapability, HttpError, HttpRequest, HttpResponse, ReplayHttp};
 pub use resolver::{Resolver, StaticResolver};
+pub use url_norm::{normalise, NormalisedUrl};
 
 /// Whether this process may touch the network at all.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
