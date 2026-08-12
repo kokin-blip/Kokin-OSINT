@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "crates/kokin-store",
-    "crates/kokin-crypto",
+    "crates/kokin-keys",
     "crates/kokin-blob",
     "crates/kokin-net",
     "crates/kokin-extract",

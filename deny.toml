@@ -33,11 +33,17 @@ allow = [
     "Unlicense",
 ]
 
-# Our own crates carry a non-SPDX identifier.
-[[licenses.clarify]]
-crate = "kokin-store"
-expression = "MIT"
-license-files = []
+# Our own crates declare LicenseRef-Kokin-Source-Available, which is
+# deliberately not on the allowlist above — that list governs what we are
+# willing to *consume*, not what we publish. All first-party crates set
+# publish = false, so skipping unpublished crates excludes exactly them
+# without weakening the check for real dependencies.
+private = { ignore = true }
+
+# The allowlist is deliberately forward-looking: BSD-2-Clause, ISC, and the LLVM
+# exception are ubiquitous and will appear as soon as the tree grows. Warning
+# that they are currently unused is noise that trains us to ignore warnings.
+unused-allowed-license = "allow"
 
 exceptions = [
     # OpenSSL is vendored and statically linked by SQLCipher. OpenSSL 3.x is
@@ -50,6 +56,12 @@ exceptions = [
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# `wildcards` exists to stop an unpinned crates.io dependency (`foo = "*"`)
+# resolving to something we never reviewed. An intra-workspace path dependency
+# has no version requirement and so registers as a wildcard, but it is the
+# opposite situation: the code is in this repository, at this commit. Allowing
+# wildcards *only* for path deps keeps the check meaningful for real ones.
+allow-wildcard-paths = true
 
 # Crates that must never appear, with the reason recorded so a future
 # contributor does not have to rediscover it.
@@ -71,4 +83,28 @@ allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []
+
+# Each entry below is an *unmaintained* advisory, not a vulnerability, and each
+# is a transitive dependency of Tauri that we cannot upgrade away from — RustSec
+# itself reports "no safe upgrade is available". The chain is identical for all
+# five: tauri -> tauri-utils -> urlpattern -> unic-*. These crates are static
+# Unicode character-property tables used for URL pattern matching; they perform
+# no I/O and parse no untrusted binary formats, so an unmaintained status is a
+# supply-chain concern rather than an exploitable one.
+#
+# These are ignored by ID rather than by relaxing the unmaintained policy
+# wholesale, so a *different* unmaintained crate still fails the build.
+#
+# cargo-deny 0.20 has no `expires` field, so nothing here lapses on its own —
+# these suppressions are permanent until a human deletes them. The expiry is
+# therefore carried by R-013 in docs/risk-register.csv (review 2026-11-12):
+# check whether Tauri has dropped urlpattern and remove whichever entries no
+# longer apply. If that review is skipped, these silently persist; that is the
+# known cost of ignoring by ID with this tool version.
+ignore = [
+    { id = "RUSTSEC-2025-0075", reason = "unic-char-property unmaintained; transitive via tauri -> tauri-utils -> urlpattern, no upgrade path. See R-013, review 2026-11-12." },
+    { id = "RUSTSEC-2025-0080", reason = "unic-char-range unmaintained; same chain. See R-013, review 2026-11-12." },
+    { id = "RUSTSEC-2025-0081", reason = "unic-common unmaintained; same chain. See R-013, review 2026-11-12." },
+    { id = "RUSTSEC-2025-0098", reason = "unic-ucd-ident / unic-ucd-version unmaintained; same chain. See R-013, review 2026-11-12." },
+    { id = "RUSTSEC-2025-0100", reason = "rust-unic family unmaintained; same chain. See R-013, review 2026-11-12." },
+]

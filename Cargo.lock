@@ -1715,15 +1715,15 @@ name = "kokin-blob"
 version = "0.0.1"
 
 [[package]]
-name = "kokin-crypto"
-version = "0.0.1"
-
-[[package]]
 name = "kokin-export"
 version = "0.0.1"
 
 [[package]]
 name = "kokin-extract"
+version = "0.0.1"
+
+[[package]]
+name = "kokin-keys"
 version = "0.0.1"
 
 [[package]]

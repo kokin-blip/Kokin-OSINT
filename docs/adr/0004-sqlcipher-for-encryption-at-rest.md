@@ -70,7 +70,7 @@ mis-built binary is visible to the user and not only to CI.
   legible rather than appearing as a C compiler error.
 - Build times are long on a cold cache; OpenSSL is compiled from source.
 - The passphrase must be held in memory while a case is open. Memory hygiene
-  (zeroization, auto-lock) is `kokin-crypto`'s problem, in increment 2.
+  (zeroization, auto-lock) is `kokin-keys`'s problem, in increment 2.
 - Deletion semantics rest on this: destroying a wrapped blob key is genuine
   cryptographic erasure, but it also makes that blob's integrity permanently
   unverifiable. Stated honestly in `docs/limitations/deletion.md`.

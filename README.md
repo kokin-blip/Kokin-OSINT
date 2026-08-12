@@ -68,7 +68,7 @@ minutes. Subsequent builds are cached.
 ```
 crates/
   kokin-store/      encrypted case storage, schema, audit chain
-  kokin-crypto/     key hierarchy
+  kokin-keys/       key hierarchy (Argon2id, case master key, KEK wrapping)
   kokin-blob/       content-addressed encrypted blob store
   kokin-net/        the ONLY socket-capable crate — egress broker
   kokin-extract/    parsers producing observations

@@ -1,5 +1,5 @@
 ﻿[package]
-name = "kokin-crypto"
+name = "kokin-keys"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
