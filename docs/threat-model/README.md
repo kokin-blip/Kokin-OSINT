@@ -7,10 +7,15 @@ STRIDE per trust boundary. Every attack class in this document has a row in
 `test_id`. A control without a test is a wish, so the catalog's `status` column
 distinguishes `active` (test exists and runs in CI) from `planned`.
 
-Current state: **3 active, 2 partial, 12 planned, 1 accepted limitation.** Most
-are planned because the crates they live in are still stubs. That ratio is the
-honest measure of how far the security architecture is from implemented, and it
-should be quoted whenever this project's security posture is described.
+Current state: **3 active, 7 partial, 7 planned, 1 accepted limitation.**
+
+`partial` is doing real work in that count. The egress-broker rows (A-001 to
+A-004, A-011) have their policy implemented and tested exhaustively offline —
+but **no live transport routes through them yet**, so nothing is actually being
+protected in production. They are not `active` and must not be described as
+though they were. That ratio is the honest measure of how far the security
+architecture is from implemented, and it should be quoted whenever this
+project's security posture is described.
 
 ## Assets, in priority order
 

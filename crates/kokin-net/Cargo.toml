@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "kokin-net"
 version.workspace = true
 edition.workspace = true
@@ -10,3 +10,5 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+blake3 = "1.8.6"
+thiserror = "2.0.20"
