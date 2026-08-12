@@ -10,16 +10,11 @@
 /// write unencrypted cases is visible to the user, not just to CI.
 #[tauri::command]
 fn storage_encryption_status() -> Result<String, String> {
-    let probe = std::env::temp_dir().join("kokin-encryption-probe.kokincase");
-    let result = (|| -> Result<bool, kokin_store::StoreError> {
-        let conn = kokin_store::open_encrypted(&probe, "probe")?;
-        kokin_store::is_sqlcipher(&conn)
-    })();
-    let _ = std::fs::remove_file(&probe);
-
-    match result {
-        Ok(true) => Ok("sqlcipher".to_string()),
-        Ok(false) => Err("plain sqlite — case files would NOT be encrypted".to_string()),
+    // Queries the linked library rather than creating a throwaway case, so this
+    // costs no key derivation and touches no filesystem.
+    match kokin_store::cipher_backend() {
+        Ok(Some(version)) => Ok(format!("sqlcipher {version}")),
+        Ok(None) => Err("plain sqlite — case files would NOT be encrypted".to_string()),
         Err(e) => Err(e.to_string()),
     }
 }

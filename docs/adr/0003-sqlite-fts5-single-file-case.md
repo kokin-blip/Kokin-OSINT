@@ -1,6 +1,10 @@
-# ADR-0003: One case is one SQLite file, with FTS5 for search
+# ADR-0003: One case is one SQLite database, with FTS5 for search
 
-- **Status:** accepted
+- **Status:** accepted, but **partly superseded by ADR-0016**. The choice of
+  SQLite and FTS5 stands. The claim that a case is a single *file* does not: a
+  case is a bundle directory. That claim was already inconsistent with this
+  ADR's own consequence that blobs live outside the database, and ADR-0015's
+  key hierarchy made it impossible.
 - **Date:** 2026-08-12
 - **Reversibility:** hard. The storage engine determines the schema, the search
   implementation, the export format, and the backup/restore story.

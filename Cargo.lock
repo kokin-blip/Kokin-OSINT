@@ -1892,8 +1892,12 @@ version = "0.0.1"
 name = "kokin-store"
 version = "0.0.1"
 dependencies = [
+ "kokin-keys",
  "rusqlite",
+ "serde",
+ "serde_json",
  "thiserror 2.0.20",
+ "zeroize",
 ]
 
 [[package]]
