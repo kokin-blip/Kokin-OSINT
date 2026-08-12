@@ -58,7 +58,7 @@ jobs:
       # cargo build sees Strawberry Perl. Forcing bash here would validate a
       # different binary than the one the build uses, i.e. a false green.
       - name: Verify perl is available (vendored OpenSSL prerequisite)
-        run: perl -e "print qq(perl OK: $^X\n$^V\n)"
+        run: perl -V:osname -V:version
 
       - name: Format check
         run: cargo fmt --all -- --check
