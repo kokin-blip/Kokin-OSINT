@@ -924,6 +924,170 @@ const MIGRATIONS: &[&str] = &[
     SELECT DISTINCT d.run_id, d.input_kind, d.input_id
       FROM derivation d;
     "#,
+    // 7: entity resolution as a reversible projection (ADR-0008).
+    //
+    // The conventional implementation merges by rewriting: pick a survivor,
+    // repoint the foreign keys, delete the absorbed row. That destroys the
+    // evidence that argued AGAINST the merge along with everything else, so
+    // "undo" means reconstructing state that no longer exists. Nothing here
+    // rewrites an entity. Identity is read through er_merge_map, split is
+    // deactivating a row, and undo is a further decision that leaves the
+    // original one visible.
+    r#"
+    -- A proposal that two entities are the same. A question, not a claim, so
+    -- it carries no evidence links and anything may raise one.
+    --
+    -- No similarity score, deliberately. ADR-0007 admits no composite score
+    -- anywhere in this product, and a number in this table would be read as one
+    -- the moment it was rendered next to a confidence dimension - "0.94" beside
+    -- "corroborated by two sources" invites an arithmetic nobody defined. What
+    -- a rule observed goes in `rationale`, in words, where it can be disagreed
+    -- with.
+    CREATE TABLE er_candidate (
+        id           TEXT PRIMARY KEY NOT NULL,
+        left_entity  TEXT NOT NULL REFERENCES entity(id),
+        right_entity TEXT NOT NULL REFERENCES entity(id),
+        -- 'rule:shared_identifier', 'ai:...', 'user:local'. Prefix matters:
+        -- er_decision refuses some of these the right to merge.
+        proposed_by  TEXT NOT NULL,
+        rationale    TEXT NOT NULL,
+        created_utc  TEXT NOT NULL,
+        -- "A might be B" and "B might be A" are one proposal. Storing the pair
+        -- in a canonical order is what lets the unique index below mean
+        -- anything.
+        CHECK (left_entity < right_entity)
+    ) STRICT;
+
+    -- One live proposal per pair per proposer: a rule that runs nightly should
+    -- not stack up a thousand copies of the same question.
+    CREATE UNIQUE INDEX er_candidate_pair
+        ON er_candidate(left_entity, right_entity, proposed_by);
+
+    -- What was decided, by whom, and why. Append-only: a decision that can be
+    -- edited afterwards is not a record of a judgement, and the point of this
+    -- table is that an analyst can be shown what they concluded and when.
+    CREATE TABLE er_decision (
+        id            TEXT PRIMARY KEY NOT NULL,
+        -- Nullable: an analyst may merge two entities nothing proposed.
+        candidate_id  TEXT REFERENCES er_candidate(id),
+        left_entity   TEXT NOT NULL REFERENCES entity(id),
+        right_entity  TEXT NOT NULL REFERENCES entity(id),
+        action        TEXT NOT NULL CHECK (action IN ('merge', 'reject', 'split')),
+        actor         TEXT NOT NULL,
+        rationale     TEXT NOT NULL,
+        -- Competing readings of the same question coexist under one group, so
+        -- "these might be the same person, and here are two readings of that"
+        -- is representable rather than something an analyst holds in their head.
+        hypothesis_group_id TEXT,
+        -- Undo is a reversing decision, not a deletion.
+        reverses_id   TEXT REFERENCES er_decision(id),
+        decided_utc   TEXT NOT NULL,
+        CHECK (left_entity < right_entity),
+
+        -- ADR-0008, and the reason this whole table exists in the database
+        -- rather than in application code: a high similarity score must never
+        -- silently merge two real people. A rule or a model may propose an
+        -- er_candidate and argue for it at length; only a human actor may
+        -- decide it.
+        --
+        -- LIKE is ASCII-case-insensitive in SQLite, so 'Rule:' and 'AI:' are
+        -- caught too. What this cannot catch is automation writing
+        -- actor = 'user:local' - that is a lie rather than a bypass, and no
+        -- schema can detect it. The audit chain is where that is answerable.
+        CHECK (action <> 'merge'
+               OR (actor NOT LIKE 'rule:%' AND actor NOT LIKE 'ai:%'))
+    ) STRICT;
+
+    CREATE INDEX er_decision_pair ON er_decision(left_entity, right_entity);
+
+    -- The projection reads resolve through. One row per absorbed entity.
+    CREATE TABLE er_merge_map (
+        id           TEXT PRIMARY KEY NOT NULL,
+        entity_id    TEXT NOT NULL REFERENCES entity(id),
+        canonical_id TEXT NOT NULL REFERENCES entity(id),
+        decision_id  TEXT NOT NULL REFERENCES er_decision(id),
+        active       INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+        created_utc  TEXT NOT NULL,
+        CHECK (entity_id <> canonical_id)
+    ) STRICT;
+
+    -- An entity is absorbed into at most one canonical at a time. Without this
+    -- an entity could resolve to two different identities depending on which
+    -- row a query happened to read first.
+    CREATE UNIQUE INDEX er_merge_map_absorbed
+        ON er_merge_map(entity_id) WHERE active = 1;
+    CREATE INDEX er_merge_map_canonical
+        ON er_merge_map(canonical_id) WHERE active = 1;
+
+    -- ---------------------------------------------------------------------
+    -- The merge map is exactly one level deep, enforced from both ends.
+    --
+    -- Chains (A -> B -> C) make resolution a recursive walk, and a recursive
+    -- walk over rows an analyst can toggle is a cycle waiting to be created:
+    -- A -> B plus B -> A is two ordinary-looking merges and an infinite loop in
+    -- every query that reads identity. Requiring a canonical to be a root AND
+    -- an absorbed entity to be a leaf makes depth 1 structurally, so resolving
+    -- an entity is one indexed lookup and a cycle is unrepresentable.
+    --
+    -- The cost is that merging two clusters is deactivate-then-insert rather
+    -- than one row, which the API does inside a single decision.
+    -- ---------------------------------------------------------------------
+    CREATE TRIGGER er_merge_map_canonical_must_be_a_root
+    BEFORE INSERT ON er_merge_map WHEN NEW.active = 1
+    BEGIN
+        SELECT RAISE(ABORT, 'er_merge_map: the canonical entity is itself absorbed; merge into its canonical instead')
+        WHERE EXISTS (
+            SELECT 1 FROM er_merge_map m
+             WHERE m.entity_id = NEW.canonical_id AND m.active = 1
+        );
+    END;
+
+    CREATE TRIGGER er_merge_map_absorbed_must_be_a_leaf
+    BEFORE INSERT ON er_merge_map WHEN NEW.active = 1
+    BEGIN
+        SELECT RAISE(ABORT, 'er_merge_map: this entity is the canonical for others; absorbing it would create a chain')
+        WHERE EXISTS (
+            SELECT 1 FROM er_merge_map m
+             WHERE m.canonical_id = NEW.entity_id AND m.active = 1
+        );
+    END;
+
+    -- Reactivating a row has to obey the same invariant, or split-then-merge
+    -- elsewhere-then-unsplit walks straight through it.
+    CREATE TRIGGER er_merge_map_reactivation_must_be_a_root
+    BEFORE UPDATE OF active ON er_merge_map WHEN NEW.active = 1 AND OLD.active = 0
+    BEGIN
+        SELECT RAISE(ABORT, 'er_merge_map: reactivating this merge would create a chain')
+        WHERE EXISTS (
+            SELECT 1 FROM er_merge_map m
+             WHERE m.active = 1
+               AND (m.entity_id = NEW.canonical_id OR m.canonical_id = NEW.entity_id)
+        );
+    END;
+
+    -- `active` is the only thing that may change. Everything else is a record
+    -- of what was decided, and splitting is a state change, not a correction.
+    CREATE TRIGGER er_merge_map_only_active_changes
+    BEFORE UPDATE ON er_merge_map
+    WHEN NEW.id <> OLD.id
+      OR NEW.entity_id <> OLD.entity_id
+      OR NEW.canonical_id <> OLD.canonical_id
+      OR NEW.decision_id <> OLD.decision_id
+      OR NEW.created_utc <> OLD.created_utc
+    BEGIN
+        SELECT RAISE(ABORT, 'er_merge_map: only `active` may change; a merge is not edited, it is superseded');
+    END;
+
+    CREATE TRIGGER er_decision_is_append_only BEFORE UPDATE ON er_decision
+    BEGIN
+        SELECT RAISE(ABORT, 'er_decision is append-only: undo is a reversing decision, not an edit');
+    END;
+
+    CREATE TRIGGER er_decision_no_delete BEFORE DELETE ON er_decision
+    BEGIN
+        SELECT RAISE(ABORT, 'er_decision is append-only: deleting a judgement erases that it was made');
+    END;
+    "#,
 ];
 
 /// The schema version this build writes and understands.
@@ -1286,12 +1450,6 @@ mod tests {
     fn upgrading_a_case_recovers_which_artifacts_a_run_had_read() {
         let conn = memory_db();
 
-        assert_eq!(
-            target_version(),
-            6,
-            "this test pins the v5 -> v6 upgrade; a later migration needs its own"
-        );
-
         migrate_to(&conn, 5);
         seed_l0(&conn);
         conn.execute_batch(
@@ -1589,4 +1747,183 @@ mod tests {
     /// mistake a golden test exists to catch, so the expected value is now
     /// copied from the database and never typed.
     const GOLDEN_SCHEMA: &str = include_str!("golden_schema.txt");
+
+    /// Seed two entities to argue about.
+    fn seed_two_entities(conn: &Connection) {
+        seed_l2(conn);
+        conn.execute_batch(
+            "INSERT INTO evidence_link VALUES ('elb','entity','b','observation','o1','supports','2026-08-12T00:00:00Z');
+             INSERT INTO entity VALUES ('b','person','J. Muller','','2026-08-12T00:00:00Z','2026-08-12T00:00:00Z');
+             INSERT INTO evidence_link VALUES ('elc','entity','c','observation','o1','supports','2026-08-12T00:00:00Z');
+             INSERT INTO entity VALUES ('c','person','Jurgen M.','','2026-08-12T00:00:00Z','2026-08-12T00:00:00Z');
+             INSERT INTO evidence_link VALUES ('eld','entity','d','observation','o1','supports','2026-08-12T00:00:00Z');
+             INSERT INTO entity VALUES ('d','person','JM','','2026-08-12T00:00:00Z','2026-08-12T00:00:00Z');",
+        )
+        .unwrap();
+    }
+
+    fn decide(conn: &Connection, id: &str, l: &str, r: &str, action: &str, actor: &str) -> bool {
+        conn.execute_batch(&format!(
+            "INSERT INTO er_decision VALUES
+             ('{id}',NULL,'{l}','{r}','{action}','{actor}','because',NULL,NULL,'2026-08-12T00:00:00Z')"
+        ))
+        .is_ok()
+    }
+
+    fn merge(conn: &Connection, id: &str, absorbed: &str, canonical: &str) -> bool {
+        conn.execute_batch(&format!(
+            "INSERT INTO er_merge_map VALUES
+             ('{id}','{absorbed}','{canonical}','dec1',1,'2026-08-12T00:00:00Z')"
+        ))
+        .is_ok()
+    }
+
+    /// ADR-0008's central promise, and the only one of these controls that
+    /// cannot be moved into application code without losing its point: a high
+    /// similarity score must never silently merge two real people.
+    #[test]
+    fn automated_actors_may_propose_a_merge_but_never_decide_one() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_two_entities(&conn);
+
+        // Anything may raise the question.
+        conn.execute_batch(
+            "INSERT INTO er_candidate VALUES
+             ('cand1','b','c','rule:shared_identifier','same email address','2026-08-12T00:00:00Z');
+             INSERT INTO er_candidate VALUES
+             ('cand2','b','c','ai:name_similarity','names are close','2026-08-12T00:00:00Z')",
+        )
+        .unwrap();
+
+        for actor in [
+            "rule:shared_identifier",
+            "ai:name_similarity",
+            "RULE:x",
+            "Ai:y",
+        ] {
+            assert!(
+                !decide(&conn, "d1", "b", "c", "merge", actor),
+                "{actor} was allowed to merge two entities"
+            );
+        }
+
+        // The same actors may reject, which is the asymmetry that matters:
+        // deciding two people are different destroys nothing.
+        assert!(decide(
+            &conn,
+            "d2",
+            "b",
+            "c",
+            "reject",
+            "rule:shared_identifier"
+        ));
+        assert!(decide(&conn, "d3", "b", "d", "merge", "user:local"));
+    }
+
+    /// Depth is 1 by construction, checked from both ends and through the
+    /// reactivation path a split-then-unsplit would take.
+    #[test]
+    fn the_merge_map_cannot_be_made_to_chain_or_to_cycle() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_two_entities(&conn);
+        decide(&conn, "dec1", "b", "c", "merge", "user:local");
+
+        assert!(merge(&conn, "m1", "b", "c"), "a plain merge was refused");
+
+        // b is absorbed, so it cannot be anyone's canonical...
+        assert!(!merge(&conn, "m2", "d", "b"), "a chain was allowed");
+        // ...and c is a canonical, so it cannot be absorbed.
+        assert!(!merge(&conn, "m3", "c", "d"), "a chain was allowed");
+        // The direct cycle is the same rule seen from both sides.
+        assert!(!merge(&conn, "m4", "c", "b"), "a cycle was allowed");
+        // And an entity cannot be absorbed twice.
+        assert!(!merge(&conn, "m5", "b", "d"), "b was absorbed twice");
+
+        // Split, then merge c into d, then try to unsplit: b -> c -> d.
+        conn.execute_batch("UPDATE er_merge_map SET active = 0 WHERE id = 'm1'")
+            .unwrap();
+        assert!(merge(&conn, "m6", "c", "d"));
+        assert!(
+            conn.execute_batch("UPDATE er_merge_map SET active = 1 WHERE id = 'm1'")
+                .is_err(),
+            "reactivating a merge walked around the depth-1 invariant"
+        );
+    }
+
+    /// A merge is superseded, not corrected. `active` is the one column a split
+    /// touches, and everything else is the record of what was decided.
+    #[test]
+    fn a_merge_may_be_split_but_not_rewritten() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_two_entities(&conn);
+        decide(&conn, "dec1", "b", "c", "merge", "user:local");
+        merge(&conn, "m1", "b", "c");
+
+        // Split: the row stays, the projection stops reading it.
+        conn.execute_batch("UPDATE er_merge_map SET active = 0 WHERE id = 'm1'")
+            .unwrap();
+        let rows: i64 = conn
+            .query_row("SELECT COUNT(*) FROM er_merge_map", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(rows, 1, "splitting destroyed the record of the merge");
+
+        for attempt in [
+            "UPDATE er_merge_map SET canonical_id = 'd' WHERE id = 'm1'",
+            "UPDATE er_merge_map SET entity_id = 'd' WHERE id = 'm1'",
+            "UPDATE er_merge_map SET decision_id = 'dec9' WHERE id = 'm1'",
+            "UPDATE er_decision SET action = 'reject' WHERE id = 'dec1'",
+            "DELETE FROM er_decision WHERE id = 'dec1'",
+        ] {
+            assert!(
+                conn.execute_batch(attempt).is_err(),
+                "resolution accepted `{attempt}`"
+            );
+        }
+    }
+
+    /// "A might be B" and "B might be A" are one question. Without a canonical
+    /// ordering the unique index means nothing and a nightly rule accumulates
+    /// both spellings of every pair it has ever considered.
+    #[test]
+    fn a_pair_is_unordered_and_proposed_once_per_proposer() {
+        let conn = memory_db();
+
+        assert_eq!(
+            target_version(),
+            7,
+            "this test pins the v6 -> v7 migration; a later one needs its own"
+        );
+
+        migrate(&conn).unwrap();
+        seed_two_entities(&conn);
+
+        assert!(conn
+            .execute_batch(
+                "INSERT INTO er_candidate VALUES ('x1','c','b','rule:r','same','2026-08-12T00:00:00Z')"
+            )
+            .is_err(),
+            "a pair was stored in non-canonical order");
+
+        conn.execute_batch(
+            "INSERT INTO er_candidate VALUES ('x2','b','c','rule:r','same','2026-08-12T00:00:00Z')",
+        )
+        .unwrap();
+        assert!(
+            conn.execute_batch(
+                "INSERT INTO er_candidate VALUES ('x3','b','c','rule:r','same again','2026-08-12T00:00:00Z')"
+            )
+            .is_err(),
+            "one rule proposed the same pair twice"
+        );
+        // A different proposer arguing the same pair is a different fact.
+        conn.execute_batch(
+            "INSERT INTO er_candidate VALUES ('x4','b','c','ai:m','looks alike','2026-08-12T00:00:00Z')",
+        )
+        .unwrap();
+
+        assert!(!decide(&conn, "d1", "c", "b", "merge", "user:local"));
+    }
 }

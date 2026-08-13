@@ -27,6 +27,7 @@
 
 use rusqlite::Connection;
 
+pub mod resolution;
 pub mod scales;
 
 pub use scales::{scales, seed_scales, Scale, ScaleValue, INSUFFICIENT_INFORMATION};
@@ -73,6 +74,18 @@ pub enum GraphError {
         "actor '{actor}' is automated and may not assign '{value_key}': that value requires a human"
     )]
     MachineMayNotAssign { actor: String, value_key: String },
+
+    #[error("actor '{actor}' is automated and may not merge entities: a merge dissolves the distinction between two real people, and only a person may decide that (ADR-0008)")]
+    MachineMayNotMerge { actor: String },
+
+    #[error("an entity cannot be merged with itself: {entity}")]
+    SelfMerge { entity: String },
+
+    #[error("{entity} already resolves to {canonical}")]
+    AlreadyMerged { entity: String, canonical: String },
+
+    #[error("{entity} is not absorbed into anything, so there is nothing to split")]
+    NotAbsorbed { entity: String },
 }
 
 pub type Result<T> = std::result::Result<T, GraphError>;
