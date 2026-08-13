@@ -53,6 +53,17 @@ pub enum ErrorCode {
     /// the codes above because none of the user's obvious remedies apply.
     Storage,
 
+    /// No row with that id in this case. A stale link, a deleted row, or an
+    /// interface holding an id from a case that is no longer open — all of which
+    /// the UI can act on, and none of which mean the case is damaged.
+    NotFound,
+
+    /// The full-text index no longer matches the case. The remedy is a rebuild,
+    /// and it is nothing like the other storage failures: the case's own data is
+    /// intact and only the derived index is wrong, so an interface can offer to
+    /// fix it rather than telling the analyst their case is broken.
+    SearchIndexCorrupt,
+
     /// A bug in this layer. If a user ever sees this, the code above is
     /// missing a case.
     Internal,
@@ -90,8 +101,20 @@ impl From<kokin_store::StoreError> for CommandError {
     /// someone makes here, in the layer that knows what the user can do about
     /// it.
     fn from(e: kokin_store::StoreError) -> Self {
+        Self::from_store_ref(&e)
+    }
+}
+
+impl CommandError {
+    /// The `StoreError` mapping, by reference.
+    ///
+    /// Exists because a `GraphError::Store` holds one and must produce the same
+    /// code it would have produced on its own. A store failure that changes
+    /// meaning depending on which crate it passed through is exactly the kind of
+    /// thing an interface cannot be expected to reason about.
+    fn from_store_ref(e: &kokin_store::StoreError) -> Self {
         use kokin_store::StoreError as S;
-        let code = match &e {
+        let code = match e {
             S::WrongPassphraseOrNotACase => ErrorCode::WrongPassphrase,
             S::NotACase(_) | S::MalformedHeader(_) | S::UnsupportedHeaderVersion { .. } => {
                 ErrorCode::NotACase
@@ -106,6 +129,61 @@ impl From<kokin_store::StoreError> for CommandError {
             | S::SchemaFromTheFuture { .. } => ErrorCode::Storage,
         };
         Self::new(code, e.to_string())
+    }
+}
+
+impl From<kokin_search::SearchError> for CommandError {
+    fn from(e: kokin_search::SearchError) -> Self {
+        use kokin_search::SearchError as S;
+        let code = match &e {
+            S::IndexCorrupt(_) => ErrorCode::SearchIndexCorrupt,
+            S::Sqlite(_) => ErrorCode::Storage,
+        };
+        Self::new(code, e.to_string())
+    }
+}
+
+impl From<kokin_graph::GraphError> for CommandError {
+    /// Variant by variant, and most of these cannot reach a read command at all.
+    ///
+    /// They are listed rather than caught by a wildcard so that a variant added
+    /// later is a compile error here. The write commands will need most of these
+    /// mapped properly — the refusals in particular, which are the product
+    /// working rather than failing — and a wildcard now would mean they arrived
+    /// silently as `Storage` then.
+    fn from(e: kokin_graph::GraphError) -> Self {
+        use kokin_graph::GraphError as G;
+        let code = match &e {
+            G::SubjectMissing { .. } | G::UnknownEntityType { .. } | G::UnknownScale { .. } => {
+                ErrorCode::NotFound
+            }
+            G::Store(inner) => return Self::from_store_ref(inner),
+            G::Sqlite(_)
+            | G::Random(_)
+            | G::MalformedScale { .. }
+            | G::Ungrounded { .. }
+            | G::UnknownScaleValue { .. }
+            | G::MachineMayNotAssign { .. }
+            | G::MachineMayNotMerge { .. }
+            | G::SelfMerge { .. }
+            | G::AlreadyMerged { .. }
+            | G::NotAbsorbed { .. } => ErrorCode::Storage,
+        };
+        Self::new(code, e.to_string())
+    }
+}
+
+impl From<kokin_blob::BlobError> for CommandError {
+    /// Only the failures that are not about a *specific* document.
+    ///
+    /// `NotFound`, `Corrupt` and `HashMismatch` are deliberately absent from any
+    /// call site that would use this: they are answers about one document, not
+    /// failures of the command, and they travel as
+    /// [`crate::views::DocumentContent`] variants instead. Routing them through
+    /// here would render "this document was destroyed six months ago" in the
+    /// same red box as "the disk is failing".
+    fn from(e: kokin_blob::BlobError) -> Self {
+        Self::new(ErrorCode::Storage, e.to_string())
     }
 }
 

@@ -78,7 +78,11 @@ def main() -> int:
     problems: list[str] = []
     checked = 0
 
-    for path in sorted(REPO.glob("crates/**/*.rs")):
+    # src-tauri writes SQL too, as of increment 16. It was outside this glob for
+    # as long as it had no queries, which is exactly how a guard comes to be
+    # looking at the wrong directory by the time it matters.
+    sources = sorted(REPO.glob("crates/**/*.rs")) + sorted(REPO.glob("src-tauri/**/*.rs"))
+    for path in sources:
         rel = path.relative_to(REPO).as_posix()
         if "/target/" in rel:
             continue

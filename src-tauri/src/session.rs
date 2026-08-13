@@ -1,17 +1,8 @@
-//! The one open case, and everything the interface is allowed to know about it.
+//! The one open case, and the lock around it.
 //!
-//! # Why this is not in a domain crate
-//!
-//! The view types here derive `Serialize`, and the domain crates deliberately
-//! do not depend on `serde`. If `OpenCase` or `CaseHeader` were serialisable,
-//! the wire format would become the domain model by accident, and the first
-//! field added for the UI's convenience would be a field the storage layer now
-//! carries forever. Defining the views here keeps the two free to differ, and
-//! makes "what crosses the boundary" a list somebody can read in one screen.
-//!
-//! More sharply: `OpenCase` holds the case master key. It must never gain
-//! `Serialize`, and the surest way to guarantee that is for the crate defining
-//! it not to know what `Serialize` is.
+//! The types this hands back are defined in [`crate::views`], which is the one
+//! file in this crate allowed to derive `Serialize` — see its module note for
+//! why that is a rule and not a habit.
 //!
 //! # One case at a time
 //!
@@ -24,55 +15,13 @@
 use std::path::Path;
 use std::sync::Mutex;
 
-use serde::Serialize;
-
 use crate::error::{CommandError, ErrorCode};
+use crate::views::{CaseView, NewCaseView, SessionView};
 
 /// The application's one mutable piece of state.
 #[derive(Default)]
 pub struct Session {
     case: Mutex<Option<kokin_store::OpenCase>>,
-}
-
-/// What the interface may know about an open case.
-///
-/// Everything here is already visible to whoever unlocked the case. There is no
-/// key material, no derived key material, and no handle that could be used to
-/// reach any: commands find the case through the session, never through a value
-/// the interface hands back.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct CaseView {
-    pub case_id: String,
-    /// Displayed in the title bar, so the analyst can see which case this is.
-    pub root: String,
-    pub schema_version: i64,
-    /// Whether the case can still be opened with a recovery key. False means a
-    /// forgotten passphrase is permanent, which the interface should say out
-    /// loud rather than leave to be discovered.
-    pub has_recovery_key: bool,
-}
-
-/// A newly created case, and the one thing that will never be shown again.
-///
-/// `recovery_key` is the single value in this entire layer that carries key
-/// material across the IPC boundary, and it does so exactly once (D-026). It is
-/// not stored in usable form anywhere — only its wrap of the case master key is
-/// — so if the interface does not put it in front of the user now, it is gone
-/// and a forgotten passphrase becomes permanent.
-///
-/// There is deliberately no command that returns it later. A "show me my
-/// recovery key again" command would have to either keep it in memory for the
-/// session or re-derive it, and neither is a thing this design permits.
-#[derive(Debug, Clone, Serialize)]
-pub struct NewCaseView {
-    pub case: CaseView,
-    pub recovery_key: String,
-}
-
-/// Whether anything is open, for an interface deciding what to render.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct SessionView {
-    pub case: Option<CaseView>,
 }
 
 impl Session {

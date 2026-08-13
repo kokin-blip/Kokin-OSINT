@@ -19,10 +19,16 @@
 //! and does not implement `Serialize`; it must never gain it.
 
 pub mod error;
+pub mod read;
 pub mod session;
+pub mod views;
 
 pub use error::{CommandError, ErrorCode};
-pub use session::{CaseView, NewCaseView, Session, SessionView};
+pub use session::Session;
+pub use views::{
+    CaseView, CoverageView, DocumentContent, DocumentView, EntityView, HitView, NewCaseView,
+    SearchRequest, SearchView, SessionView,
+};
 
 use std::path::PathBuf;
 
@@ -84,6 +90,33 @@ fn session_status(session: State<'_, Session>) -> Result<SessionView, CommandErr
     session.view()
 }
 
+/// Search the open case. Returns hits and coverage together, always.
+#[tauri::command]
+fn search(session: State<'_, Session>, request: SearchRequest) -> Result<SearchView, CommandError> {
+    session.with_case(|open| read::search(open, &request))
+}
+
+/// How much of the case a search can reach, for a view that has not searched.
+#[tauri::command]
+fn coverage(session: State<'_, Session>) -> Result<CoverageView, CommandError> {
+    session.with_case(|open| read::coverage(&open.conn))
+}
+
+/// An artifact and whatever the case can still show of it.
+#[tauri::command]
+fn artifact_document(
+    session: State<'_, Session>,
+    artifact_id: String,
+) -> Result<DocumentView, CommandError> {
+    session.with_case(|open| read::artifact_document(open, &artifact_id))
+}
+
+/// An entity, read through the merge map.
+#[tauri::command]
+fn entity(session: State<'_, Session>, entity_id: String) -> Result<EntityView, CommandError> {
+    session.with_case(|open| read::entity(open, &entity_id))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Failing to start the webview is unrecoverable and happens before any case
@@ -99,6 +132,10 @@ pub fn run() {
             open_case_with_recovery_key,
             close_case,
             session_status,
+            search,
+            coverage,
+            artifact_document,
+            entity,
         ])
         .run(tauri::generate_context!())
         .expect("failed to start the Kokin-OSINT window");
