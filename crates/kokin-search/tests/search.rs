@@ -740,3 +740,253 @@ fn script_bodies_do_not_become_searchable_text() {
         "a script body reached the search index"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Increment 13: reading through the merge map.
+
+/// Two entity rows, one of them merged into the other.
+fn merged_pair(case: &mut Case) -> (String, String) {
+    let a = case.entity("organisation", "Acme Holdings", "the filing name");
+    let b = case.entity("organisation", "Acme Holdings Ltd", "the trading name");
+    let survivor = kokin_graph::resolution::merge(
+        &mut case.conn,
+        &a,
+        &b,
+        "user:local",
+        "same registration",
+        None,
+    )
+    .map(|_| kokin_graph::resolution::canonical_id(&case.conn, &b).unwrap())
+    .unwrap();
+    let absorbed = if survivor == a { b } else { a };
+    (survivor, absorbed)
+}
+
+fn entity_hits(hits: &[kokin_search::Hit]) -> Vec<&kokin_search::Hit> {
+    hits.iter().filter(|h| h.subject_kind == "entity").collect()
+}
+
+/// The whole point of the increment. Before it, merging two records made the
+/// case *look* like it held two organisations with similar names — which is the
+/// reading the analyst had just rejected.
+#[test]
+fn a_merged_entity_is_one_result_not_two() {
+    let mut case = Case::new("merged");
+    let (survivor, absorbed) = merged_pair(&mut case);
+
+    let hits = case.find("acme");
+    let entities = entity_hits(&hits);
+    assert_eq!(
+        entities.len(),
+        1,
+        "a merged pair listed as two: {:?}",
+        entities.iter().map(|h| &h.title).collect::<Vec<_>>()
+    );
+
+    // Both rows still exist and are both still indexed. Nothing was deleted,
+    // and nothing was rewritten — the collapse is a read (ADR-0008).
+    let indexed: i64 = case
+        .conn
+        .query_row(
+            "SELECT COUNT(*) FROM search_document
+              WHERE subject_kind = 'entity' AND subject_id IN (?1, ?2)",
+            [&survivor, &absorbed],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(indexed, 2, "the merge removed a document from the index");
+
+    // And the caller can still tell which is which.
+    let hit = entities[0];
+    if hit.subject_id == absorbed {
+        assert_eq!(hit.canonical_id.as_deref(), Some(survivor.as_str()));
+    } else {
+        assert_eq!(
+            hit.canonical_id, None,
+            "the survivor reported itself as an alias of something"
+        );
+    }
+}
+
+/// The opt-out exists for the analyst who is auditing the merge itself, and it
+/// has to actually show both rows.
+#[test]
+fn the_rows_are_still_reachable_when_asked_for() {
+    let mut case = Case::new("unresolved");
+    let (survivor, absorbed) = merged_pair(&mut case);
+
+    let raw = search(
+        &case.conn,
+        &Query::parse("acme"),
+        &SearchOptions {
+            resolve_merged: false,
+            ..SearchOptions::default()
+        },
+    )
+    .unwrap();
+
+    let ids: Vec<&String> = entity_hits(&raw).iter().map(|h| &h.subject_id).collect();
+    assert!(
+        ids.contains(&&survivor) && ids.contains(&&absorbed),
+        "{ids:?}"
+    );
+    // Even here the alias says what it now resolves to. Hiding that would make
+    // the raw view the misleading one.
+    let alias = raw.iter().find(|h| h.subject_id == absorbed).unwrap();
+    assert_eq!(alias.canonical_id.as_deref(), Some(survivor.as_str()));
+}
+
+/// A total that disagrees with the list under it is worse than no total: the
+/// analyst reads both in one glance and trusts the number.
+#[test]
+fn the_count_and_the_facets_agree_with_the_list() {
+    let mut case = Case::new("totals");
+    merged_pair(&mut case);
+
+    let query = Query::parse("acme");
+    for resolve in [true, false] {
+        let options = SearchOptions {
+            resolve_merged: resolve,
+            limit: 500,
+            ..SearchOptions::default()
+        };
+        let hits = search(&case.conn, &query, &options).unwrap();
+        let total = count(&case.conn, &query, &options).unwrap();
+        let facets: i64 = facet_counts(&case.conn, &query, &options)
+            .unwrap()
+            .iter()
+            .map(|(_, _, n)| n)
+            .sum();
+
+        assert_eq!(
+            total,
+            hits.len() as i64,
+            "count disagrees (resolve={resolve})"
+        );
+        assert_eq!(facets, total, "facet counts disagree (resolve={resolve})");
+    }
+
+    // And the two modes really do differ, or the assertions above are vacuous.
+    let resolved = count(&case.conn, &query, &SearchOptions::default()).unwrap();
+    let raw = count(
+        &case.conn,
+        &query,
+        &SearchOptions {
+            resolve_merged: false,
+            ..SearchOptions::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(raw, resolved + 1, "collapsing removed no row at all");
+}
+
+/// Collapsing after paging would silently shrink pages. This is the test that
+/// catches it: two pages of one, over a result set that contains an alias pair.
+#[test]
+fn paging_is_not_shrunk_by_collapsing() {
+    let mut case = Case::new("paging");
+    merged_pair(&mut case);
+
+    let query = Query::parse("acme");
+    let total = count(&case.conn, &query, &SearchOptions::default()).unwrap();
+
+    let mut seen = Vec::new();
+    for offset in 0..(total as usize) {
+        let page = search(
+            &case.conn,
+            &query,
+            &SearchOptions {
+                limit: 1,
+                offset,
+                ..SearchOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(page.len(), 1, "page {offset} of {total} came back short");
+        seen.push(page[0].subject_id.clone());
+    }
+
+    let mut unique = seen.clone();
+    unique.sort();
+    unique.dedup();
+    assert_eq!(unique.len(), seen.len(), "a row appeared on two pages");
+}
+
+/// Splitting is a read-level change like the merge was: the second row comes
+/// back on its own without anything being reindexed.
+#[test]
+fn splitting_puts_the_second_result_back() {
+    let mut case = Case::new("split");
+    let (_, absorbed) = merged_pair(&mut case);
+    assert_eq!(entity_hits(&case.find("acme")).len(), 1);
+
+    kokin_graph::resolution::split(&mut case.conn, &absorbed, "user:local", "different filings")
+        .unwrap();
+
+    let hits = case.find("acme");
+    assert_eq!(
+        entity_hits(&hits).len(),
+        2,
+        "a split did not restore the row"
+    );
+    assert!(
+        hits.iter().all(|h| h.canonical_id.is_none()),
+        "an alias survived the split"
+    );
+}
+
+/// Merging two people does not merge their email addresses.
+///
+/// The collapse partitions by `subject_kind` as well as by resolved id, and
+/// this is why. An identifier under an absorbed entity is still a distinct
+/// piece of the world — `press@` and `sales@` are two addresses whether or not
+/// the two records holding them turned out to be one company — and folding them
+/// together would delete evidence from the result list.
+#[test]
+fn merging_two_entities_does_not_merge_what_they_hold() {
+    let mut case = Case::new("kinds");
+    let a = case.entity("organisation", "Acme Holdings", "the filing name");
+    let b = case.entity("organisation", "Acme Holdings Ltd", "the trading name");
+
+    let observation = case.observation();
+    let evidence = [Grounding::supporting_observation(&observation)];
+    add_identifier(
+        &mut case.conn,
+        &a,
+        "email_address",
+        "press@acme.example",
+        &evidence,
+    )
+    .unwrap();
+    add_identifier(
+        &mut case.conn,
+        &b,
+        "email_address",
+        "sales@acme.example",
+        &evidence,
+    )
+    .unwrap();
+
+    kokin_graph::resolution::merge(&mut case.conn, &a, &b, "user:local", "same reg", None).unwrap();
+
+    let hits = case.find("acme");
+    let identifiers: Vec<&kokin_search::Hit> = hits
+        .iter()
+        .filter(|h| h.subject_kind == "identifier")
+        .collect();
+    assert_eq!(
+        identifiers.len(),
+        2,
+        "an identifier was collapsed with the entity that holds it: {:?}",
+        identifiers.iter().map(|h| &h.title).collect::<Vec<_>>()
+    );
+    assert!(
+        identifiers.iter().all(|h| h.canonical_id.is_none()),
+        "an identifier was resolved through the entity merge map"
+    );
+    assert_eq!(
+        entity_hits(&hits).len(),
+        1,
+        "the entities were not collapsed"
+    );
+}

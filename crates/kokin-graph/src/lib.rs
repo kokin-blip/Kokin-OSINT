@@ -508,9 +508,12 @@ pub fn assess(
             action: "assessment.recorded",
             subject_kind: Some(subject.kind.as_str()),
             subject_id: Some(subject.id),
-            payload_json: &format!(
-                r#"{{"dimension":"{dimension}","scale_version":{version},"value":"{value_key}"}}"#
-            ),
+            payload_json: &serde_json::json!({
+                "dimension": dimension,
+                "scale_version": version,
+                "value": value_key,
+            })
+            .to_string(),
         },
     )?;
 
@@ -528,12 +531,21 @@ pub struct EvidenceRef {
 
 /// The evidence under a subject: the read behind "open this edge and show me
 /// why". Returned in insertion order so the first-cited evidence stays first.
+///
+/// This answers about one row. For an entity that has been merged, the person's
+/// evidence is spread across the cluster and
+/// [`resolution::evidence_for_cluster`] is the read that gathers it.
+///
+/// The tie-break is `rowid`, not `id`. `created_utc` is second-resolution and
+/// the links under one subject are written in one loop inside one transaction,
+/// so ties are the normal case here rather than an edge one — and `id` is
+/// random, which would make "insertion order" above a false claim (D-022).
 pub fn evidence_for(conn: &Connection, subject: Subject<'_>) -> Result<Vec<EvidenceRef>> {
     let mut stmt = conn.prepare(
         "SELECT id, evidence_kind, evidence_id, role
            FROM evidence_link
           WHERE subject_kind = ?1 AND subject_id = ?2
-          ORDER BY created_utc, id",
+          ORDER BY created_utc, rowid",
     )?;
 
     let rows = stmt.query_map(rusqlite::params![subject.kind.as_str(), subject.id], |r| {

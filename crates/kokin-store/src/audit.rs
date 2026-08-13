@@ -35,8 +35,15 @@ pub struct NewAuditEvent<'a> {
     pub action: &'a str,
     pub subject_kind: Option<&'a str>,
     pub subject_id: Option<&'a str>,
-    /// Structured detail. Must be a JSON object; it is re-encoded as canonical
-    /// CBOR for hashing so key order cannot change the hash.
+    /// Structured detail. Must be a JSON **object**; [`append`] refuses
+    /// anything else and normalises what it accepts before storing it.
+    ///
+    /// Build it with `serde_json`, never with `format!`. A payload assembled by
+    /// string interpolation escapes nothing, so a rationale containing a quote
+    /// either corrupts the record or - worse - closes the string and adds keys
+    /// of the writer's choosing. This log is the fallback control for A-024,
+    /// where the question being asked of it is *who merged these two people*,
+    /// and a field an actor can forge is not an answer.
     pub payload_json: &'a str,
 }
 
@@ -68,6 +75,7 @@ pub enum ChainStatus {
 pub fn append(conn: &Connection, event: &NewAuditEvent<'_>) -> Result<[u8; 32]> {
     let prev = tip_hash(conn)?;
     let occurred = now_utc_rfc3339();
+    let payload = canonical_payload(event.payload_json)?;
 
     let hash = compute_hash(
         &prev,
@@ -76,7 +84,7 @@ pub fn append(conn: &Connection, event: &NewAuditEvent<'_>) -> Result<[u8; 32]> 
         event.action,
         event.subject_kind,
         event.subject_id,
-        event.payload_json,
+        &payload,
     )?;
 
     conn.execute(
@@ -90,13 +98,45 @@ pub fn append(conn: &Connection, event: &NewAuditEvent<'_>) -> Result<[u8; 32]> 
             event.action,
             event.subject_kind,
             event.subject_id,
-            event.payload_json,
+            payload,
             prev.as_slice(),
             hash.as_slice(),
         ],
     )?;
 
     Ok(hash)
+}
+
+/// Parse, require an object, and re-serialise with keys in a fixed order.
+///
+/// Two things happen here and both are load-bearing.
+///
+/// **Validation.** The payload was previously stored as an opaque string that
+/// nothing ever read, so a `format!`-built payload holding a quote produced
+/// invalid JSON that no reader could parse - and a reader failing on an audit
+/// record is precisely the moment the record was needed. It is now rejected at
+/// write time, where there is still a caller to blame.
+///
+/// **Canonicalisation.** `serde_json::Map` is a `BTreeMap` unless the
+/// `preserve_order` feature is on, so round-tripping sorts the keys. Without
+/// this, two payloads carrying identical facts in a different key order hash
+/// differently, which the doc comment on [`NewAuditEvent`] has always claimed
+/// does not happen. It does not, now.
+///
+/// Only new events are affected: nothing rehashes what is already stored, so a
+/// chain written by an older build still verifies against the bytes it was
+/// written from.
+fn canonical_payload(payload_json: &str) -> Result<String> {
+    let parsed: serde_json::Value = serde_json::from_str(payload_json).map_err(|e| {
+        StoreError::MalformedHeader(format!("audit payload is not valid JSON: {e}"))
+    })?;
+    if !parsed.is_object() {
+        return Err(StoreError::MalformedHeader(
+            "audit payload must be a JSON object".to_string(),
+        ));
+    }
+    serde_json::to_string(&parsed)
+        .map_err(|e| StoreError::MalformedHeader(format!("could not re-encode audit payload: {e}")))
 }
 
 /// The hash of the most recent event, or genesis for an empty chain.
@@ -396,5 +436,83 @@ mod tests {
             ChainStatus::Intact { events: 1 },
             "a rebuilt chain verifies - this is tamper-evident, not tamper-proof"
         );
+    }
+
+    /// A payload built by string interpolation escapes nothing. The realistic
+    /// version of this is not an attack, it is an analyst writing a rationale
+    /// with a quotation mark in it and silently corrupting the record of their
+    /// own decision.
+    #[test]
+    fn a_payload_that_is_not_a_json_object_is_refused_at_write_time() {
+        let conn = db();
+        migrations::migrate(&conn).unwrap();
+
+        for bad in [
+            // What `format!("{{\"why\":\"{rationale}\"}}")` produces when the
+            // rationale is: she said "same person".
+            r#"{"why":"she said "same person""}"#,
+            // Valid JSON, but not an object: nothing can carry fields.
+            r#""just a string""#,
+            "[1,2,3]",
+            "",
+        ] {
+            let event = NewAuditEvent {
+                actor: "user:local",
+                action: "entity.merged",
+                subject_kind: Some("entity"),
+                subject_id: Some("e1"),
+                payload_json: bad,
+            };
+            assert!(
+                append(&conn, &event).is_err(),
+                "a malformed audit payload was accepted: {bad}"
+            );
+        }
+    }
+
+    /// The doc comment on `NewAuditEvent` has always promised that key order
+    /// cannot change the hash. Until now it could: the payload was hashed as
+    /// the raw string it arrived as.
+    #[test]
+    fn key_order_in_a_payload_does_not_change_the_event_hash() {
+        let conn = db();
+        migrations::migrate(&conn).unwrap();
+
+        let one = append(
+            &conn,
+            &NewAuditEvent {
+                actor: "user:local",
+                action: "entity.merged",
+                subject_kind: Some("entity"),
+                subject_id: Some("e1"),
+                payload_json: r#"{"absorbed":"b","survivor":"a"}"#,
+            },
+        )
+        .unwrap();
+
+        // Same facts, written the other way round, appended to a fresh chain so
+        // the previous hash is identical.
+        let other = db();
+        migrations::migrate(&other).unwrap();
+        let two = append(
+            &other,
+            &NewAuditEvent {
+                actor: "user:local",
+                action: "entity.merged",
+                subject_kind: Some("entity"),
+                subject_id: Some("e1"),
+                payload_json: r#"{"survivor":"a","absorbed":"b"}"#,
+            },
+        )
+        .unwrap();
+
+        // The timestamps differ, so the hashes will too - what must match is
+        // the stored payload, which is what the hash is taken over.
+        let stored = |c: &Connection| -> String {
+            c.query_row("SELECT payload_json FROM audit_event", [], |r| r.get(0))
+                .unwrap()
+        };
+        assert_eq!(stored(&conn), stored(&other));
+        assert_eq!(one.len(), two.len());
     }
 }

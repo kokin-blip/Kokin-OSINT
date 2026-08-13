@@ -123,7 +123,7 @@ pub fn open_candidates(conn: &Connection, limit: usize) -> Result<Vec<Candidate>
                  WHERE d.left_entity = c.left_entity
                    AND d.right_entity = c.right_entity
           )
-          ORDER BY c.created_utc, c.id
+          ORDER BY c.created_utc, c.rowid
           LIMIT ?1",
     )?;
     let rows = stmt.query_map([limit as i64], |r| {
@@ -202,6 +202,7 @@ pub fn merge(
     // entity the analyst actually named, which reads as a merge that half
     // happened.
     members.push(absorbed_canonical.clone());
+    let moved = members.len();
     tx.execute(
         "UPDATE er_merge_map SET active = 0
           WHERE canonical_id = ?1 AND active = 1",
@@ -216,6 +217,20 @@ pub fn merge(
         )?;
     }
 
+    audit(
+        &tx,
+        actor,
+        "entity.merged",
+        &survivor,
+        serde_json::json!({
+            "decision": decision,
+            "absorbed": absorbed_canonical,
+            "absorbed_count": moved,
+            "rationale": rationale,
+            "candidate": candidate_id,
+        }),
+    )?;
+
     tx.commit()?;
     Ok(decision)
 }
@@ -226,7 +241,7 @@ pub fn merge(
 /// people are different destroys nothing and can be reconsidered at any time,
 /// while a wrong merge dissolves the distinction between two real people.
 pub fn reject(
-    conn: &Connection,
+    conn: &mut Connection,
     a: &str,
     b: &str,
     actor: &str,
@@ -235,7 +250,9 @@ pub fn reject(
 ) -> Result<String> {
     let (left, right) = ordered(a, b);
     let decision = new_id()?;
-    conn.execute(
+
+    let tx = conn.transaction()?;
+    tx.execute(
         "INSERT INTO er_decision
             (id, candidate_id, left_entity, right_entity, action, actor, rationale,
              hypothesis_group_id, reverses_id, decided_utc)
@@ -250,6 +267,19 @@ pub fn reject(
             now_utc()
         ],
     )?;
+    audit(
+        &tx,
+        actor,
+        "entity.merge_rejected",
+        left,
+        serde_json::json!({
+            "decision": decision,
+            "other": right,
+            "rationale": rationale,
+            "candidate": candidate_id,
+        }),
+    )?;
+    tx.commit()?;
     Ok(decision)
 }
 
@@ -290,8 +320,47 @@ pub fn split(conn: &mut Connection, entity: &str, actor: &str, rationale: &str) 
         "UPDATE er_merge_map SET active = 0 WHERE entity_id = ?1 AND active = 1",
         [entity],
     )?;
+    audit(
+        &tx,
+        actor,
+        "entity.split",
+        entity,
+        serde_json::json!({
+            "decision": decision,
+            "from": canonical,
+            "reverses": reverses,
+            "rationale": rationale,
+        }),
+    )?;
     tx.commit()?;
     Ok(decision)
+}
+
+/// Write an entity-resolution decision to the audit chain.
+///
+/// A-024 accepts that automation can lie about its actor string, and names this
+/// log as the fallback control - so a merge that leaves no trace here has no
+/// control at all. The payload is built with `serde_json` rather than
+/// `format!`, because `rationale` is free analyst text and interpolation
+/// escapes nothing.
+fn audit(
+    conn: &Connection,
+    actor: &str,
+    action: &str,
+    subject_id: &str,
+    payload: serde_json::Value,
+) -> Result<()> {
+    kokin_store::append_audit_event(
+        conn,
+        &kokin_store::NewAuditEvent {
+            actor,
+            action,
+            subject_kind: Some("entity"),
+            subject_id: Some(subject_id),
+            payload_json: &payload.to_string(),
+        },
+    )?;
+    Ok(())
 }
 
 /// The entity this one currently resolves to, or itself.
@@ -325,16 +394,79 @@ pub fn cluster(conn: &Connection, canonical: &str) -> Result<Vec<String>> {
     Ok(out)
 }
 
+/// One piece of the cluster's evidence, and the entity it actually hangs on.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClusterEvidence {
+    /// The entity the link is attached to, which is often *not* the canonical
+    /// one. Carried rather than flattened away because it is the answer to
+    /// "which of these two records did that come from" — the question a merge
+    /// makes hard to ask and ADR-0008 exists to keep answerable.
+    pub entity_id: String,
+    pub evidence: crate::EvidenceRef,
+}
+
+/// The evidence under an entity *and* everything merged into it.
+///
+/// [`crate::evidence_for`] answers about a row; this answers about a person.
+/// Both are needed and neither is the other's default: a merge does not move
+/// evidence, so the row-level read stays true, and a UI showing a merged entity
+/// that used it would display the survivor's evidence and quietly omit the
+/// absorbed record's — which is the case's strongest material about that person
+/// going missing at exactly the moment they were identified.
+///
+/// The entity named need not be the canonical one; an analyst clicking a search
+/// result clicks whichever row matched.
+///
+/// Ordered chronologically across the whole cluster rather than grouped by
+/// member, because after a merge the useful reading is what was learned and
+/// when, not which of two now-equivalent records it landed under.
+pub fn evidence_for_cluster(conn: &Connection, entity: &str) -> Result<Vec<ClusterEvidence>> {
+    let canonical = canonical_id(conn, entity)?;
+    let mut members = cluster(conn, &canonical)?;
+    members.push(canonical);
+
+    let placeholders: Vec<String> = (1..=members.len()).map(|i| format!("?{i}")).collect();
+    let sql = format!(
+        "SELECT subject_id, id, evidence_kind, evidence_id, role
+           FROM evidence_link
+          WHERE subject_kind = 'entity'
+            AND subject_id IN ({})
+          ORDER BY created_utc, rowid",
+        placeholders.join(",")
+    );
+
+    let mut stmt = conn.prepare(&sql)?;
+    let rows = stmt.query_map(rusqlite::params_from_iter(members.iter()), |r| {
+        Ok(ClusterEvidence {
+            entity_id: r.get(0)?,
+            evidence: crate::EvidenceRef {
+                link_id: r.get(1)?,
+                evidence_kind: r.get(2)?,
+                evidence_id: r.get(3)?,
+                role: r.get(4)?,
+            },
+        })
+    })?;
+
+    let mut out = Vec::new();
+    for row in rows {
+        out.push(row?);
+    }
+    Ok(out)
+}
+
 /// Every decision touching this entity, newest first.
 ///
 /// The history is the product here, not a debugging aid: an analyst who merged
-/// two people in March needs to be able to read why they thought so.
+/// two people in March needs to be able to read why they thought so — and a
+/// merge-then-split shown in the wrong order says the opposite of what happened,
+/// which is why the tie-break is `rowid` and not `id` (see [`older_first`]).
 pub fn history(conn: &Connection, entity: &str) -> Result<Vec<(String, String, String, String)>> {
     let mut stmt = conn.prepare(
         "SELECT action, actor, rationale, decided_utc
            FROM er_decision
           WHERE left_entity = ?1 OR right_entity = ?1
-          ORDER BY decided_utc DESC, id DESC",
+          ORDER BY decided_utc DESC, rowid DESC",
     )?;
     let rows = stmt.query_map([entity], |r| {
         Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))

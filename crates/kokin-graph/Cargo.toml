@@ -15,6 +15,9 @@ rusqlite = { version = "0.40.2", features = ["bundled-sqlcipher-vendored-openssl
 thiserror = "2.0.20"
 getrandom = "0.4.3"
 serde = { version = "1.0.229", features = ["derive"] }
+# Audit payloads are built, never interpolated: a rationale is free text and
+# format! escapes nothing. See NewAuditEvent::payload_json.
+serde_json = "1.0.151"
 # Reads the seven confidence scales, which are embedded at compile time from
 # docs/data-model/scales/*.yaml. See docs/decision-log.csv D-014 for why this
 # fork and not one of the other four.

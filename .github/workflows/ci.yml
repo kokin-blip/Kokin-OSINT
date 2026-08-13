@@ -178,6 +178,14 @@ jobs:
       - name: Internal cross-references resolve
         run: python3 scripts/lint_crossrefs.py
 
+      # `ORDER BY created_utc, id` reads as obviously correct and is a coin
+      # flip: the timestamps are second-resolution and the ids are random. It
+      # has been written three times in three crates (A-023, D-021, D-022),
+      # each time found by a test that failed intermittently rather than by
+      # review, which is why it is a build failure now.
+      - name: SQL orderings are stable
+        run: python3 scripts/lint_sql_ordering.py
+
   # ---------------------------------------------------------------------------
   # Licence compatibility. Kokin-OSINT ships source-available/proprietary, so a
   # GPL or AGPL dependency entering the tree is a legal problem, not a style

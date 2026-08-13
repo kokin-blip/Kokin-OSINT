@@ -11,9 +11,13 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use kokin_graph::resolution::{
-    canonical_id, cluster, history, merge, open_candidates, propose, reject, split,
+    canonical_id, cluster, evidence_for_cluster, history, merge, open_candidates, propose, reject,
+    split,
 };
-use kokin_graph::{add_identifier, create_entity, initialise, Grounding, NewEntity};
+use kokin_graph::{
+    add_identifier, create_entity, evidence_for, initialise, Grounding, NewEntity, Subject,
+    SubjectKind,
+};
 use rusqlite::Connection;
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
@@ -150,7 +154,7 @@ fn a_rule_may_propose_and_reject_but_never_merge() {
     }
 
     reject(
-        &case.conn,
+        &mut case.conn,
         &a,
         &b,
         "rule:shared_identifier",
@@ -321,4 +325,152 @@ fn merging_something_already_merged_is_refused_by_name() {
         matches!(err, kokin_graph::GraphError::NotAbsorbed { .. }),
         "{err:?}"
     );
+}
+
+// ---------------------------------------------------------------------------
+// Increment 13.
+
+/// The read that makes a merge worth making.
+///
+/// A UI showing the survivor with only the survivor's evidence would quietly
+/// omit the absorbed record's — the case's strongest material about that person
+/// disappearing at the moment they were identified.
+#[test]
+fn a_cluster_shows_the_evidence_of_everything_in_it() {
+    let mut case = Case::new("clusterev");
+    let a = case.entity("Jürgen Müller");
+
+    // A second observation, so the two entities are grounded in different rows
+    // and "gathered the cluster's evidence" is a claim with teeth.
+    case.conn
+        .execute_batch(
+            "INSERT INTO observation VALUES ('o2','a1','r1','page.text','Muller GmbH','{}','2026-08-12T00:00:01Z');",
+        )
+        .unwrap();
+    let b = create_entity(
+        &mut case.conn,
+        NewEntity {
+            type_key: "person",
+            display_name: "J. Muller",
+            notes: "",
+        },
+        &[Grounding::supporting_observation("o2")],
+    )
+    .unwrap();
+
+    merge(&mut case.conn, &a, &b, "user:local", "same person", None).unwrap();
+
+    // Asked about the survivor, and asked about the absorbed row an analyst
+    // would actually have clicked in a result list: same answer either way.
+    for asked in [&a, &b] {
+        let gathered = evidence_for_cluster(&case.conn, asked).unwrap();
+        let owners: Vec<&str> = gathered.iter().map(|e| e.entity_id.as_str()).collect();
+        assert!(
+            owners.contains(&a.as_str()) && owners.contains(&b.as_str()),
+            "asked about {asked}, got evidence for {owners:?} only"
+        );
+    }
+
+    // The row-level read is still the row-level read. A merge moved nothing.
+    let survivor_only = evidence_for(
+        &case.conn,
+        Subject {
+            kind: SubjectKind::Entity,
+            id: &a,
+        },
+    )
+    .unwrap();
+    let cluster_wide = evidence_for_cluster(&case.conn, &a).unwrap();
+    assert!(
+        cluster_wide.len() > survivor_only.len(),
+        "the cluster read returned no more than the row read"
+    );
+    assert!(
+        cluster_wide
+            .iter()
+            .any(|e| e.entity_id == b && e.evidence.evidence_id == "o2"),
+        "the absorbed entity's own evidence is not attributed to it"
+    );
+}
+
+/// A-024 accepts that automation can lie about its actor string and names the
+/// audit chain as the fallback control. A decision that leaves no trace there
+/// has no control at all.
+#[test]
+fn every_resolution_decision_reaches_the_audit_chain() {
+    let mut case = Case::new("audited");
+    let a = case.entity("Jürgen Müller");
+    let b = case.entity("J. Muller");
+    let c = case.entity("Someone Else");
+
+    merge(&mut case.conn, &a, &b, "user:local", "same person", None).unwrap();
+    split(&mut case.conn, &b, "user:local", "different DOB").unwrap();
+    reject(&mut case.conn, &a, &c, "rule:names", "different DOB", None).unwrap();
+
+    let mut stmt = case
+        .conn
+        .prepare("SELECT action, actor, payload_json FROM audit_event ORDER BY id")
+        .unwrap();
+    let events: Vec<(String, String, String)> = stmt
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+        .unwrap()
+        .collect::<std::result::Result<Vec<_>, _>>()
+        .unwrap();
+    let actions: Vec<&str> = events.iter().map(|(a, ..)| a.as_str()).collect();
+
+    for expected in ["entity.merged", "entity.split", "entity.merge_rejected"] {
+        assert!(
+            actions.contains(&expected),
+            "{expected} missing: {actions:?}"
+        );
+    }
+
+    // The rationale is analyst free text and reaches the log intact rather than
+    // as something that happens to survive interpolation.
+    let merged = events.iter().find(|(a, ..)| a == "entity.merged").unwrap();
+    assert_eq!(merged.1, "user:local");
+    assert!(
+        merged.2.contains("\"rationale\":\"same person\""),
+        "{}",
+        merged.2
+    );
+
+    // The chain still verifies with the new events in it.
+    assert!(matches!(
+        kokin_store::verify_chain(&case.conn).unwrap(),
+        kokin_store::ChainStatus::Intact { .. }
+    ));
+}
+
+/// The payload is built, never interpolated. A rationale is free text, and an
+/// analyst who types a quote must not be able to corrupt the audit record —
+/// which under a tamper-evident chain means breaking it for everything after.
+#[test]
+fn a_rationale_full_of_json_does_not_corrupt_the_chain() {
+    let mut case = Case::new("hostile");
+    let a = case.entity("Jürgen Müller");
+    let b = case.entity("J. Muller");
+
+    let hostile = r#"same "person", per {"source":"registry"} — see \x22 and
+a newline"#;
+    merge(&mut case.conn, &a, &b, "user:local", hostile, None).unwrap();
+
+    let payload: String = case
+        .conn
+        .query_row(
+            "SELECT payload_json FROM audit_event WHERE action = 'entity.merged'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&payload).unwrap();
+    assert_eq!(
+        parsed["rationale"], hostile,
+        "the rationale did not survive"
+    );
+
+    assert!(matches!(
+        kokin_store::verify_chain(&case.conn).unwrap(),
+        kokin_store::ChainStatus::Intact { .. }
+    ));
 }
