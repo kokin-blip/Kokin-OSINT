@@ -254,6 +254,20 @@ fn open_database(paths: &CasePaths, cmk: &CaseMasterKey) -> Result<Connection> {
     conn.pragma_update(None, "foreign_keys", true)?;
     conn.pragma_update(None, "synchronous", "NORMAL")?;
 
+    // Temporary b-trees — the sorters behind ORDER BY, GROUP BY, and the
+    // materialised subqueries a search query produces — must never touch the
+    // disk. SQLCipher encrypts the database file; it does not encrypt the
+    // temp files SQLite writes beside it, so a spilled sorter is case content
+    // in plaintext outside the encryption boundary.
+    //
+    // The bundled amalgamation is compiled SQLITE_TEMP_STORE=2, which already
+    // defaults to memory, so this pragma changes nothing today. It is set
+    // anyway because that default is a property of a vendored dependency's
+    // build flags, not of our code: a libsqlite3-sys bump could move it to 1
+    // and start writing plaintext to disk without a single test failing.
+    // `temp_store_is_memory_so_nothing_spills_to_disk` pins the outcome.
+    conn.pragma_update(None, "temp_store", "MEMORY")?;
+
     Ok(conn)
 }
 
@@ -578,6 +592,55 @@ mod tests {
             "case database has a plain SQLite header - encryption is not active"
         );
 
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// SQLCipher encrypts the database. It does not encrypt the temp files
+    /// SQLite writes when a sorter or a materialised subquery outgrows its
+    /// memory budget, so a spilled b-tree is case content in plaintext outside
+    /// the encryption boundary — sitting in the system temp directory, which
+    /// outlives the case and is not covered by crypto-shredding.
+    ///
+    /// Nothing spills today: the bundled amalgamation is compiled
+    /// SQLITE_TEMP_STORE=2. That is the point of this test. The guarantee
+    /// currently rests on a vendored dependency's build flags rather than on
+    /// anything in this repository, so it is asserted here where a
+    /// libsqlite3-sys bump that changes it fails loudly instead of quietly
+    /// relocating case data to disk.
+    #[test]
+    fn temp_store_is_memory_so_nothing_spills_to_disk() {
+        let dir = temp_case_dir("tempstore");
+        let (conn, _paths, _r) = create_case(&dir, "case-011", "passphrase").unwrap();
+
+        // 0 means "defer to the compile-time default", which is exactly the
+        // ambiguity this pragma removes: 2 is memory whatever that default is.
+        let effective: i64 = conn
+            .query_row("PRAGMA temp_store", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(
+            effective, 2,
+            "temp_store is not MEMORY: search sorters may write plaintext case \
+             data to the system temp directory"
+        );
+
+        // And the compile-time default is checked separately, because if it
+        // ever becomes 1 then every connection opened by code that forgets the
+        // pragma starts spilling. Finding that out here is cheaper than
+        // finding it out from a forensic image.
+        let temp_store_default: Option<String> = conn
+            .prepare("SELECT * FROM pragma_compile_options()")
+            .unwrap()
+            .query_map([], |r| r.get::<_, String>(0))
+            .unwrap()
+            .filter_map(std::result::Result::ok)
+            .find(|o| o.starts_with("TEMP_STORE="));
+        assert_eq!(
+            temp_store_default.as_deref(),
+            Some("TEMP_STORE=2"),
+            "the bundled SQLite no longer defaults temp storage to memory"
+        );
+
+        drop(conn);
         std::fs::remove_dir_all(&dir).unwrap();
     }
 

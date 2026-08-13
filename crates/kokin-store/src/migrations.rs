@@ -583,6 +583,241 @@ const MIGRATIONS: &[&str] = &[
         SELECT RAISE(ABORT, 'an automated actor may not assign this value: a human must decide it');
     END;
     "#,
+    // 5: search (ADR-0003).
+    //
+    // The index is a PROJECTION, never a source of truth. Every row in it is
+    // derived from a row in L1 or L2 by a trigger, and dropping the whole thing
+    // and rebuilding it from those rows must produce the same index. That is
+    // what makes it safe for an index to be lossy, denormalised, and tuned for
+    // retrieval: nothing is knowable only from here.
+    //
+    // Two consequences are load-bearing.
+    //
+    // First, a document carries only the text its own row OWNS. A relationship
+    // is indexed by its kind, not by the display names of the entities it
+    // joins, tempting as that is - "Acme director" is exactly what an analyst
+    // would type. Borrowing another row's text makes this document's
+    // correctness depend on a row it does not control, so renaming an entity
+    // would silently leave stale names searchable, and stale names in an
+    // investigation tool are worse than absent ones. Reaching a relationship
+    // means finding an endpoint and following the edge.
+    //
+    // Second, superseded observations are FLAGGED, not removed. An extractor
+    // rerun withdraws an observation (ADR-0006); deleting its document would
+    // erase the ability to ask what the case used to say, which is a question
+    // investigations genuinely need to answer. Search hides them by default and
+    // labels them when asked for them, which is a different thing from
+    // pretending they were never there.
+    r#"
+    -- One row per searchable thing. `id` is an explicit INTEGER PRIMARY KEY
+    -- because FTS5 external content addresses its content table by rowid, and
+    -- naming it is clearer than relying on the implicit alias.
+    --
+    -- subject_kind is deliberately NOT constrained to a list, for the same
+    -- reason evidence_link.subject_kind is not: SQLite cannot ALTER a CHECK, so
+    -- a list here would make indexing a new kind of thing - artifact body text,
+    -- claims, analyst notes - a table rebuild instead of one more trigger.
+    CREATE TABLE search_document (
+        id           INTEGER PRIMARY KEY,
+        subject_kind TEXT NOT NULL,
+        subject_id   TEXT NOT NULL,
+        -- What a result list shows.
+        title        TEXT NOT NULL,
+        -- What is actually matched against, and what snippets come from.
+        body         TEXT NOT NULL,
+        -- The row's own type, for filtering without teaching the user FTS5
+        -- column syntax: observation kind, entity type, identifier namespace.
+        facet        TEXT NOT NULL,
+        superseded   INTEGER NOT NULL DEFAULT 0,
+        indexed_utc  TEXT NOT NULL
+    ) STRICT;
+
+    -- One document per subject. Also what makes a re-projection idempotent.
+    CREATE UNIQUE INDEX search_document_subject
+        ON search_document(subject_kind, subject_id);
+    CREATE INDEX search_document_facet
+        ON search_document(subject_kind, facet);
+
+    -- External content: the index stores terms, and reads text back from
+    -- search_document when it needs it (snippets, deletes). The alternative,
+    -- a contentless index, is smaller but cannot produce snippets at all, and
+    -- a result you cannot see the matching text of is a result an analyst has
+    -- to open blind.
+    --
+    -- remove_diacritics 2 is not cosmetic. Names in an OSINT case are
+    -- international and are transliterated inconsistently by the sources that
+    -- publish them; without folding, a case holding "Müller" does not answer a
+    -- search for "Muller", and the analyst concludes the case is empty rather
+    -- than that the query was spelled differently. Version 2 rather than 1
+    -- because 1 does not fold characters outside Latin-1.
+    CREATE VIRTUAL TABLE search_index USING fts5(
+        title,
+        body,
+        content = 'search_document',
+        content_rowid = 'id',
+        tokenize = "unicode61 remove_diacritics 2"
+    );
+
+    -- Keeping an external-content index in step is the caller's job; these
+    -- three triggers are that job, done once, where no write path can skip it.
+    CREATE TRIGGER search_document_indexed AFTER INSERT ON search_document
+    BEGIN
+        INSERT INTO search_index(rowid, title, body)
+        VALUES (NEW.id, NEW.title, NEW.body);
+    END;
+
+    -- FTS5 needs the OLD text to retract the OLD terms. Passing NEW values to
+    -- 'delete' leaves the previous terms in the index for ever, which reads as
+    -- a search that keeps finding text the case no longer contains.
+    CREATE TRIGGER search_document_reindexed AFTER UPDATE ON search_document
+    BEGIN
+        INSERT INTO search_index(search_index, rowid, title, body)
+        VALUES ('delete', OLD.id, OLD.title, OLD.body);
+        INSERT INTO search_index(rowid, title, body)
+        VALUES (NEW.id, NEW.title, NEW.body);
+    END;
+
+    CREATE TRIGGER search_document_unindexed AFTER DELETE ON search_document
+    BEGIN
+        INSERT INTO search_index(search_index, rowid, title, body)
+        VALUES ('delete', OLD.id, OLD.title, OLD.body);
+    END;
+
+    -- ---------------------------------------------------------------------
+    -- L1 -> the projection.
+    -- ---------------------------------------------------------------------
+
+    -- Observations are append-only, so there is no update path to mirror.
+    CREATE TRIGGER observation_is_searchable AFTER INSERT ON observation
+    BEGIN
+        INSERT INTO search_document
+            (subject_kind, subject_id, title, body, facet, superseded, indexed_utc)
+        VALUES
+            ('observation', NEW.id, NEW.value, NEW.value, NEW.kind, 0, NEW.observed_utc);
+    END;
+
+    -- Withdrawn, not deleted. See the note above this migration.
+    CREATE TRIGGER observation_supersession_marks_the_index
+    AFTER INSERT ON observation_supersession
+    BEGIN
+        UPDATE search_document
+           SET superseded = 1
+         WHERE subject_kind = 'observation'
+           AND subject_id = NEW.superseded_id;
+    END;
+
+    -- ---------------------------------------------------------------------
+    -- L2 -> the projection. L2 is mutable, so all three paths are covered.
+    -- ---------------------------------------------------------------------
+
+    CREATE TRIGGER entity_is_searchable AFTER INSERT ON entity
+    BEGIN
+        INSERT INTO search_document
+            (subject_kind, subject_id, title, body, facet, superseded, indexed_utc)
+        VALUES
+            ('entity', NEW.id, NEW.display_name,
+             NEW.display_name || ' ' || NEW.notes, NEW.type_key, 0, NEW.created_utc);
+    END;
+
+    CREATE TRIGGER entity_reindexed AFTER UPDATE ON entity
+    BEGIN
+        UPDATE search_document
+           SET title = NEW.display_name,
+               body  = NEW.display_name || ' ' || NEW.notes,
+               facet = NEW.type_key,
+               indexed_utc = NEW.updated_utc
+         WHERE subject_kind = 'entity' AND subject_id = OLD.id;
+    END;
+
+    CREATE TRIGGER entity_unindexed AFTER DELETE ON entity
+    BEGIN
+        DELETE FROM search_document
+         WHERE subject_kind = 'entity' AND subject_id = OLD.id;
+    END;
+
+    -- The normalised form is indexed alongside the raw one so that a search
+    -- for a lowercased domain finds the identifier that was captured shouting.
+    CREATE TRIGGER identifier_is_searchable AFTER INSERT ON identifier
+    BEGIN
+        INSERT INTO search_document
+            (subject_kind, subject_id, title, body, facet, superseded, indexed_utc)
+        VALUES
+            ('identifier', NEW.id, NEW.value,
+             NEW.value || ' ' || NEW.normalized, NEW.namespace, 0, NEW.created_utc);
+    END;
+
+    CREATE TRIGGER identifier_reindexed AFTER UPDATE ON identifier
+    BEGIN
+        UPDATE search_document
+           SET title = NEW.value,
+               body  = NEW.value || ' ' || NEW.normalized,
+               facet = NEW.namespace
+         WHERE subject_kind = 'identifier' AND subject_id = OLD.id;
+    END;
+
+    CREATE TRIGGER identifier_unindexed AFTER DELETE ON identifier
+    BEGIN
+        DELETE FROM search_document
+         WHERE subject_kind = 'identifier' AND subject_id = OLD.id;
+    END;
+
+    CREATE TRIGGER relationship_is_searchable AFTER INSERT ON relationship
+    BEGIN
+        INSERT INTO search_document
+            (subject_kind, subject_id, title, body, facet, superseded, indexed_utc)
+        VALUES
+            ('relationship', NEW.id, NEW.kind, NEW.kind, NEW.kind, 0, NEW.created_utc);
+    END;
+
+    CREATE TRIGGER relationship_reindexed AFTER UPDATE ON relationship
+    BEGIN
+        UPDATE search_document
+           SET title = NEW.kind, body = NEW.kind, facet = NEW.kind
+         WHERE subject_kind = 'relationship' AND subject_id = OLD.id;
+    END;
+
+    CREATE TRIGGER relationship_unindexed AFTER DELETE ON relationship
+    BEGIN
+        DELETE FROM search_document
+         WHERE subject_kind = 'relationship' AND subject_id = OLD.id;
+    END;
+
+    -- ---------------------------------------------------------------------
+    -- Backfill.
+    --
+    -- Triggers only fire on writes that happen after they exist, so without
+    -- this an upgraded case would hold rows that search cannot see, and the
+    -- failure is silent: search works, returns fewer results than the truth,
+    -- and an analyst reads the gap as an answer. A fresh case backfills
+    -- nothing because there is nothing there yet, which is exactly why this
+    -- is easy to leave out and impossible to notice afterwards.
+    -- ---------------------------------------------------------------------
+    INSERT INTO search_document
+        (subject_kind, subject_id, title, body, facet, superseded, indexed_utc)
+    SELECT 'observation', o.id, o.value, o.value, o.kind,
+           CASE WHEN EXISTS (
+               SELECT 1 FROM observation_supersession s WHERE s.superseded_id = o.id
+           ) THEN 1 ELSE 0 END,
+           o.observed_utc
+      FROM observation o;
+
+    INSERT INTO search_document
+        (subject_kind, subject_id, title, body, facet, superseded, indexed_utc)
+    SELECT 'entity', e.id, e.display_name, e.display_name || ' ' || e.notes,
+           e.type_key, 0, e.updated_utc
+      FROM entity e;
+
+    INSERT INTO search_document
+        (subject_kind, subject_id, title, body, facet, superseded, indexed_utc)
+    SELECT 'identifier', i.id, i.value, i.value || ' ' || i.normalized,
+           i.namespace, 0, i.created_utc
+      FROM identifier i;
+
+    INSERT INTO search_document
+        (subject_kind, subject_id, title, body, facet, superseded, indexed_utc)
+    SELECT 'relationship', r.id, r.kind, r.kind, r.kind, 0, r.created_utc
+      FROM relationship r;
+    "#,
 ];
 
 /// The schema version this build writes and understands.
@@ -831,6 +1066,109 @@ mod tests {
              INSERT INTO entity VALUES ('e1','person','Acme','','2026-08-12T00:00:00Z','2026-08-12T00:00:00Z');",
         )
         .unwrap();
+    }
+
+    /// Apply migrations up to and including `version`, leaving the database
+    /// exactly as an older build would have left it.
+    fn migrate_to(conn: &Connection, version: usize) {
+        for sql in MIGRATIONS.iter().take(version) {
+            conn.execute_batch(sql).unwrap();
+        }
+        conn.execute_batch(&format!("PRAGMA user_version = {version};"))
+            .unwrap();
+    }
+
+    /// The projection is maintained by triggers, and a trigger cannot fire for
+    /// a row that was written before it existed. So an upgraded case starts
+    /// with rows that search cannot see — and the failure is silent, which is
+    /// what makes it dangerous: search still works, still returns results, and
+    /// simply omits everything collected before the upgrade. An analyst reads
+    /// "no results" as a finding about the world rather than about the index.
+    ///
+    /// A fresh case cannot catch this, because at migration time it holds
+    /// nothing to backfill and every later write goes through the triggers.
+    /// That is precisely why the backfill is easy to omit: every test that
+    /// starts from `migrate()` passes without it.
+    #[test]
+    fn upgrading_a_populated_case_makes_its_existing_rows_searchable() {
+        let conn = memory_db();
+
+        assert_eq!(
+            target_version(),
+            5,
+            "this test pins the v4 -> v5 upgrade; a later migration needs its own"
+        );
+
+        // A case as an older build left it: schema at 4, rows already in it.
+        migrate_to(&conn, 4);
+        seed_l2(&conn);
+        conn.execute_batch(
+            "INSERT INTO observation VALUES ('o2','a1','r1','page.email','press@acme.example','{}','2026-08-12T00:00:00Z');
+             INSERT INTO observation VALUES ('o3','a1','r1','page.email','stale@acme.example','{}','2026-08-12T00:00:00Z');
+             -- A rerun withdrew o3 without replacing it.
+             INSERT INTO observation_supersession VALUES ('o3', NULL, 'r1', '2026-08-12T01:00:00Z');
+             INSERT INTO evidence_link VALUES ('el2','identifier','i1','observation','o2','supports','2026-08-12T00:00:00Z');
+             INSERT INTO identifier VALUES ('i1','e1','email_address','Press@ACME.example','press@acme.example','2026-08-12T00:00:00Z');
+             INSERT INTO evidence_link VALUES ('el3','entity','e2','observation','o1','supports','2026-08-12T00:00:00Z');
+             INSERT INTO entity VALUES ('e2','person','Jürgen Müller','a note','2026-08-12T00:00:00Z','2026-08-12T00:00:00Z');
+             INSERT INTO evidence_link VALUES ('el4','relationship','rel1','observation','o1','supports','2026-08-12T00:00:00Z');
+             INSERT INTO relationship VALUES ('rel1','e1','e2','mentioned_alongside',NULL,NULL,'2026-08-12T00:00:00Z');",
+        )
+        .unwrap();
+
+        // Now the upgrade.
+        migrate(&conn).unwrap();
+
+        // Every pre-existing row has a document. Counted per table rather than
+        // spot-checked, because the way this goes wrong is one table being left
+        // out of the backfill, not the backfill being absent altogether.
+        for (kind, table) in [
+            ("observation", "observation"),
+            ("entity", "entity"),
+            ("identifier", "identifier"),
+            ("relationship", "relationship"),
+        ] {
+            let rows: i64 = conn
+                .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |r| r.get(0))
+                .unwrap();
+            let docs: i64 = conn
+                .query_row(
+                    "SELECT COUNT(*) FROM search_document WHERE subject_kind = ?1",
+                    [kind],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(
+                rows, docs,
+                "{kind}: {rows} rows backfilled to {docs} documents"
+            );
+        }
+
+        // The index, not just the projection, actually answers.
+        let hit: String = conn
+            .query_row(
+                "SELECT d.subject_id
+                   FROM search_index i JOIN search_document d ON d.id = i.rowid
+                  WHERE search_index MATCH '\"press@acme.example\"' AND d.subject_kind = 'observation'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(hit, "o2");
+
+        // A withdrawn observation is carried as withdrawn, not as current and
+        // not as missing.
+        let superseded: i64 = conn
+            .query_row(
+                "SELECT superseded FROM search_document WHERE subject_id = 'o3'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            superseded, 1,
+            "a superseded observation was backfilled as current"
+        );
     }
 
     /// ADR-0006's single L2 constraint, tested by trying to break it.

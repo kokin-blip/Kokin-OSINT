@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "kokin-search"
 version.workspace = true
 edition.workspace = true
@@ -10,3 +10,13 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+kokin-store = { path = "../kokin-store" }
+rusqlite = { version = "0.40.2", features = ["bundled-sqlcipher-vendored-openssl"] }
+thiserror = "2.0.20"
+
+[dev-dependencies]
+kokin-ingest = { path = "../kokin-ingest" }
+kokin-extract = { path = "../kokin-extract" }
+kokin-graph = { path = "../kokin-graph" }
+kokin-blob = { path = "../kokin-blob" }
+kokin-keys = { path = "../kokin-keys" }
