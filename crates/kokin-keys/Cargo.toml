@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 argon2 = "0.5.3"
+blake3 = "1.8.6"
 chacha20poly1305 = "0.11.0"
 getrandom = "0.4.3"
 subtle = "2.6.1"

@@ -2012,6 +2012,7 @@ name = "kokin-keys"
 version = "0.0.1"
 dependencies = [
  "argon2",
+ "blake3",
  "chacha20poly1305",
  "getrandom 0.4.3",
  "subtle",
@@ -2034,7 +2035,9 @@ dependencies = [
 name = "kokin-osint"
 version = "0.0.1"
 dependencies = [
+ "kokin-keys",
  "kokin-store",
+ "rusqlite",
  "serde",
  "serde_json",
  "tauri",

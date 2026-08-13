@@ -34,6 +34,10 @@
 
 #![doc = include_str!("../README.md")]
 
+pub mod phrase;
+
+pub use phrase::{from_phrase, to_phrase};
+
 use argon2::{Algorithm, Argon2, Params, Version};
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{Key, XChaCha20Poly1305, XNonce};
@@ -62,6 +66,8 @@ pub enum KeyError {
     Random(String),
     #[error("expected {expected} bytes, found {found}")]
     BadLength { expected: usize, found: usize },
+    #[error("that is not a recovery key: check for a mistyped or missing character")]
+    MistypedRecoveryKey,
     #[error("unsupported key-derivation profile: {0}")]
     UnsupportedProfile(u8),
 }
