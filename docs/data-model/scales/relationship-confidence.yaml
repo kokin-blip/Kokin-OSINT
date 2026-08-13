@@ -59,6 +59,10 @@ values:
       - An email address and a domain mentioned on the same captured page —
         which is exactly what increment 7's extractor produces, and is why its
         output is a lead rather than a finding.
+    machine_assignable: true
+    # The one value an automated pass may set, and the reason the field is here
+    # at all: a machine can see that two things appear together. It is also the
+    # ceiling, per threshold_rationale below.
 
   - key: contradicted
     label: Contradicted

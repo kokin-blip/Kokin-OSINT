@@ -1,0 +1,29 @@
+[package]
+name = "kokin-graph"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+kokin-store = { path = "../kokin-store" }
+rusqlite = { version = "0.40.2", features = ["bundled-sqlcipher-vendored-openssl"] }
+thiserror = "2.0.20"
+getrandom = "0.4.3"
+serde = { version = "1.0.229", features = ["derive"] }
+# Reads the seven confidence scales, which are embedded at compile time from
+# docs/data-model/scales/*.yaml. See docs/decision-log.csv D-014 for why this
+# fork and not one of the other four.
+yaml_serde = "0.10.6"
+
+[dev-dependencies]
+# The composition under test is ingest -> extract -> graph: L2 rows are grounded
+# in observations produced by the real pipeline, not in hand-written rows.
+kokin-ingest = { path = "../kokin-ingest" }
+kokin-extract = { path = "../kokin-extract" }
+kokin-blob = { path = "../kokin-blob" }
+kokin-keys = { path = "../kokin-keys" }

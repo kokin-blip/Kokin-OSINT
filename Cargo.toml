@@ -7,6 +7,7 @@ members = [
     "crates/kokin-net",
     "crates/kokin-ingest",
     "crates/kokin-extract",
+    "crates/kokin-graph",
     "crates/kokin-search",
     "crates/kokin-export",
     "crates/kokin-ai",

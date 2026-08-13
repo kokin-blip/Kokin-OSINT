@@ -308,6 +308,281 @@ const MIGRATIONS: &[&str] = &[
         SELECT RAISE(ABORT, 'a supersession is a historical fact and cannot be deleted');
     END;
     "#,
+    // 4: L2 — analysis (ADR-0006), and the assessment machinery of ADR-0007.
+    //
+    // L2 is MUTABLE, and that is the point: an analyst's reading of the evidence
+    // is supposed to change as more evidence arrives. What may not change is the
+    // evidence underneath it, which L0 and L1 already guarantee.
+    //
+    // The one rule this layer enforces for itself is ADR-0006's: nothing in L2
+    // exists without an evidence_link. It is a trigger rather than a convention
+    // because it is the mechanism behind "graph edges open their supporting
+    // evidence" — that acceptance criterion is a consequence of the schema, not
+    // a screen someone has to remember to build.
+    r#"
+    -- ---------------------------------------------------------------------
+    -- The entity type registry.
+    --
+    -- entity_type is DATA, not schema (ADR-0006). Adding the remaining ~25
+    -- entity types is an INSERT and a form descriptor, never a migration, which
+    -- is the whole reason "25 entity types" is not a Phase 1 burden. The
+    -- alternative - a table per type, or a type enum in a CHECK - makes every
+    -- new type a schema change and a table rebuild.
+    -- ---------------------------------------------------------------------
+    CREATE TABLE entity_type (
+        key          TEXT PRIMARY KEY NOT NULL,
+        label        TEXT NOT NULL,
+        description  TEXT NOT NULL,
+        -- Describes the per-type fields a UI should offer. Empty until there
+        -- is a UI; the column exists so adding one is still not a migration.
+        form_json    TEXT NOT NULL DEFAULT '{}',
+        builtin      INTEGER NOT NULL DEFAULT 0
+    ) STRICT;
+
+    -- ---------------------------------------------------------------------
+    -- The scales an assessment may use (ADR-0007).
+    --
+    -- Seeded from docs/data-model/scales/*.yaml, and stored IN THE CASE so the
+    -- case is self-describing: an assessment made under version 1 of a scale
+    -- still renders correctly when opened by a build that ships version 2,
+    -- because the definitions it was made under travel with it. Without this,
+    -- editing a scale silently reinterprets every existing assessment.
+    -- ---------------------------------------------------------------------
+    CREATE TABLE scale (
+        id              TEXT NOT NULL,
+        version         INTEGER NOT NULL,
+        title           TEXT NOT NULL,
+        status          TEXT NOT NULL,
+        question        TEXT NOT NULL,
+        -- The authored file, verbatim. Calibration examples, threshold
+        -- rationale and known failure modes are what make a scale meaningful
+        -- rather than an opinion with a number attached, so they are carried
+        -- rather than summarised.
+        source_yaml     TEXT NOT NULL,
+        loaded_utc      TEXT NOT NULL,
+        PRIMARY KEY (id, version)
+    ) STRICT;
+
+    CREATE TABLE scale_value (
+        scale_id           TEXT NOT NULL,
+        scale_version      INTEGER NOT NULL,
+        value_key          TEXT NOT NULL,
+        label              TEXT NOT NULL,
+        definition         TEXT NOT NULL,
+        -- Authored order, so a UI renders the scale as it was written. Note
+        -- that insufficient_information is deliberately FIRST and outside the
+        -- ordering: "we have not established this" is not a weak value.
+        ordinal            INTEGER NOT NULL,
+        machine_assignable INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (scale_id, scale_version, value_key),
+        FOREIGN KEY (scale_id, scale_version) REFERENCES scale(id, version)
+    ) STRICT;
+
+    -- ---------------------------------------------------------------------
+    -- L2: analysis.
+    -- ---------------------------------------------------------------------
+
+    CREATE TABLE entity (
+        id           TEXT PRIMARY KEY NOT NULL,
+        type_key     TEXT NOT NULL REFERENCES entity_type(key),
+        display_name TEXT NOT NULL,
+        notes        TEXT NOT NULL DEFAULT '',
+        created_utc  TEXT NOT NULL,
+        updated_utc  TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX entity_by_type ON entity(type_key);
+
+    -- value is what the evidence said; normalized is what equality is judged
+    -- on. Both are kept, because a normalisation that turns two distinct
+    -- identifiers into one string would otherwise be undetectable after the
+    -- fact - and identifier_match rates such a collision as an exact match.
+    CREATE TABLE identifier (
+        id           TEXT PRIMARY KEY NOT NULL,
+        entity_id    TEXT NOT NULL REFERENCES entity(id),
+        namespace    TEXT NOT NULL,
+        value        TEXT NOT NULL,
+        normalized   TEXT NOT NULL,
+        created_utc  TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX identifier_by_entity ON identifier(entity_id);
+    CREATE INDEX identifier_lookup ON identifier(namespace, normalized);
+
+    -- started_utc and ended_utc are nullable because most relationships are
+    -- asserted without a period, and inventing one would be a claim the
+    -- evidence does not support. temporal_consistency rates that absence.
+    CREATE TABLE relationship (
+        id           TEXT PRIMARY KEY NOT NULL,
+        from_entity  TEXT NOT NULL REFERENCES entity(id),
+        to_entity    TEXT NOT NULL REFERENCES entity(id),
+        kind         TEXT NOT NULL,
+        started_utc  TEXT,
+        ended_utc    TEXT,
+        created_utc  TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX relationship_from ON relationship(from_entity);
+    CREATE INDEX relationship_to ON relationship(to_entity);
+
+    -- The join between an analytical row and the evidence under it.
+    --
+    -- subject is polymorphic and therefore cannot carry a foreign key. It is
+    -- deliberately NOT constrained to a list of kinds: each L2 table enforces
+    -- its own requirement below by naming its own kind, so a future table adds
+    -- a trigger rather than forcing a rebuild of this one.
+    --
+    -- role is CHECKed because ADR-0006 fixes the three values. 'contradicts' is
+    -- the one that matters: evidence arguing AGAINST a conclusion has a place
+    -- to live, which is precisely what graph-native tools cannot represent.
+    CREATE TABLE evidence_link (
+        id            TEXT PRIMARY KEY NOT NULL,
+        subject_kind  TEXT NOT NULL,
+        subject_id    TEXT NOT NULL,
+        evidence_kind TEXT NOT NULL CHECK (evidence_kind IN ('observation', 'artifact', 'capture')),
+        evidence_id   TEXT NOT NULL,
+        role          TEXT NOT NULL CHECK (role IN ('supports', 'contradicts', 'context')),
+        created_utc   TEXT NOT NULL
+    ) STRICT;
+
+    CREATE INDEX evidence_link_subject ON evidence_link(subject_kind, subject_id);
+    CREATE INDEX evidence_link_evidence ON evidence_link(evidence_kind, evidence_id);
+
+    -- One row per dimension per subject (ADR-0007).
+    --
+    -- There is NO composite column here, and there must never be one, because a
+    -- column that exists will eventually be displayed. A single number formed
+    -- from a reliable source, a shaky identifier match and an untested temporal
+    -- assumption tells an analyst nothing about which one to go and check.
+    --
+    -- The composite foreign key is what makes the scales load-bearing rather
+    -- than decorative: a value that is not in the scale it claims cannot be
+    -- written at all.
+    CREATE TABLE assessment (
+        id                        TEXT PRIMARY KEY NOT NULL,
+        subject_kind              TEXT NOT NULL,
+        subject_id                TEXT NOT NULL,
+        dimension                 TEXT NOT NULL,
+        scale_version             INTEGER NOT NULL,
+        value_key                 TEXT NOT NULL,
+        -- Drives the UI's "why" panel. A factor that is not recorded cannot be
+        -- displayed, which forces the scoring rules to be honest: anything that
+        -- influenced the assessment has to be written down to have any effect.
+        contributing_factors_json TEXT NOT NULL DEFAULT '[]',
+        actor                     TEXT NOT NULL,
+        assessed_utc              TEXT NOT NULL,
+        FOREIGN KEY (dimension, scale_version, value_key)
+            REFERENCES scale_value(scale_id, scale_version, value_key)
+    ) STRICT;
+
+    CREATE UNIQUE INDEX assessment_one_per_dimension
+        ON assessment(subject_kind, subject_id, dimension);
+
+    -- ---------------------------------------------------------------------
+    -- Nothing in L2 exists without an evidence_link (ADR-0006).
+    --
+    -- Enforced at insert, which forces the caller to have decided what the
+    -- evidence IS before creating the row - the link is written first, then the
+    -- row it grounds. That ordering is the point: an entity whose evidence is
+    -- "to be filled in later" is exactly the ungrounded assertion this schema
+    -- exists to prevent, and later never comes.
+    -- ---------------------------------------------------------------------
+
+    CREATE TRIGGER entity_requires_evidence BEFORE INSERT ON entity
+    WHEN NOT EXISTS (
+        SELECT 1 FROM evidence_link
+         WHERE subject_kind = 'entity' AND subject_id = NEW.id
+    )
+    BEGIN
+        SELECT RAISE(ABORT, 'nothing in L2 exists without evidence: write the evidence_link before the entity');
+    END;
+
+    CREATE TRIGGER identifier_requires_evidence BEFORE INSERT ON identifier
+    WHEN NOT EXISTS (
+        SELECT 1 FROM evidence_link
+         WHERE subject_kind = 'identifier' AND subject_id = NEW.id
+    )
+    BEGIN
+        SELECT RAISE(ABORT, 'nothing in L2 exists without evidence: write the evidence_link before the identifier');
+    END;
+
+    CREATE TRIGGER relationship_requires_evidence BEFORE INSERT ON relationship
+    WHEN NOT EXISTS (
+        SELECT 1 FROM evidence_link
+         WHERE subject_kind = 'relationship' AND subject_id = NEW.id
+    )
+    BEGIN
+        SELECT RAISE(ABORT, 'nothing in L2 exists without evidence: write the evidence_link before the relationship');
+    END;
+
+    -- The same rule read backwards: an L2 row may not be stripped of its last
+    -- piece of evidence while it still exists. Removing a link is how the rule
+    -- would otherwise be defeated a moment after insert.
+    CREATE TRIGGER evidence_link_keeps_l2_grounded BEFORE DELETE ON evidence_link
+    WHEN (
+        SELECT COUNT(*) FROM evidence_link
+         WHERE subject_kind = OLD.subject_kind AND subject_id = OLD.subject_id
+    ) <= 1
+    AND (
+        (OLD.subject_kind = 'entity'
+            AND EXISTS (SELECT 1 FROM entity WHERE id = OLD.subject_id))
+     OR (OLD.subject_kind = 'identifier'
+            AND EXISTS (SELECT 1 FROM identifier WHERE id = OLD.subject_id))
+     OR (OLD.subject_kind = 'relationship'
+            AND EXISTS (SELECT 1 FROM relationship WHERE id = OLD.subject_id))
+    )
+    BEGIN
+        SELECT RAISE(ABORT, 'this is the last evidence for a row that still exists: delete the row first');
+    END;
+
+    -- A scale definition in a case is the record of what an assessment MEANT.
+    -- Editing it in place would reinterpret every assessment already made under
+    -- it, which is the exact failure ADR-0007's versioning exists to prevent.
+    CREATE TRIGGER scale_is_immutable BEFORE UPDATE ON scale
+    BEGIN
+        SELECT RAISE(ABORT, 'a scale version is immutable: publish a new version, do not rewrite this one');
+    END;
+
+    CREATE TRIGGER scale_value_is_immutable BEFORE UPDATE ON scale_value
+    BEGIN
+        SELECT RAISE(ABORT, 'a scale version is immutable: publish a new version, do not rewrite this one');
+    END;
+
+    -- An automated actor may only assign the values its scale marks as
+    -- machine-assignable.
+    --
+    -- This is what makes machine_assignable in the YAML a control rather than a
+    -- comment. identifier_match is the case that matters: until PoC P8 measures
+    -- the username sweep's false-positive rate, a rule may say two identifiers
+    -- LOOK alike and may not say they belong to the same actor. Enforced here
+    -- because "the code will only ever assign safe values" is the kind of
+    -- promise that survives exactly until someone adds a heuristic.
+    CREATE TRIGGER assessment_respects_machine_limits BEFORE INSERT ON assessment
+    WHEN (NEW.actor LIKE 'rule:%' OR NEW.actor LIKE 'ai:%')
+     AND NOT EXISTS (
+        SELECT 1 FROM scale_value
+         WHERE scale_id = NEW.dimension
+           AND scale_version = NEW.scale_version
+           AND value_key = NEW.value_key
+           AND machine_assignable = 1
+     )
+    BEGIN
+        SELECT RAISE(ABORT, 'an automated actor may not assign this value: a human must decide it');
+    END;
+
+    CREATE TRIGGER assessment_update_respects_machine_limits BEFORE UPDATE ON assessment
+    WHEN (NEW.actor LIKE 'rule:%' OR NEW.actor LIKE 'ai:%')
+     AND NOT EXISTS (
+        SELECT 1 FROM scale_value
+         WHERE scale_id = NEW.dimension
+           AND scale_version = NEW.scale_version
+           AND value_key = NEW.value_key
+           AND machine_assignable = 1
+     )
+    BEGIN
+        SELECT RAISE(ABORT, 'an automated actor may not assign this value: a human must decide it');
+    END;
+    "#,
 ];
 
 /// The schema version this build writes and understands.
@@ -539,6 +814,204 @@ mod tests {
         assert!(conn
             .execute_batch("UPDATE transform_run SET status = 'failed' WHERE id = 'r1'")
             .is_err());
+    }
+
+    /// Seed the minimum L2 needs: a type, a scale, and one piece of evidence
+    /// to point at. Deliberately writes the evidence_link *before* the entity,
+    /// because that is the only order the schema permits.
+    fn seed_l2(conn: &Connection) {
+        seed_l0(conn);
+        conn.execute_batch(
+            "INSERT INTO observation VALUES ('o1','a1','r1','page.title','Acme','{}','2026-08-12T00:00:00Z');
+             INSERT INTO entity_type VALUES ('person','Person','A human being','{}',1);
+             INSERT INTO scale VALUES ('review_status',1,'Review status','active','q','yaml','2026-08-12T00:00:00Z');
+             INSERT INTO scale_value VALUES ('review_status',1,'insufficient_information','Insufficient information','d',0,0);
+             INSERT INTO scale_value VALUES ('review_status',1,'unreviewed','Unreviewed','d',1,1);
+             INSERT INTO evidence_link VALUES ('el1','entity','e1','observation','o1','supports','2026-08-12T00:00:00Z');
+             INSERT INTO entity VALUES ('e1','person','Acme','','2026-08-12T00:00:00Z','2026-08-12T00:00:00Z');",
+        )
+        .unwrap();
+    }
+
+    /// ADR-0006's single L2 constraint, tested by trying to break it.
+    ///
+    /// An entity with no evidence is an assertion, and a tool that lets you
+    /// record assertions next to evidence and cannot tell them apart is the
+    /// failure this whole schema exists to avoid.
+    #[test]
+    fn nothing_in_l2_can_be_created_without_evidence() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_l2(&conn);
+
+        let ungrounded = [
+            (
+                "INSERT INTO entity VALUES ('e2','person','Ungrounded','','2026-08-12T00:00:00Z','2026-08-12T00:00:00Z')",
+                "entity",
+            ),
+            (
+                "INSERT INTO identifier VALUES ('i1','e1','email','a@b.test','a@b.test','2026-08-12T00:00:00Z')",
+                "identifier",
+            ),
+            (
+                "INSERT INTO relationship VALUES ('rel1','e1','e1','knows',NULL,NULL,'2026-08-12T00:00:00Z')",
+                "relationship",
+            ),
+        ];
+
+        for (sql, what) in ungrounded {
+            assert!(
+                conn.execute_batch(sql).is_err(),
+                "an ungrounded {what} was accepted - L2 can hold assertions with no evidence"
+            );
+        }
+
+        // And the same rows succeed once their evidence exists.
+        conn.execute_batch(
+            "INSERT INTO evidence_link VALUES ('el2','identifier','i1','observation','o1','supports','2026-08-12T00:00:00Z');
+             INSERT INTO identifier VALUES ('i1','e1','email','a@b.test','a@b.test','2026-08-12T00:00:00Z');",
+        )
+        .unwrap();
+    }
+
+    /// The rule read backwards. Enforcing it only at insert would leave it
+    /// defeatable one statement later.
+    #[test]
+    fn the_last_evidence_for_a_live_row_cannot_be_removed() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_l2(&conn);
+
+        assert!(
+            conn.execute_batch("DELETE FROM evidence_link WHERE id = 'el1'")
+                .is_err(),
+            "an entity was stripped of its last evidence and survived"
+        );
+
+        // A second link makes the first removable: the row stays grounded.
+        conn.execute_batch(
+            "INSERT INTO evidence_link VALUES ('el1b','entity','e1','artifact','a1','context','2026-08-12T00:00:00Z')",
+        )
+        .unwrap();
+        conn.execute_batch("DELETE FROM evidence_link WHERE id = 'el1'")
+            .unwrap();
+    }
+
+    /// The scales are load-bearing, not decorative: a value that is not in the
+    /// scale it names cannot be written at all.
+    #[test]
+    fn an_assessment_cannot_use_a_value_outside_its_scale() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        conn.pragma_update(None, "foreign_keys", true).unwrap();
+        seed_l2(&conn);
+
+        assert!(
+            conn.execute_batch(
+                "INSERT INTO assessment VALUES ('as1','entity','e1','review_status',1,'looks_about_right','[]','user:local','2026-08-12T00:00:00Z')"
+            )
+            .is_err(),
+            "an invented scale value was accepted"
+        );
+
+        // A version that does not exist is refused for the same reason, which
+        // is what keeps an old assessment pinned to the scale it was made under.
+        assert!(conn
+            .execute_batch(
+                "INSERT INTO assessment VALUES ('as2','entity','e1','review_status',2,'unreviewed','[]','user:local','2026-08-12T00:00:00Z')"
+            )
+            .is_err());
+
+        conn.execute_batch(
+            "INSERT INTO assessment VALUES ('as3','entity','e1','review_status',1,'unreviewed','[]','user:local','2026-08-12T00:00:00Z')",
+        )
+        .unwrap();
+    }
+
+    /// A rule or a model may argue; only a human may conclude. The scale files
+    /// say which values are machine-assignable, and this is where saying so
+    /// starts to mean something.
+    #[test]
+    fn an_automated_actor_cannot_assign_a_value_reserved_for_humans() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+        seed_l2(&conn);
+
+        // 'unreviewed' is machine-assignable in the seed; 'insufficient_information'
+        // is not, and standing in here for identifier_match's unmeasured tiers.
+        assert!(
+            conn.execute_batch(
+                "INSERT INTO assessment VALUES ('as1','entity','e1','review_status',1,'insufficient_information','[]','rule:username_sweep','2026-08-12T00:00:00Z')"
+            )
+            .is_err(),
+            "a rule assigned a value reserved for a human"
+        );
+        assert!(conn
+            .execute_batch(
+                "INSERT INTO assessment VALUES ('as2','entity','e1','review_status',1,'insufficient_information','[]','ai:local_model','2026-08-12T00:00:00Z')"
+            )
+            .is_err());
+
+        // The same rule may assign a value the scale permits it,
+        conn.execute_batch(
+            "INSERT INTO assessment VALUES ('as3','entity','e1','review_status',1,'unreviewed','[]','rule:username_sweep','2026-08-12T00:00:00Z')",
+        )
+        .unwrap();
+
+        // and a human may assign either.
+        conn.execute_batch("DELETE FROM assessment").unwrap();
+        conn.execute_batch(
+            "INSERT INTO assessment VALUES ('as4','entity','e1','review_status',1,'insufficient_information','[]','user:local','2026-08-12T00:00:00Z')",
+        )
+        .unwrap();
+
+        // Nor can a rule sneak past by writing as a human and then updating.
+        assert!(conn
+            .execute_batch("UPDATE assessment SET actor = 'rule:username_sweep' WHERE id = 'as4'")
+            .is_err());
+    }
+
+    /// ADR-0007 forbids a composite confidence score, and the reason it gives
+    /// is that *a column that exists will eventually be displayed*. So the
+    /// prohibition is tested against the schema itself rather than trusted to
+    /// reviewer memory: no column may look like an overall score.
+    #[test]
+    fn the_schema_has_no_composite_confidence_column() {
+        let conn = memory_db();
+        migrate(&conn).unwrap();
+
+        let mut tables = conn
+            .prepare(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .unwrap();
+        let names: Vec<String> = tables
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect();
+
+        for table in names {
+            let mut cols = conn
+                .prepare(&format!("PRAGMA table_info({table})"))
+                .unwrap();
+            let columns: Vec<String> = cols
+                .query_map([], |r| r.get(1))
+                .unwrap()
+                .map(|r| r.unwrap())
+                .collect();
+
+            for column in columns {
+                let c = column.to_lowercase();
+                assert!(
+                    !(c.contains("score")
+                        || c.contains("composite")
+                        || c.contains("overall")
+                        || c == "confidence"),
+                    "{table}.{column} looks like a composite confidence score, which ADR-0007 forbids"
+                );
+            }
+        }
     }
 
     /// Golden-schema test.
