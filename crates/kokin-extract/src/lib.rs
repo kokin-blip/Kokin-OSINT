@@ -100,6 +100,9 @@ pub struct Extracted {
     pub observation_ids: Vec<String>,
     /// Values too long to record. See [`Extraction::skipped_oversize`].
     pub skipped_oversize: usize,
+    /// Prose this document holds that search will not find. See
+    /// [`Extraction::text_truncated_bytes`].
+    pub text_truncated_bytes: usize,
     /// Observations from an earlier run of this extractor that this run
     /// superseded.
     pub superseded: usize,
@@ -345,9 +348,10 @@ fn record(
             subject_kind: Some("artifact"),
             subject_id: Some(artifact_id),
             payload_json: &format!(
-                r#"{{"observations":{},"skipped_oversize":{},"superseded":{}}}"#,
+                r#"{{"observations":{},"skipped_oversize":{},"text_truncated_bytes":{},"superseded":{}}}"#,
                 observation_ids.len(),
                 extraction.skipped_oversize,
+                extraction.text_truncated_bytes,
                 superseded
             ),
         },
@@ -360,6 +364,7 @@ fn record(
         artifact_id: artifact_id.to_string(),
         observation_ids,
         skipped_oversize: extraction.skipped_oversize,
+        text_truncated_bytes: extraction.text_truncated_bytes,
         superseded,
     })
 }
@@ -498,9 +503,18 @@ fn code_version() -> String {
 /// identified by the `derivation` edge.
 fn params_hash(limits: &Limits) -> String {
     kokin_store::blake3_hex(
+        // Every field, or two configurations that produce different
+        // observations would share a hash - and a rerun under new limits would
+        // look like a repeat of the old one and supersede nothing.
+        // `every_limit_changes_the_params_hash` fails if a field is added here
+        // and forgotten.
         format!(
-            "max_observations={};max_value_bytes={};max_parser_memory_bytes={}",
-            limits.max_observations, limits.max_value_bytes, limits.max_parser_memory_bytes
+            "max_observations={};max_value_bytes={};max_parser_memory_bytes={};             max_text_chunk_bytes={};max_text_bytes={}",
+            limits.max_observations,
+            limits.max_value_bytes,
+            limits.max_parser_memory_bytes,
+            limits.max_text_chunk_bytes,
+            limits.max_text_bytes
         )
         .as_bytes(),
     )
@@ -627,6 +641,76 @@ mod tests {
         }
     }
 
+    /// `params_hash` lists the limit fields by hand, so a new limit that is
+    /// added to `Limits` and forgotten here would make two configurations that
+    /// produce different observations share a hash. A rerun under the new
+    /// limits would then look like a repeat of the old run and supersede
+    /// nothing, leaving both readings live and the case double-counting.
+    ///
+    /// The destructuring below is the real guard, and it is a compile error
+    /// rather than a test failure: adding a field to `Limits` stops this file
+    /// building until someone looks at it. The assertions then check that each
+    /// field actually reaches the hash.
+    #[test]
+    fn every_limit_changes_the_params_hash() {
+        let base = Limits::default();
+
+        let Limits {
+            max_observations,
+            max_value_bytes,
+            max_parser_memory_bytes,
+            max_text_chunk_bytes,
+            max_text_bytes,
+        } = base;
+
+        let baseline = params_hash(&base);
+
+        for (name, changed) in [
+            (
+                "max_observations",
+                Limits {
+                    max_observations: max_observations - 1,
+                    ..base
+                },
+            ),
+            (
+                "max_value_bytes",
+                Limits {
+                    max_value_bytes: max_value_bytes - 1,
+                    ..base
+                },
+            ),
+            (
+                "max_parser_memory_bytes",
+                Limits {
+                    max_parser_memory_bytes: max_parser_memory_bytes - 1,
+                    ..base
+                },
+            ),
+            (
+                "max_text_chunk_bytes",
+                Limits {
+                    max_text_chunk_bytes: max_text_chunk_bytes - 1,
+                    ..base
+                },
+            ),
+            (
+                "max_text_bytes",
+                Limits {
+                    max_text_bytes: max_text_bytes - 1,
+                    ..base
+                },
+            ),
+        ] {
+            assert_ne!(
+                params_hash(&changed),
+                baseline,
+                "{name} does not reach params_hash, so a rerun that changes it \
+                 would supersede nothing"
+            );
+        }
+    }
+
     /// The whole trail in one assertion set: observations exist, each one is
     /// reachable from the artifact through a derivation edge, and the run says
     /// it succeeded.
@@ -639,8 +723,8 @@ mod tests {
 
         assert_eq!(
             out.observation_ids.len(),
-            6,
-            "title, meta, 2 links, 1 domain, 1 email"
+            7,
+            "title, meta, 2 links, 1 domain, 1 email, 1 page.text"
         );
         assert_eq!(h.run_status(&out.run_id), ("succeeded".into(), None));
         assert_eq!(out.skipped_oversize, 0);
@@ -663,7 +747,7 @@ mod tests {
                 AND run_id = '{}'",
             out.run_id
         ));
-        assert_eq!(edges, 6);
+        assert_eq!(edges, 7);
 
         // And the locator is a real range in a real artifact.
         let locator: String = h
@@ -692,8 +776,8 @@ mod tests {
         let first = h.extract(&artifact_id).unwrap();
         let second = h.extract(&artifact_id).unwrap();
 
-        assert_eq!(second.superseded, 6);
-        assert_eq!(h.count("SELECT count(*) FROM observation"), 12);
+        assert_eq!(second.superseded, 7);
+        assert_eq!(h.count("SELECT count(*) FROM observation"), 14);
 
         // The old rows are still there, untouched, and each points at the new
         // row that replaced it.
@@ -712,7 +796,7 @@ mod tests {
 
         // A third run supersedes the second, not the first again.
         let third = h.extract(&artifact_id).unwrap();
-        assert_eq!(third.superseded, 6);
+        assert_eq!(third.superseded, 7);
 
         h.cleanup();
     }
@@ -737,7 +821,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(second.superseded, 6);
+        assert_eq!(second.superseded, 7);
         assert!(second.skipped_oversize > 0);
 
         let withdrawn =
@@ -864,7 +948,7 @@ mod tests {
 
         assert_eq!(action, "evidence.extracted");
         assert_eq!(subject, out.artifact_id);
-        assert!(payload.contains("\"observations\":6"), "{payload}");
+        assert!(payload.contains("\"observations\":7"), "{payload}");
 
         assert!(matches!(
             kokin_store::verify_chain(&h.conn).unwrap(),

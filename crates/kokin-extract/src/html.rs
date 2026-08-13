@@ -38,6 +38,8 @@ pub const KIND_TITLE: &str = "page.title";
 pub const KIND_LINK: &str = "link.href";
 pub const KIND_EMAIL: &str = "email.address";
 pub const KIND_DOMAIN: &str = "domain.mention";
+/// The visible prose of the document, in chunks. See [`Limits::max_text_chunk_bytes`].
+pub const KIND_TEXT: &str = "page.text";
 /// Meta tags are `meta:<key>`, where key is the `property` or `name` attribute.
 pub const KIND_META_PREFIX: &str = "meta:";
 
@@ -61,6 +63,35 @@ pub struct Limits {
     /// CDN rewriting its customers' pages and wrong for us: a single
     /// unterminated tag would otherwise buffer the entire document.
     pub max_parser_memory_bytes: usize,
+    /// Roughly how much prose goes into one `page.text` observation.
+    ///
+    /// A whole page cannot be one observation: it would exceed
+    /// [`Limits::max_value_bytes`] on anything substantial, and a locator
+    /// spanning the entire document would route a search hit to "somewhere in
+    /// here", which is not a route at all. Chunking gives each piece of prose
+    /// its own byte range.
+    ///
+    /// The trade-off is that a phrase straddling a chunk boundary is not
+    /// findable as a phrase. Larger chunks make that rarer and locators
+    /// coarser. 4 KiB is a few paragraphs.
+    pub max_text_chunk_bytes: usize,
+    /// Total prose indexed from one document, in bytes.
+    ///
+    /// Needed because prose is the one thing here whose volume is unbounded by
+    /// the document's *structure*: half a gigabyte of paragraphs holds no more
+    /// links or titles than a small page, but it holds half a gigabyte of
+    /// text. Without this, chunking it would produce hundreds of thousands of
+    /// observations and trip [`Limits::max_observations`], and a document that
+    /// used to be read would start being refused outright.
+    ///
+    /// Prose past this point is **counted and reported**, never dropped in
+    /// silence — see [`Extraction::text_truncated_bytes`]. It is truncated
+    /// rather than refused, unlike the observation cap, because the two
+    /// failures are not alike: too many discrete facts means a truncated fact
+    /// list that reads as complete, whereas prose is a search aid, and
+    /// refusing the document over it would also throw away every link, title
+    /// and address in it.
+    pub max_text_bytes: usize,
 }
 
 impl Default for Limits {
@@ -69,6 +100,10 @@ impl Default for Limits {
             max_observations: 10_000,
             max_value_bytes: 8 * 1024,
             max_parser_memory_bytes: 4 * 1024 * 1024,
+            max_text_chunk_bytes: 4 * 1024,
+            // At 4 KiB chunks this is at most ~1024 text observations, leaving
+            // most of the observation cap for the document's actual structure.
+            max_text_bytes: 4 * 1024 * 1024,
         }
     }
 }
@@ -114,20 +149,34 @@ pub struct Extraction {
     /// and the caller, so "this page had more in it" is always visible even
     /// though the value itself is not stored.
     pub skipped_oversize: usize,
+    /// Bytes of prose past [`Limits::max_text_bytes`] that were not indexed.
+    ///
+    /// Non-zero means this document holds text that search cannot find. That
+    /// is the most dangerous kind of gap in an investigation tool - a search
+    /// returns nothing and the analyst concludes the term is not there - so it
+    /// is reported to the caller and written to the audit log rather than
+    /// being a silent property of a large page.
+    pub text_truncated_bytes: usize,
 }
 
 #[derive(Default)]
 struct State {
     observations: Vec<RawObservation>,
     skipped_oversize: usize,
-    title: Option<TitleBuffer>,
+    title: Option<TextSpan>,
     title_emitted: bool,
+    /// The text node currently arriving, still in source form.
+    text_node: Option<TextSpan>,
+    /// Decoded prose accumulated across text nodes, waiting to be emitted.
+    pending_text: Option<TextSpan>,
+    text_indexed_bytes: usize,
+    text_truncated_bytes: usize,
     limit_hit: bool,
 }
 
-/// A title's text can arrive in several chunks, so it is accumulated and
-/// emitted when the parser says the text node has ended.
-struct TitleBuffer {
+/// Text that arrives in several chunks, accumulated with the byte range it
+/// spans in the artifact.
+struct TextSpan {
     text: String,
     start: usize,
     end: usize,
@@ -211,6 +260,18 @@ impl HtmlExtractor {
                     on_anchor(&state, &limits, el);
                     check_limit(&state)
                 }
+            }))
+            // `*` rather than `body`, because a document with no explicit
+            // <body> tag matches nothing at all for that selector - and saved
+            // fragments routinely have no <body>. `lol_html` fires a text
+            // handler once per chunk however deeply the text is nested, so
+            // this does not double-count text inside nested elements.
+            .append_element_content_handler(text!("*", {
+                let state = Rc::clone(&state);
+                move |chunk: &mut TextChunk<'_>| {
+                    on_body_text(&state, &limits, chunk);
+                    check_limit(&state)
+                }
             }));
 
         Self {
@@ -242,6 +303,11 @@ impl HtmlExtractor {
         }
 
         let mut state = state.borrow_mut();
+
+        // The last chunk of prose is usually shorter than the chunk size, so
+        // without this the end of every document is silently dropped.
+        emit_pending_text(&mut state, &limits);
+
         if state.limit_hit {
             return Err(ExtractError::TooManyObservations {
                 limit: limits.max_observations,
@@ -251,6 +317,7 @@ impl HtmlExtractor {
         Ok(Extraction {
             observations: std::mem::take(&mut state.observations),
             skipped_oversize: state.skipped_oversize,
+            text_truncated_bytes: state.text_truncated_bytes,
         })
     }
 
@@ -334,7 +401,7 @@ fn on_title_text(state: &Rc<RefCell<State>>, limits: &Limits, chunk: &mut TextCh
             buffer.end = span.end;
         }
         None => {
-            state.title = Some(TitleBuffer {
+            state.title = Some(TextSpan {
                 text: text.to_string(),
                 start: span.start,
                 end: span.end,
@@ -358,6 +425,122 @@ fn on_title_text(state: &Rc<RefCell<State>>, limits: &Limits, chunk: &mut TextCh
             state.push(limits, KIND_TITLE.to_string(), value, locator);
         }
     }
+}
+
+/// Accumulate the document's visible prose and emit it in chunks.
+///
+/// Only [`TextType::Data`] is prose. A script body arrives as `ScriptData` and
+/// a stylesheet as `RawText`; indexing either would fill a case's search index
+/// with source code nobody is looking for, and would make every page match
+/// terms like `function` or `color`. A `<title>` arrives as `RCData` and is
+/// already recorded as `page.title`, so taking it here as well would index it
+/// twice and let one page outrank another on nothing but its title.
+fn on_body_text(state: &Rc<RefCell<State>>, limits: &Limits, chunk: &mut TextChunk<'_>) {
+    if chunk.text_type() != TextType::Data {
+        return;
+    }
+
+    let span = chunk.source_location().bytes();
+    let mut state = state.borrow_mut();
+
+    match state.text_node.as_mut() {
+        Some(buffer) => {
+            // Bounded for the same reason the title buffer is: one enormous
+            // text node must not be accumulated in full before it is cut up.
+            if buffer.text.len() <= limits.max_text_chunk_bytes {
+                buffer.text.push_str(chunk.as_str());
+            }
+            buffer.end = span.end;
+        }
+        None => {
+            state.text_node = Some(TextSpan {
+                text: chunk.as_str().to_string(),
+                start: span.start,
+                end: span.end,
+            });
+        }
+    }
+
+    if !chunk.last_in_text_node() {
+        return;
+    }
+
+    // Decoded only once the whole node has arrived, for the reason given on
+    // `decode`: an entity can straddle a write() boundary.
+    let Some(node) = state.text_node.take() else {
+        return;
+    };
+    let text = collapse_whitespace(&decode(&node.text));
+    if text.is_empty() {
+        return;
+    }
+
+    // Past the budget the prose is counted and discarded. Flushing whatever
+    // is pending first means the boundary falls on a chunk edge rather than
+    // mid-sentence.
+    if state.text_indexed_bytes + text.len() > limits.max_text_bytes {
+        state.text_truncated_bytes += text.len();
+        emit_pending_text(&mut state, limits);
+        return;
+    }
+    state.text_indexed_bytes += text.len();
+
+    match state.pending_text.as_mut() {
+        Some(pending) => {
+            // A space between text nodes, always. Without one, `<p>A</p><p>B</p>`
+            // becomes "AB" and invents a word the page does not contain, which
+            // is a worse error than the one this costs: `<b>Hold</b><i>ings</i>`
+            // becomes "Hold ings". Separate blocks are common and mid-word
+            // formatting is rare.
+            pending.text.push(' ');
+            pending.text.push_str(&text);
+            pending.end = node.end;
+        }
+        None => {
+            state.pending_text = Some(TextSpan {
+                text,
+                start: node.start,
+                end: node.end,
+            });
+        }
+    }
+
+    let full = state
+        .pending_text
+        .as_ref()
+        .is_some_and(|p| p.text.len() >= limits.max_text_chunk_bytes);
+    if full {
+        emit_pending_text(&mut state, limits);
+    }
+}
+
+/// Emit whatever prose has accumulated, if any.
+fn emit_pending_text(state: &mut State, limits: &Limits) {
+    let Some(pending) = state.pending_text.take() else {
+        return;
+    };
+    let locator = Locator {
+        selector: "*",
+        start: pending.start,
+        end: pending.end,
+    };
+    state.push(limits, KIND_TEXT.to_string(), pending.text, locator);
+}
+
+/// Collapse runs of whitespace to single spaces and trim.
+///
+/// HTML prose is full of the indentation of the document that carries it.
+/// Storing that verbatim would spend most of a chunk's byte budget on layout
+/// and would make phrase matching depend on how the page was formatted.
+fn collapse_whitespace(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for word in text.split_whitespace() {
+        if !out.is_empty() {
+            out.push(' ');
+        }
+        out.push_str(word);
+    }
+    out
 }
 
 /// Turn source text into the value it represents.

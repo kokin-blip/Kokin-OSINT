@@ -9,7 +9,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use kokin_extract::html::{
-    Extraction, HtmlExtractor, Limits, KIND_DOMAIN, KIND_EMAIL, KIND_LINK, KIND_TITLE,
+    Extraction, HtmlExtractor, Limits, KIND_DOMAIN, KIND_EMAIL, KIND_LINK, KIND_TEXT, KIND_TITLE,
 };
 use kokin_extract::ExtractError;
 use std::path::PathBuf;
@@ -445,4 +445,135 @@ fn relative_links_are_recorded_but_produce_no_domain() {
         vec!["/about", "../up", "https://absolute.example/x"]
     );
     assert_eq!(values(&out, KIND_DOMAIN), vec!["absolute.example"]);
+}
+
+// ---------------------------------------------------------------------------
+// Page text (increment 10).
+// ---------------------------------------------------------------------------
+
+/// Script and stylesheet bodies are not prose. Indexing them would make every
+/// page in a case match `function`, `var`, or `color`, and would bury the
+/// document's actual words under its machinery.
+#[test]
+fn script_and_style_bodies_are_not_indexed_as_prose() {
+    let out = extract(
+        "<html><head><title>T</title><style>.a{color:red}</style></head>\
+         <body><p>Visible prose here</p>\
+         <script>var apiKey = 'sk-not-prose';</script></body></html>",
+    )
+    .unwrap();
+
+    let prose = values(&out, KIND_TEXT).join(" ");
+    assert!(prose.contains("Visible prose here"), "{prose:?}");
+    assert!(
+        !prose.contains("apiKey"),
+        "a script body was indexed: {prose:?}"
+    );
+    assert!(
+        !prose.contains("sk-not-prose"),
+        "a script body was indexed: {prose:?}"
+    );
+    assert!(
+        !prose.contains("color"),
+        "a stylesheet was indexed: {prose:?}"
+    );
+    // The title has its own kind already; taking it twice would let a page
+    // outrank another on nothing but its title.
+    assert!(!prose.contains('T') || !prose.starts_with('T'), "{prose:?}");
+}
+
+/// `<p>A</p><p>B</p>` must not become "AB", which is a word the page does not
+/// contain. The cost of the fix is that `<b>Hold</b><i>ings</i>` becomes
+/// "Hold ings"; separate blocks are common and mid-word formatting is rare.
+#[test]
+fn text_from_separate_blocks_does_not_run_together() {
+    let out = extract("<html><body><p>Acme</p><p>Holdings</p></body></html>").unwrap();
+    let prose = values(&out, KIND_TEXT).join(" ");
+
+    assert!(prose.contains("Acme Holdings"), "{prose:?}");
+    assert!(
+        !prose.contains("AcmeHoldings"),
+        "two blocks ran together: {prose:?}"
+    );
+}
+
+/// Inline formatting inside a sentence must not break the sentence, or a
+/// phrase search for the name as written on the page fails.
+#[test]
+fn inline_markup_does_not_fragment_a_sentence() {
+    let out =
+        extract("<html><body><p>the <b>Acme</b> <i>Holdings</i> group</p></body></html>").unwrap();
+    let prose = values(&out, KIND_TEXT).join(" ");
+
+    assert!(prose.contains("the Acme Holdings group"), "{prose:?}");
+}
+
+/// Indentation is the document's layout, not its content. Storing it verbatim
+/// would spend the chunk budget on whitespace and make phrase matching depend
+/// on how the page happened to be formatted.
+#[test]
+fn layout_whitespace_is_collapsed() {
+    let out = extract("<html><body><p>\n\n    Acme\t\tHoldings\n  </p></body></html>").unwrap();
+    assert_eq!(values(&out, KIND_TEXT), vec!["Acme Holdings"]);
+}
+
+/// A document with no `<body>` tag is ordinary, not exotic — saved fragments
+/// routinely have none. Selecting on `body` finds nothing in one, which is why
+/// the handler selects on `*`.
+#[test]
+fn a_document_with_no_body_tag_still_yields_its_prose() {
+    let out = extract("<p>bare paragraph</p>").unwrap();
+    assert_eq!(values(&out, KIND_TEXT), vec!["bare paragraph"]);
+}
+
+/// Prose past the budget is the most dangerous kind of gap: search returns
+/// nothing and the analyst concludes the term is not in the case. It must be
+/// counted and reported, and the document must still be read rather than
+/// refused for being wordy.
+#[test]
+fn prose_past_the_budget_is_reported_rather_than_dropped_in_silence() {
+    let filler = "lorem ipsum dolor sit amet ".repeat(400); // ~10 KiB
+    let html = format!(
+        "<html><head><title>Wordy</title></head><body><p>{filler}</p>\
+         <a href=\"https://end.example/\">end</a></body></html>"
+    );
+
+    let out = extract_with(
+        &html,
+        Limits {
+            max_text_bytes: 2 * 1024,
+            ..Limits::default()
+        },
+    )
+    .unwrap();
+
+    assert!(
+        out.text_truncated_bytes > 0,
+        "prose was dropped without saying so"
+    );
+    // And the document is still read: refusing it over its wordiness would
+    // throw away every link and title in it too.
+    assert_eq!(values(&out, KIND_TITLE), vec!["Wordy"]);
+    assert_eq!(values(&out, KIND_LINK), vec!["https://end.example/"]);
+    assert!(
+        !values(&out, KIND_TEXT).is_empty(),
+        "no prose at all was kept"
+    );
+}
+
+/// The budget exists so that prose cannot exhaust the observation cap. A
+/// document of pure text must still be readable rather than refused.
+#[test]
+fn a_document_that_is_all_prose_is_read_not_refused() {
+    let filler = "lorem ipsum dolor sit amet ".repeat(200_000); // ~5.4 MB
+    let html = format!("<html><body><p>{filler}</p></body></html>");
+
+    let out = extract(&html).unwrap();
+
+    assert!(out.text_truncated_bytes > 0);
+    assert!(
+        out.observations.len() <= Limits::default().max_observations,
+        "prose alone exhausted the observation cap: {}",
+        out.observations.len()
+    );
 }

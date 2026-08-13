@@ -27,7 +27,11 @@ const PAGE: &str = concat!(
     "<html><head><title>Acme Holdings</title></head>\n",
     "<body><a href=\"mailto:press@ACME.example\">Press</a>\n",
     "<a href=\"mailto:sales@acme.example\">Sales</a>\n",
-    "<a href=\"https://acme.example/about\">About</a></body></html>"
+    "<a href=\"https://acme.example/about\">About</a>
+",
+    "<p>Registered in the Cayman Islands under reference QX-7741.</p>
+",
+    "<script>var noise = 'not prose';</script></body></html>"
 );
 
 struct Case {
@@ -687,5 +691,52 @@ fn a_snippet_shows_why_a_result_matched() {
         hit.snippet.contains("[acme]"),
         "the snippet does not mark the match: {:?}",
         hit.snippet
+    );
+}
+
+/// The gap increment 9 left open: until now a case could only be searched for
+/// what it had *recorded about* a document, never for what the document says.
+#[test]
+fn the_words_on_the_page_are_findable() {
+    let case = Case::new("prose");
+
+    let hits = case.find("cayman");
+    assert!(
+        hits.iter().any(|h| h.facet == "page.text"),
+        "the page's own prose is not searchable: {:?}",
+        hits.iter()
+            .map(|h| (&h.facet, &h.title))
+            .collect::<Vec<_>>()
+    );
+
+    // As a phrase, not as two loose words that happen to co-occur.
+    assert!(!case.find("\"Cayman Islands\"").is_empty());
+    assert!(
+        !case.find("QX-7741").is_empty(),
+        "a reference code was not findable"
+    );
+
+    // And a hit in prose routes back to a real observation, like any other.
+    let hit = hits.iter().find(|h| h.facet == "page.text").unwrap();
+    let locator: String = case
+        .conn
+        .query_row(
+            "SELECT locator_json FROM observation WHERE id = ?1",
+            [&hit.subject_id],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert!(locator.contains("html_byte_range"), "{locator}");
+}
+
+/// A script body is not prose. If it were indexed, every page carrying a
+/// tracker would match terms like `function`, and the case would answer
+/// searches with its own machinery.
+#[test]
+fn script_bodies_do_not_become_searchable_text() {
+    let case = Case::new("noscript");
+    assert!(
+        case.find("noise").is_empty(),
+        "a script body reached the search index"
     );
 }
