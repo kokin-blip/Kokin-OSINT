@@ -23,6 +23,16 @@
 //! as a quality — and should not show it next to a confidence dimension where
 //! the two could be read as the same kind of thing.
 //!
+//! # An empty result list is not a finding
+//!
+//! [`search`] answers with what the index holds, and the index holds only what
+//! some transform managed to read. A case with an unopened PDF in it will
+//! answer "no results" to a query the PDF contains, in exactly the same words
+//! it uses for a query nothing in the world matches — and those are opposite
+//! facts. [`coverage`] is how a caller tells them apart, and anything rendering
+//! a result list is expected to render it too. See [`coverage::coverage`] for
+//! why the figure is necessarily about the case rather than about the query.
+//!
 //! # Searches are not written to the audit chain
 //!
 //! Deliberately. A record of every query an analyst typed is a record of every
@@ -33,8 +43,10 @@
 use rusqlite::types::Value;
 use rusqlite::Connection;
 
+pub mod coverage;
 pub mod query;
 
+pub use coverage::{ArtifactCoverage, Coverage, CoverageState, Gap};
 pub use query::Query;
 
 /// Errors this crate can produce.

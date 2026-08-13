@@ -42,6 +42,11 @@ pub use html::{Extraction, HtmlExtractor, Limits, Locator, RawObservation};
 pub const TRANSFORM_HTML: &str = "extract.html";
 pub const TRANSFORM_VERSION: &str = "1";
 
+/// Stable codes for what a successful run did not cover, so gaps can be counted
+/// and grouped rather than only read one at a time.
+pub const GAP_TEXT_TRUNCATED: &str = "text_truncated";
+pub const GAP_VALUE_OVERSIZE: &str = "value_oversize";
+
 /// Media types this extractor will read.
 ///
 /// Checked rather than assumed: running an HTML parser over a PDF produces
@@ -122,6 +127,18 @@ pub fn extract_artifact(
     let params = params_hash(&limits);
 
     with_run(conn, TRANSFORM_HTML, &params, |conn, run_id| {
+        // Before anything can fail, and outside the transaction `record` opens,
+        // because this must survive every path out of here. A run that refused
+        // a PDF, or blew a limit, or found an empty document, produces no
+        // derivation edge — and without a row here those runs are
+        // indistinguishable from an artifact nobody has looked at yet. One of
+        // those is finished work and the other is a job still to do.
+        conn.execute(
+            "INSERT OR IGNORE INTO run_subject (run_id, subject_kind, subject_id)
+             VALUES (?1, 'artifact', ?2)",
+            rusqlite::params![run_id, artifact_id],
+        )?;
+
         let blob = load_readable_blob(conn, artifact_id)?;
         let extraction = parse_blob(blobs, cmk, &blob, limits)?;
         record(conn, artifact_id, run_id, &extraction)
@@ -339,6 +356,7 @@ fn record(
     }
 
     let superseded = supersede_earlier_runs(&tx, artifact_id, run_id, &by_position, &now)?;
+    record_coverage_gaps(&tx, artifact_id, run_id, extraction, &now)?;
 
     kokin_store::audit::append(
         &tx,
@@ -412,6 +430,78 @@ fn supersede_earlier_runs(
     }
 
     Ok(earlier.len())
+}
+
+/// Write down what this run knows it did not read.
+///
+/// Both of these were already counted and already returned to the caller, and
+/// that was not enough: a number handed back from a function call is seen once,
+/// by whoever made the call, at the moment they made it. An analyst searching
+/// the case a week later asks a different process a different question, and the
+/// only honest answer comes from a row. This is the whole increment in one
+/// function — the gaps were never unknown, they were just unreachable.
+///
+/// A run with nothing to say here writes nothing. The absence of a gap row is
+/// the claim that the run covered its input, which is why it must never be
+/// written by default and never written speculatively.
+fn record_coverage_gaps(
+    tx: &rusqlite::Transaction<'_>,
+    artifact_id: &str,
+    run_id: &str,
+    extraction: &Extraction,
+    now: &str,
+) -> Result<()> {
+    // (kind, detail, magnitude, unit) — units differ because the two gaps are
+    // different shapes, and reporting a count of values as a quantity of bytes
+    // would be worse than reporting nothing.
+    let mut gaps: Vec<(&str, String, i64, &str)> = Vec::new();
+
+    if extraction.text_truncated_bytes > 0 {
+        gaps.push((
+            GAP_TEXT_TRUNCATED,
+            format!(
+                "{} bytes of prose past this document's text budget were not \
+                 indexed, so a search of this case will not find them",
+                extraction.text_truncated_bytes
+            ),
+            extraction.text_truncated_bytes as i64,
+            "bytes",
+        ));
+    }
+
+    if extraction.skipped_oversize > 0 {
+        gaps.push((
+            GAP_VALUE_OVERSIZE,
+            format!(
+                "{} value(s) in this document were longer than the extractor \
+                 records and were not kept",
+                extraction.skipped_oversize
+            ),
+            extraction.skipped_oversize as i64,
+            "values",
+        ));
+    }
+
+    for (gap_kind, detail, magnitude, unit) in gaps {
+        tx.execute(
+            "INSERT INTO coverage_gap
+                (id, run_id, subject_kind, subject_id, gap_kind, detail,
+                 magnitude, unit, recorded_utc)
+             VALUES (?1, ?2, 'artifact', ?3, ?4, ?5, ?6, ?7, ?8)",
+            rusqlite::params![
+                new_id()?,
+                run_id,
+                artifact_id,
+                gap_kind,
+                detail,
+                magnitude,
+                unit,
+                now
+            ],
+        )?;
+    }
+
+    Ok(())
 }
 
 /// Open a run, do the work, and close the run either way.

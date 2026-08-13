@@ -818,6 +818,112 @@ const MIGRATIONS: &[&str] = &[
     SELECT 'relationship', r.id, r.kind, r.kind, r.kind, 0, r.created_utc
       FROM relationship r;
     "#,
+    // 6: coverage. What the case knows it has not read.
+    //
+    // Increment 10 gave documents a prose budget and, past it, truncated. The
+    // truncation was counted and audited and then went nowhere an analyst
+    // looks, which left the case able to answer a search with less than it
+    // holds while looking like it answered with all of it. That is the failure
+    // this product exists to prevent, so it gets schema rather than a log line.
+    //
+    // Two tables, because two different things were missing.
+    r#"
+    -- What a run was ABOUT.
+    --
+    -- `derivation` records what a run PRODUCED, which is not the same question
+    -- and cannot answer this one: a run that produced nothing writes no
+    -- derivation edge, and "this artifact was read and yielded nothing" is
+    -- precisely the state that must not be confused with "this artifact was
+    -- never read". Without this table those two are indistinguishable, and the
+    -- second one is a job still to do while the first one is finished work.
+    --
+    -- Written for failed runs too. An artifact the extractor refused - a PDF,
+    -- today - is a document this case cannot answer questions about, and that
+    -- is worth more to an analyst than most things it can.
+    CREATE TABLE run_subject (
+        run_id       TEXT NOT NULL REFERENCES transform_run(id),
+        subject_kind TEXT NOT NULL,
+        subject_id   TEXT NOT NULL,
+        PRIMARY KEY (run_id, subject_kind, subject_id)
+    ) STRICT;
+
+    CREATE INDEX run_subject_subject ON run_subject(subject_kind, subject_id);
+
+    -- What a run that SUCCEEDED knows it did not cover.
+    --
+    -- Only partial success needs a row here. A run that failed outright already
+    -- says so in transform_run.status and error_code, and duplicating that into
+    -- a second table would create two places to disagree about the same run.
+    -- The gap this table exists for is the quiet one: the run reports success,
+    -- the observations look complete, and some of the document was never read.
+    CREATE TABLE coverage_gap (
+        id           TEXT PRIMARY KEY NOT NULL,
+        run_id       TEXT NOT NULL REFERENCES transform_run(id),
+        -- What is incomplete. 'artifact' today; unconstrained for the same
+        -- reason as evidence_link.subject_kind, since SQLite cannot ALTER a
+        -- CHECK and the next thing with a coverage story is not known yet.
+        subject_kind TEXT NOT NULL,
+        subject_id   TEXT NOT NULL,
+        -- A stable code, because these are counted and grouped:
+        -- 'text_truncated' today.
+        gap_kind     TEXT NOT NULL,
+        -- Said in words, for a human reading one row rather than a chart.
+        detail       TEXT NOT NULL,
+        -- How much was missed, in `unit`. NULL when the run genuinely does not
+        -- know, which is a real answer and not a zero: a parser that stopped
+        -- early cannot report how much was left.
+        magnitude    INTEGER,
+        unit         TEXT,
+        recorded_utc TEXT NOT NULL,
+        -- A magnitude without a unit gets read as whatever the reader expects,
+        -- and the reader expects the smaller number.
+        CHECK ((magnitude IS NULL) = (unit IS NULL))
+    ) STRICT;
+
+    CREATE INDEX coverage_gap_subject ON coverage_gap(subject_kind, subject_id);
+    CREATE INDEX coverage_gap_run ON coverage_gap(run_id);
+
+    -- L1 lineage, so append-only on the same grounds as derivation: an account
+    -- of what a run did that can be edited afterwards is not an account.
+    CREATE TRIGGER run_subject_is_append_only BEFORE UPDATE ON run_subject
+    BEGIN
+        SELECT RAISE(ABORT, 'run_subject is append-only: lineage cannot be edited');
+    END;
+
+    CREATE TRIGGER run_subject_no_delete BEFORE DELETE ON run_subject
+    BEGIN
+        SELECT RAISE(ABORT, 'run_subject is append-only: lineage cannot be deleted');
+    END;
+
+    CREATE TRIGGER coverage_gap_is_append_only BEFORE UPDATE ON coverage_gap
+    BEGIN
+        SELECT RAISE(ABORT, 'coverage_gap is append-only: a gap is superseded by a later run, not edited');
+    END;
+
+    CREATE TRIGGER coverage_gap_no_delete BEFORE DELETE ON coverage_gap
+    BEGIN
+        SELECT RAISE(ABORT, 'coverage_gap is append-only: deleting a gap is how a case forgets what it cannot answer');
+    END;
+
+    -- ---------------------------------------------------------------------
+    -- Backfill.
+    --
+    -- Every run that produced anything can be recovered from its derivation
+    -- edges. Runs that produced nothing cannot be - they left no trace tying
+    -- them to an input, which is the whole reason this table now exists - so an
+    -- upgraded case will under-report attempts until its artifacts are
+    -- re-extracted. Stated in docs/increments/011-coverage.md rather than
+    -- papered over, because the direction of the error matters: it reports work
+    -- as still to do, never as already done.
+    --
+    -- coverage_gap gets no backfill at all. Truncation was previously recorded
+    -- only in an audit payload, which carries no run_id, and a gap that cannot
+    -- name the run accountable for it is not evidence of anything.
+    -- ---------------------------------------------------------------------
+    INSERT INTO run_subject (run_id, subject_kind, subject_id)
+    SELECT DISTINCT d.run_id, d.input_kind, d.input_id
+      FROM derivation d;
+    "#,
 ];
 
 /// The schema version this build writes and understands.
@@ -1093,13 +1199,9 @@ mod tests {
     fn upgrading_a_populated_case_makes_its_existing_rows_searchable() {
         let conn = memory_db();
 
-        assert_eq!(
-            target_version(),
-            5,
-            "this test pins the v4 -> v5 upgrade; a later migration needs its own"
-        );
-
         // A case as an older build left it: schema at 4, rows already in it.
+        // `migrate` then takes it all the way to current, which is what an
+        // upgrade actually does; migration 5's backfill is what is under test.
         migrate_to(&conn, 4);
         seed_l2(&conn);
         conn.execute_batch(
@@ -1169,6 +1271,92 @@ mod tests {
             superseded, 1,
             "a superseded observation was backfilled as current"
         );
+    }
+
+    /// Migration 6 recovers what a run was about from the edges it produced.
+    ///
+    /// The assertion that matters most here is the *negative* one. A run that
+    /// produced nothing left no derivation edge, so the backfill cannot see it,
+    /// and an upgraded case will therefore report that artifact as never
+    /// attempted. That is a real inaccuracy and it is pinned deliberately: the
+    /// error points at more work to do, never at work already done, and a later
+    /// change that quietly reversed that direction would be much worse than the
+    /// gap itself.
+    #[test]
+    fn upgrading_a_case_recovers_which_artifacts_a_run_had_read() {
+        let conn = memory_db();
+
+        assert_eq!(
+            target_version(),
+            6,
+            "this test pins the v5 -> v6 upgrade; a later migration needs its own"
+        );
+
+        migrate_to(&conn, 5);
+        seed_l0(&conn);
+        conn.execute_batch(
+            "INSERT INTO artifact VALUES ('a2','hash1','application/pdf',10,'2026-08-12T00:00:00Z');
+             INSERT INTO artifact VALUES ('a3','hash1','text/html',10,'2026-08-12T00:00:00Z');
+             -- r2 read a1 and produced an observation, so it is recoverable.
+             INSERT INTO transform_run VALUES ('r2','extract.html','1','abc','p1','2026-08-12T00:01:00Z','2026-08-12T00:01:01Z','succeeded',NULL,NULL);
+             INSERT INTO observation VALUES ('o9','a1','r2','page.title','Acme','{}','2026-08-12T00:01:00Z');
+             INSERT INTO derivation VALUES ('d9','r2','artifact','a1','observation','o9');
+             -- r3 read a3 and found nothing in it. No edge, so no trace.
+             INSERT INTO transform_run VALUES ('r3','extract.html','1','abc','p1','2026-08-12T00:02:00Z','2026-08-12T00:02:01Z','succeeded',NULL,NULL);",
+        )
+        .unwrap();
+
+        migrate(&conn).unwrap();
+
+        let subjects: Vec<String> = conn
+            .prepare("SELECT run_id || ':' || subject_id FROM run_subject ORDER BY 1")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<std::result::Result<_, _>>()
+            .unwrap();
+
+        assert_eq!(
+            subjects,
+            vec!["r1:c1".to_string(), "r2:a1".to_string()],
+            "the backfill recovered the wrong set of run subjects"
+        );
+
+        // The named limitation, asserted rather than assumed. a3 was read and
+        // is about to be reported as unread.
+        assert!(
+            !subjects.iter().any(|s| s.ends_with(":a3")),
+            "a run that produced nothing became recoverable, which means the \
+             backfill found a trace this test believes does not exist - good \
+             news, but docs/increments/011-coverage.md now says something false"
+        );
+
+        // Both new tables are lineage, so both refuse to be rewritten.
+        conn.execute_batch(
+            "INSERT INTO coverage_gap
+             VALUES ('g1','r2','artifact','a1','text_truncated','4 KiB of prose',4096,'bytes','2026-08-12T00:01:01Z')",
+        )
+        .unwrap();
+        for attempt in [
+            "UPDATE run_subject SET subject_id = 'a2' WHERE run_id = 'r2'",
+            "DELETE FROM run_subject WHERE run_id = 'r2'",
+            "UPDATE coverage_gap SET magnitude = 0 WHERE id = 'g1'",
+            "DELETE FROM coverage_gap WHERE id = 'g1'",
+        ] {
+            assert!(
+                conn.execute_batch(attempt).is_err(),
+                "lineage accepted `{attempt}`"
+            );
+        }
+
+        // A magnitude with no unit is a number the reader supplies a unit for,
+        // and they supply the flattering one.
+        assert!(conn
+            .execute_batch(
+                "INSERT INTO coverage_gap
+                 VALUES ('g2','r2','artifact','a1','text_truncated','some',4096,NULL,'2026-08-12T00:01:01Z')"
+            )
+            .is_err());
     }
 
     /// ADR-0006's single L2 constraint, tested by trying to break it.
