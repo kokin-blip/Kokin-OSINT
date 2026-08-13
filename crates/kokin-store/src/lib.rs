@@ -15,6 +15,7 @@
 //! application-level field encryption was rejected.
 
 pub mod audit;
+pub mod evidence;
 pub mod header;
 pub mod migrations;
 
@@ -23,6 +24,7 @@ use std::path::Path;
 use rusqlite::Connection;
 
 pub use audit::{append as append_audit_event, verify_chain, ChainStatus, NewAuditEvent};
+pub use evidence::{blob_access, BlobAccess};
 pub use header::{
     create_header, read_header, rotate_passphrase, unlock_with_passphrase,
     unlock_with_recovery_key, write_header, CaseHeader, CasePaths, NewCase,
@@ -93,6 +95,46 @@ pub type Result<T> = std::result::Result<T, StoreError>;
 /// existing cases. Any change here requires a migration path.
 const CIPHER_PAGE_SIZE: i64 = 4096;
 
+/// An open case: its database, where it lives, and the key that unlocks it.
+///
+/// # Why the key is handed back
+///
+/// The database is only half of a case. Blob contents are encrypted with the
+/// case master key, and blob *filenames* are keyed with it too
+/// ([`kokin_blob::storage_name`]) so that a directory listing does not leak
+/// which documents a case holds. A caller holding a connection and no key can
+/// read every row about a document and not the document.
+///
+/// Earlier versions of this API dropped the key at the end of the open, which
+/// made that the only possible state — see
+/// `a_case_can_still_read_its_evidence_after_being_closed_and_opened` for the
+/// test that had no way to pass.
+///
+/// The key is live secret material for as long as this value is held. It is a
+/// [`CaseMasterKey`], so it zeroizes on drop and cannot be printed or compared
+/// in variable time; what it must not do is escape the process. Nothing here
+/// serialises it, and nothing at the IPC boundary may.
+pub struct OpenCase {
+    pub conn: Connection,
+    pub paths: CasePaths,
+    pub cmk: CaseMasterKey,
+}
+
+/// Written out rather than derived, and it prints no key material.
+///
+/// `CaseMasterKey` already redacts itself, so deriving would be safe today. It
+/// is spelled out anyway because the safety would then depend on a decision made
+/// in another crate, and `{:?}` on an open case is exactly the call that ends up
+/// in a log line or a panic message.
+impl std::fmt::Debug for OpenCase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OpenCase")
+            .field("root", &self.paths.root)
+            .field("cmk", &"<redacted>")
+            .finish_non_exhaustive()
+    }
+}
+
 /// Create a new case bundle.
 ///
 /// Returns the recovery key **once**. It is never stored in usable form — only
@@ -103,7 +145,7 @@ pub fn create_case(
     root: impl AsRef<Path>,
     case_id: &str,
     passphrase: &str,
-) -> Result<(Connection, CasePaths, RecoveryKey)> {
+) -> Result<(OpenCase, RecoveryKey)> {
     let paths = CasePaths::new(root);
 
     if paths.header().exists() {
@@ -135,26 +177,33 @@ pub fn create_case(
     // is not mistaken for a valid case.
     write_header(&paths, &new_case.header)?;
 
-    Ok((conn, paths, new_case.recovery_key))
+    Ok((
+        OpenCase {
+            conn,
+            paths,
+            cmk: new_case.cmk,
+        },
+        new_case.recovery_key,
+    ))
 }
 
 /// Open an existing case with a passphrase.
-pub fn open_case(root: impl AsRef<Path>, passphrase: &str) -> Result<(Connection, CasePaths)> {
+pub fn open_case(root: impl AsRef<Path>, passphrase: &str) -> Result<OpenCase> {
     let paths = CasePaths::new(root);
     let header = read_header(&paths)?;
     let cmk = unlock_with_passphrase(&header, passphrase)?;
-    finish_open(&paths, &header, &cmk, "passphrase")
+    finish_open(paths, &header, cmk, "passphrase")
 }
 
 /// Open an existing case with the recovery key, for a forgotten passphrase.
 pub fn open_case_with_recovery_key(
     root: impl AsRef<Path>,
     recovery_key: &RecoveryKey,
-) -> Result<(Connection, CasePaths)> {
+) -> Result<OpenCase> {
     let paths = CasePaths::new(root);
     let header = read_header(&paths)?;
     let cmk = unlock_with_recovery_key(&header, recovery_key)?;
-    finish_open(&paths, &header, &cmk, "recovery_key")
+    finish_open(paths, &header, cmk, "recovery_key")
 }
 
 /// Shared tail of both open paths.
@@ -164,12 +213,12 @@ pub fn open_case_with_recovery_key(
 /// rather than the passphrase, because that is exactly the event worth noticing
 /// if it was not them.
 fn finish_open(
-    paths: &CasePaths,
+    paths: CasePaths,
     header: &CaseHeader,
-    cmk: &CaseMasterKey,
+    cmk: CaseMasterKey,
     unlocked_with: &str,
-) -> Result<(Connection, CasePaths)> {
-    let conn = open_database(paths, cmk)?;
+) -> Result<OpenCase> {
+    let conn = open_database(&paths, &cmk)?;
     migrations::migrate(&conn)?;
 
     audit::append(
@@ -179,11 +228,11 @@ fn finish_open(
             action: "case.opened",
             subject_kind: Some("case"),
             subject_id: Some(&header.case_id),
-            payload_json: &format!("{{\"unlocked_with\":\"{unlocked_with}\"}}"),
+            payload_json: &serde_json::json!({ "unlocked_with": unlocked_with }).to_string(),
         },
     )?;
 
-    Ok((conn, paths.clone()))
+    Ok(OpenCase { conn, paths, cmk })
 }
 
 /// Change a case's passphrase.
@@ -339,7 +388,14 @@ mod tests {
     fn a_case_survives_close_and_reopen() {
         let dir = temp_case_dir("roundtrip");
 
-        let (conn, _paths, _recovery) = create_case(&dir, "case-001", "correct horse").unwrap();
+        let (
+            OpenCase {
+                conn,
+                paths: _paths,
+                ..
+            },
+            _recovery,
+        ) = create_case(&dir, "case-001", "correct horse").unwrap();
         assert!(
             is_sqlcipher(&conn).unwrap(),
             "linked against plain SQLite, not SQLCipher - case files would be unencrypted"
@@ -348,7 +404,7 @@ mod tests {
             .unwrap();
         drop(conn);
 
-        let (conn, _paths) = open_case(&dir, "correct horse").unwrap();
+        let OpenCase { conn, .. } = open_case(&dir, "correct horse").unwrap();
         let v: String = conn
             .query_row("SELECT v FROM probe", [], |r| r.get(0))
             .unwrap();
@@ -361,7 +417,7 @@ mod tests {
     #[test]
     fn wrong_passphrase_is_rejected_and_named_as_such() {
         let dir = temp_case_dir("wrongpass");
-        let (conn, ..) = create_case(&dir, "case-002", "the right one").unwrap();
+        let (OpenCase { conn, .. }, _r) = create_case(&dir, "case-002", "the right one").unwrap();
         drop(conn);
 
         let err = open_case(&dir, "the wrong one").unwrap_err();
@@ -379,12 +435,19 @@ mod tests {
     fn a_recovery_key_opens_a_case_whose_passphrase_is_lost() {
         let dir = temp_case_dir("recovery");
 
-        let (conn, _paths, recovery) = create_case(&dir, "case-003", "forgotten").unwrap();
+        let (
+            OpenCase {
+                conn,
+                paths: _paths,
+                ..
+            },
+            recovery,
+        ) = create_case(&dir, "case-003", "forgotten").unwrap();
         conn.execute_batch("CREATE TABLE probe(v TEXT); INSERT INTO probe VALUES ('survived');")
             .unwrap();
         drop(conn);
 
-        let (conn, _paths) = open_case_with_recovery_key(&dir, &recovery).unwrap();
+        let OpenCase { conn, .. } = open_case_with_recovery_key(&dir, &recovery).unwrap();
         let v: String = conn
             .query_row("SELECT v FROM probe", [], |r| r.get(0))
             .unwrap();
@@ -399,7 +462,14 @@ mod tests {
     fn changing_the_passphrase_preserves_data_and_the_recovery_key() {
         let dir = temp_case_dir("rotate");
 
-        let (conn, _paths, recovery) = create_case(&dir, "case-004", "old passphrase").unwrap();
+        let (
+            OpenCase {
+                conn,
+                paths: _paths,
+                ..
+            },
+            recovery,
+        ) = create_case(&dir, "case-004", "old passphrase").unwrap();
         conn.execute_batch("CREATE TABLE probe(v TEXT); INSERT INTO probe VALUES ('intact');")
             .unwrap();
         drop(conn);
@@ -407,7 +477,7 @@ mod tests {
         change_passphrase(&dir, "old passphrase", "new passphrase").unwrap();
 
         // The new passphrase works and the data is untouched.
-        let (conn, _paths) = open_case(&dir, "new passphrase").unwrap();
+        let OpenCase { conn, .. } = open_case(&dir, "new passphrase").unwrap();
         let v: String = conn
             .query_row("SELECT v FROM probe", [], |r| r.get(0))
             .unwrap();
@@ -418,7 +488,7 @@ mod tests {
         assert!(open_case(&dir, "old passphrase").is_err());
 
         // And the recovery key written down before the change still works.
-        let (conn, _paths) = open_case_with_recovery_key(&dir, &recovery).unwrap();
+        let OpenCase { conn, .. } = open_case_with_recovery_key(&dir, &recovery).unwrap();
         let v: String = conn
             .query_row("SELECT v FROM probe", [], |r| r.get(0))
             .unwrap();
@@ -446,7 +516,8 @@ mod tests {
     #[test]
     fn a_corrupt_header_is_named_as_such() {
         let dir = temp_case_dir("corrupt");
-        let (conn, paths, _r) = create_case(&dir, "case-005", "passphrase").unwrap();
+        let (OpenCase { conn, paths, .. }, _r) =
+            create_case(&dir, "case-005", "passphrase").unwrap();
         drop(conn);
 
         std::fs::write(paths.header(), "{ this is not json").unwrap();
@@ -464,7 +535,8 @@ mod tests {
     #[test]
     fn a_header_from_a_future_version_is_rejected_by_name() {
         let dir = temp_case_dir("future");
-        let (conn, paths, _r) = create_case(&dir, "case-006", "passphrase").unwrap();
+        let (OpenCase { conn, paths, .. }, _r) =
+            create_case(&dir, "case-006", "passphrase").unwrap();
         drop(conn);
 
         let text = std::fs::read_to_string(paths.header()).unwrap();
@@ -489,7 +561,8 @@ mod tests {
     #[test]
     fn tampering_with_the_header_kdf_profile_is_detected() {
         let dir = temp_case_dir("aadtamper");
-        let (conn, paths, _r) = create_case(&dir, "case-007", "passphrase").unwrap();
+        let (OpenCase { conn, paths, .. }, _r) =
+            create_case(&dir, "case-007", "passphrase").unwrap();
         drop(conn);
 
         let text = std::fs::read_to_string(paths.header()).unwrap();
@@ -516,15 +589,22 @@ mod tests {
     fn the_case_lifecycle_is_recorded_in_a_verifiable_chain() {
         let dir = temp_case_dir("auditlifecycle");
 
-        let (conn, _paths, recovery) = create_case(&dir, "case-010", "old passphrase").unwrap();
+        let (
+            OpenCase {
+                conn,
+                paths: _paths,
+                ..
+            },
+            recovery,
+        ) = create_case(&dir, "case-010", "old passphrase").unwrap();
         drop(conn);
 
         change_passphrase(&dir, "old passphrase", "new passphrase").unwrap();
 
-        let (conn, _paths) = open_case(&dir, "new passphrase").unwrap();
+        let OpenCase { conn, .. } = open_case(&dir, "new passphrase").unwrap();
         drop(conn);
 
-        let (conn, _paths) = open_case_with_recovery_key(&dir, &recovery).unwrap();
+        let OpenCase { conn, .. } = open_case_with_recovery_key(&dir, &recovery).unwrap();
 
         let actions: Vec<String> = {
             let mut stmt = conn
@@ -573,7 +653,8 @@ mod tests {
     fn case_database_contains_no_plaintext() {
         let dir = temp_case_dir("plaintext");
 
-        let (conn, paths, _r) = create_case(&dir, "case-008", "passphrase").unwrap();
+        let (OpenCase { conn, paths, .. }, _r) =
+            create_case(&dir, "case-008", "passphrase").unwrap();
         conn.execute_batch(
             "CREATE TABLE probe(v TEXT); INSERT INTO probe VALUES ('SUPERSECRETMARKER');",
         )
@@ -610,7 +691,14 @@ mod tests {
     #[test]
     fn temp_store_is_memory_so_nothing_spills_to_disk() {
         let dir = temp_case_dir("tempstore");
-        let (conn, _paths, _r) = create_case(&dir, "case-011", "passphrase").unwrap();
+        let (
+            OpenCase {
+                conn,
+                paths: _paths,
+                ..
+            },
+            _r,
+        ) = create_case(&dir, "case-011", "passphrase").unwrap();
 
         // 0 means "defer to the compile-time default", which is exactly the
         // ambiguity this pragma removes: 2 is memory whatever that default is.
@@ -653,7 +741,8 @@ mod tests {
         // value itself leaked, not merely the word "passphrase" appearing in a
         // field name like cmk_wrapped_by_passphrase.
         const SECRET: &str = "ZZQX-header-leak-canary-4718";
-        let (conn, paths, recovery) = create_case(&dir, "case-009", SECRET).unwrap();
+        let (OpenCase { conn, paths, .. }, recovery) =
+            create_case(&dir, "case-009", SECRET).unwrap();
         drop(conn);
 
         let text = std::fs::read_to_string(paths.header()).unwrap();

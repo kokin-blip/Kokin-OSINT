@@ -36,8 +36,14 @@ impl Case {
         let _ = std::fs::remove_dir_all(&dir);
 
         let case_dir = dir.join("case.kokincase");
-        let (conn, _paths, _recovery) =
-            kokin_store::create_case(&case_dir, "case-er", "passphrase").unwrap();
+        let (
+            kokin_store::OpenCase {
+                conn,
+                paths: _paths,
+                ..
+            },
+            _recovery,
+        ) = kokin_store::create_case(&case_dir, "case-er", "passphrase").unwrap();
         initialise(&conn).unwrap();
 
         // One real piece of evidence for everything here to hang off.

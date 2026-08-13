@@ -657,7 +657,7 @@ mod tests {
         fn new(name: &str) -> Self {
             let dir = temp_dir(name);
             let case_dir = dir.join("case.kokincase");
-            let (conn, paths, _recovery) =
+            let (kokin_store::OpenCase { conn, paths, .. }, _recovery) =
                 kokin_store::create_case(&case_dir, "case-ingest", "passphrase").unwrap();
 
             Self {

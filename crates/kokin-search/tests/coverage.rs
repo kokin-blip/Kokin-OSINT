@@ -41,7 +41,7 @@ impl Case {
         let _ = std::fs::remove_dir_all(&dir);
 
         let case_dir = dir.join("case.kokincase");
-        let (conn, paths, _recovery) =
+        let (kokin_store::OpenCase { conn, paths, .. }, _recovery) =
             kokin_store::create_case(&case_dir, "case-coverage", "passphrase").unwrap();
         let blobs = BlobStore::new(paths.blobs());
         let cmk = CaseMasterKey::generate().unwrap();

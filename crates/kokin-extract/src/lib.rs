@@ -150,11 +150,6 @@ struct ReadableBlob {
     reference: kokin_blob::BlobRef,
 }
 
-/// A `blob` row's size and key material. Both key columns are NULL once the
-/// blob has been crypto-shredded, which is the case this tuple exists to make
-/// visible rather than to paper over.
-type BlobKeyRow = (i64, Option<Vec<u8>>, Option<Vec<u8>>);
-
 fn load_readable_blob(conn: &Connection, artifact_id: &str) -> Result<ReadableBlob> {
     let (content_hash, media_type): (String, String) = conn
         .query_row(
@@ -179,45 +174,21 @@ fn load_readable_blob(conn: &Connection, artifact_id: &str) -> Result<ReadableBl
         });
     }
 
-    // `.ok()` here would fold a genuine database failure into "no such blob",
-    // which would report a broken case as a missing one and send whoever reads
-    // the error code looking in the wrong place.
-    let row: BlobKeyRow = match conn.query_row(
-        "SELECT size_bytes, wrapped_key, wrapped_nonce FROM blob WHERE content_hash = ?1",
-        [&content_hash],
-        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-    ) {
-        Ok(row) => row,
-        Err(rusqlite::Error::QueryReturnedNoRows) => {
-            return Err(ExtractError::BlobMissing { content_hash })
-        }
-        Err(other) => return Err(ExtractError::Sqlite(other)),
-    };
-
-    let (size, wrapped_key, wrapped_nonce) = row;
-
     // A shredded blob is a row whose key is gone. That is a different fact from
     // the blob never having existed, and an analyst reading the error needs to
-    // be able to tell them apart.
-    let (Some(ciphertext), Some(nonce)) = (wrapped_key, wrapped_nonce) else {
-        return Err(ExtractError::BlobShredded { content_hash });
-    };
-
-    let nonce: [u8; kokin_keys::NONCE_LEN] =
-        nonce
-            .as_slice()
-            .try_into()
-            .map_err(|_| ExtractError::BlobShredded {
-                content_hash: content_hash.clone(),
-            })?;
-
-    Ok(ReadableBlob {
-        reference: kokin_blob::BlobRef {
-            content_hash,
-            size: size as u64,
-            wrapped_key: kokin_keys::WrappedKey { nonce, ciphertext },
-        },
-    })
+    // be able to tell them apart — which is `blob_access`'s whole job, so the
+    // three cases are enumerated here rather than being reduced to one.
+    //
+    // A genuine database failure stays a database failure: folding it into "no
+    // such blob" would report a broken case as a missing one and send whoever
+    // reads the error code looking in the wrong place.
+    match kokin_store::blob_access(conn, &content_hash)? {
+        kokin_store::BlobAccess::Readable(reference) => Ok(ReadableBlob { reference }),
+        kokin_store::BlobAccess::Shredded { .. } => {
+            Err(ExtractError::BlobShredded { content_hash })
+        }
+        kokin_store::BlobAccess::Unrecorded => Err(ExtractError::BlobMissing { content_hash }),
+    }
 }
 
 /// Stream the blob through the parser.
@@ -664,7 +635,7 @@ mod tests {
         fn new(name: &str) -> Self {
             let dir = temp_dir(name);
             let case_dir = dir.join("case.kokincase");
-            let (conn, paths, _recovery) =
+            let (kokin_store::OpenCase { conn, paths, .. }, _recovery) =
                 kokin_store::create_case(&case_dir, "case-extract", "passphrase").unwrap();
 
             Self {
