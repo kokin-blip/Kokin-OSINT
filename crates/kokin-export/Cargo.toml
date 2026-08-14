@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "kokin-export"
 version.workspace = true
 edition.workspace = true
@@ -10,3 +10,21 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+kokin-store = { path = "../kokin-store" }
+kokin-keys = { path = "../kokin-keys" }
+kokin-blob = { path = "../kokin-blob" }
+rusqlite = { version = "0.40.2", features = ["bundled-sqlcipher-vendored-openssl"] }
+thiserror = "2.0.20"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+blake3 = "1.5"
+
+# No archive crate. The container holds four kinds of entry with names this
+# crate decides, so a general archive reader would add a dependency whose main
+# feature - arbitrary paths, links and compression - is the part that has to be
+# defended against. See the module note on `container`.
+
+[dev-dependencies]
+kokin-ingest = { path = "../kokin-ingest" }
+kokin-extract = { path = "../kokin-extract" }
+kokin-graph = { path = "../kokin-graph" }

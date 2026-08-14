@@ -355,14 +355,28 @@ impl BlobStore {
     }
 
     fn path_for(&self, content_hash: &str, cmk: &CaseMasterKey) -> PathBuf {
-        let name = storage_name(content_hash, cmk);
-        // Two levels of fan-out: 256 x 256 directories keeps any one directory
-        // small enough that filesystem listing stays fast at scale.
         self.root
-            .join(&name[0..2])
-            .join(&name[2..4])
-            .join(format!("{name}.blob"))
+            .join(relative_path(&storage_name(content_hash, cmk)))
     }
+}
+
+/// Where a blob with this storage name sits, relative to the store root.
+///
+/// Public because `kokin-export` has to find blob files on disk from a storage
+/// name and put them back in the same place on the other side. It could compute
+/// `ab/cd/name.blob` itself, and then the two crates would hold the same layout
+/// rule in two places — so changing the fan-out here would silently produce
+/// packages that import into a case whose blobs are all unfindable, with every
+/// hash still matching. One function, one rule.
+///
+/// Panics if `storage_name` is shorter than four characters, which cannot happen
+/// for a value from [`storage_name`] — it is always 64 hex characters.
+pub fn relative_path(storage_name: &str) -> PathBuf {
+    // Two levels of fan-out: 256 x 256 directories keeps any one directory
+    // small enough that filesystem listing stays fast at scale.
+    PathBuf::from(&storage_name[0..2])
+        .join(&storage_name[2..4])
+        .join(format!("{storage_name}.blob"))
 }
 
 /// The on-disk name for a blob: `BLAKE3_keyed(cmk, content_hash)`.

@@ -1959,6 +1959,19 @@ dependencies = [
 [[package]]
 name = "kokin-export"
 version = "0.0.1"
+dependencies = [
+ "blake3",
+ "kokin-blob",
+ "kokin-extract",
+ "kokin-graph",
+ "kokin-ingest",
+ "kokin-keys",
+ "kokin-store",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
 
 [[package]]
 name = "kokin-extract"
