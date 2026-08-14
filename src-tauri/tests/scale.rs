@@ -290,6 +290,37 @@ fn the_storage_layer_holds_at_a_hundred_thousand_observations() {
         },
     ));
 
+    // The R-014 fix skips the alias-collapsing window when no merge is active.
+    // Its cost is a sort of every *matched* row, which has nothing to do with how
+    // many merges exist — so the interesting question is not "is it faster with
+    // none" but "does a single merge bring the whole cost back". One merge, out
+    // of twenty thousand entities, and the same query again.
+    kokin_graph::resolution::merge(
+        &mut open.conn,
+        "ent-1",
+        "ent-2",
+        "user:local",
+        "p2: one merge, to measure what the first one costs",
+        None,
+    )
+    .unwrap();
+    results.push(Latencies::measure(
+        "FTS5 common term (after one merge)",
+        Kind::TrackedGap {
+            risk: "R-014",
+            ceiling: Duration::from_millis(350),
+        },
+        || {
+            kokin_search::search(
+                &open.conn,
+                &Query::parse("mercer"),
+                &SearchOptions::default(),
+            )
+            .unwrap()
+            .len()
+        },
+    ));
+
     // 2. Bounded 3-hop expansion — what the graph view issues on every expand.
     let seed_entity: String = open
         .conn

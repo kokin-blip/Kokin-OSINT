@@ -165,7 +165,7 @@ pub fn search(conn: &Connection, query: &Query, options: &SearchOptions) -> Resu
         &inner,
         "subject_kind, subject_id, title, snippet, facet, superseded,
          relevance, resolved_id",
-        options,
+        collapse_aliases(conn, options)?,
     );
 
     let limit_at = params.len() + 1;
@@ -251,6 +251,45 @@ fn matched_keys() -> String {
     )
 }
 
+/// Whether this query needs the alias-collapsing window at all.
+///
+/// # Why this is not an optimisation with a correctness caveat
+///
+/// `search_document` carries a unique index on `(subject_kind, subject_id)`, so
+/// there is exactly one row per subject. When no `er_merge_map` row is active,
+/// `resolved_id` is `COALESCE(NULL, d.subject_id)` — that is, `subject_id` — for
+/// every matched row, so each `PARTITION BY subject_kind, resolved_id` holds
+/// exactly one row, `ROW_NUMBER()` is 1 everywhere, and `WHERE alias_rank = 1`
+/// discards nothing. The window is **provably** the identity function, and the
+/// unique index is the proof rather than an assumption about the data.
+///
+/// # What it was costing
+///
+/// P2 measured a common-term search at 291ms against a 200ms budget, of which
+/// 174ms was this window (R-014, `docs/benchmarks/p2-scale.md`). The expense is
+/// not the `LEFT JOIN` the module note above nominates — that is one indexed
+/// lookup per hit. It is that `ROW_NUMBER()` must materialise and sort **every**
+/// matched row before `LIMIT` can apply, so a query returning fifty rows out of
+/// forty thousand sorts forty thousand. Without the window SQLite streams and
+/// stops at fifty.
+///
+/// A case pays that only once it has actually merged something, and it pays it
+/// then for a reason. Before the first merge — which is most cases, and every
+/// case for its first hours — it was paying to deduplicate against an empty map.
+///
+/// The probe itself is cheap: `er_merge_map_absorbed` is a partial index on
+/// `WHERE active = 1`, so this is an index probe that stops at the first row.
+fn collapse_aliases(conn: &Connection, options: &SearchOptions) -> Result<bool> {
+    if !options.resolve_merged {
+        return Ok(false);
+    }
+    Ok(conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM er_merge_map WHERE active = 1)",
+        [],
+        |r| r.get::<_, i64>(0),
+    )? == 1)
+}
+
 /// Reduce matched rows to one per resolved identity, keeping the best-ranked
 /// alias as the representative.
 ///
@@ -262,8 +301,8 @@ fn matched_keys() -> String {
 /// Collapsing is done here, in SQL, rather than on the page `search` returns,
 /// because doing it afterwards would silently shrink pages — ask for fifty and
 /// get forty-seven because three were aliases of each other.
-fn one_row_per(inner: &str, columns: &str, options: &SearchOptions) -> String {
-    if !options.resolve_merged {
+fn one_row_per(inner: &str, columns: &str, collapse: bool) -> String {
+    if !collapse {
         return format!("WITH matched AS ({inner}) SELECT {columns} FROM matched");
     }
     format!(
@@ -288,7 +327,7 @@ pub fn count(conn: &Connection, query: &Query, options: &SearchOptions) -> Resul
     let mut params: Vec<Value> = vec![Value::Text(expression)];
     let mut inner = matched_keys();
     push_filters(&mut inner, &mut params, options);
-    let sql = one_row_per(&inner, "COUNT(*)", options);
+    let sql = one_row_per(&inner, "COUNT(*)", collapse_aliases(conn, options)?);
 
     Ok(conn.query_row(&sql, rusqlite::params_from_iter(params), |r| r.get(0))?)
 }
@@ -314,7 +353,11 @@ pub fn facet_counts(
     // representative's facet; where a merge spans facets that is a real
     // ambiguity, and picking the same row the list shows is the least
     // surprising of the available wrong-ish answers.
-    let mut sql = one_row_per(&inner, "subject_kind, facet, COUNT(*)", options);
+    let mut sql = one_row_per(
+        &inner,
+        "subject_kind, facet, COUNT(*)",
+        collapse_aliases(conn, options)?,
+    );
     sql.push_str(" GROUP BY subject_kind, facet ORDER BY COUNT(*) DESC, subject_kind, facet");
 
     let mut stmt = conn.prepare(&sql)?;

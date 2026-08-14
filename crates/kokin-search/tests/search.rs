@@ -770,6 +770,81 @@ fn entity_hits(hits: &[kokin_search::Hit]) -> Vec<&kokin_search::Hit> {
     hits.iter().filter(|h| h.subject_kind == "entity").collect()
 }
 
+/// R-014: a case with no merges gets the same answers without the window.
+///
+/// `collapse_aliases` skips the `ROW_NUMBER()` deduplication when no
+/// `er_merge_map` row is active, on the argument that the window is provably the
+/// identity function there — `search_document` is unique per subject, so every
+/// partition holds one row. This asserts the behaviour that argument predicts,
+/// against the same case before and after its first merge, so the claim is
+/// checked rather than reasoned about.
+///
+/// The second half matters more than the first. A guard that skipped the window
+/// permanently would pass every assertion above the merge and none below it, and
+/// "we stopped collapsing aliases" is not a failure anything else here would
+/// notice — `a_merged_entity_is_one_result_not_two` would catch it, which is why
+/// that test and this one are both kept rather than merged into one.
+#[test]
+fn skipping_the_collapse_changes_nothing_until_something_is_merged() {
+    let mut case = Case::new("no-merges");
+    let a = case.entity("organisation", "Acme Holdings", "the filing name");
+    let b = case.entity("organisation", "Acme Holdings Ltd", "the trading name");
+
+    // Before any merge: resolving and not resolving must agree, because there is
+    // nothing to resolve.
+    let resolved = case.find("acme");
+    let raw = kokin_search::search(
+        &case.conn,
+        &kokin_search::Query::parse("acme"),
+        &kokin_search::SearchOptions {
+            resolve_merged: false,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let ids = |hits: &[kokin_search::Hit]| -> Vec<String> {
+        let mut v: Vec<String> = entity_hits(hits)
+            .iter()
+            .map(|h| h.subject_id.clone())
+            .collect();
+        v.sort();
+        v
+    };
+    assert_eq!(
+        ids(&resolved),
+        ids(&raw),
+        "with no merges, collapsing and not collapsing disagreed"
+    );
+    assert_eq!(ids(&resolved).len(), 2, "both entities should be listed");
+    assert!(
+        entity_hits(&resolved)
+            .iter()
+            .all(|h| h.canonical_id.is_none()),
+        "an unmerged entity reported a canonical id"
+    );
+
+    // After a merge the window has work to do, and the same query must now
+    // collapse. This is the half that fails if the guard is stuck off.
+    kokin_search::rebuild(&case.conn).unwrap();
+    kokin_graph::resolution::merge(
+        &mut case.conn,
+        &a,
+        &b,
+        "user:local",
+        "same registration",
+        None,
+    )
+    .unwrap();
+
+    let after = case.find("acme");
+    assert_eq!(
+        entity_hits(&after).len(),
+        1,
+        "the collapse did not resume once the case had a merge"
+    );
+}
+
 /// The whole point of the increment. Before it, merging two records made the
 /// case *look* like it held two organisations with similar names — which is the
 /// reading the analyst had just rejected.

@@ -108,6 +108,40 @@ because there is nothing to collapse. Recorded as **R-014**, not fixed here —
 measuring and fixing in one increment is how a benchmark comes to justify the
 change it was used to design.
 
+### After the R-014 fix (2026-08-14, increment 21)
+
+`collapse_aliases` now skips the window when no `er_merge_map` row is active.
+
+| Query | before | after | after **one** merge |
+|---|---|---|---|
+| FTS5 common term | 291 ms | **117 ms** | **291 ms** |
+| FTS5 two terms | 196 ms | **95 ms** | — |
+| FTS5 typeahead | 295 ms | **121 ms** | — |
+| FTS5 `resolve_merged: false` | 118 ms | 118 ms | — |
+
+The default path and the explicitly-unresolved path now measure identically
+(118.6 ms against 118.4 ms), because they now execute the same plan. That is the
+equivalence argument confirmed rather than asserted.
+
+**And a single merge restores the entire cost.** One merge, between two of twenty
+thousand entities, takes the same query from 118.6 ms back to 291.0 ms.
+
+That is not a surprise and it should not be read as a partial success. The window
+sorts every *matched* row, and that work is independent of how many merges exist
+— two rows needing deduplication out of forty thousand matches cost exactly what
+forty thousand would. So the fix buys latency for a case up to its first merge,
+and nothing after it. **Merging records is the thing this product exists to
+support**, so the population it helps is real but shrinking, and every case leaves
+it permanently.
+
+**R-014 therefore stays open, re-scoped.** The sharper diagnosis is that
+collapsing is applied globally when it is needed for a vanishing subset of rows.
+A row whose `subject_id` never appears in `er_merge_map` cannot have an alias, so
+it needs no partition at all — the candidate remedy is an indexed anti-join that
+sends only genuinely mergeable rows through the window, leaving the rest to
+stream. That is untested, and it is a design sketch rather than a plan until it
+is measured.
+
 ### `coverage()`: the worry was unfounded
 
 Increment 16 made coverage non-optional on every result list (D-029) and flagged
@@ -149,7 +183,8 @@ on this evidence.
 
 | Item | Where |
 |---|---|
-| Skip alias collapsing when the case has no active merges | R-014 |
+| Skip alias collapsing when the case has no active merges | done, increment 21 |
+| Collapse only rows that can actually have aliases | R-014, still open |
 | Bounded per-hop expansion as the graph view's only traversal | increment 30 |
 | Vector KNN at 100k | ADR-0009, when embeddings exist |
 | Cold-cache and concurrent-write figures | a later run of this probe |
