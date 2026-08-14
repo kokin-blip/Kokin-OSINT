@@ -39,6 +39,12 @@ struct Fixture {
     /// An artifact nobody ever read. Its whole job is to make coverage
     /// incomplete, which is the state every result list has to admit to.
     unread_artifact: String,
+    /// The same bytes as `read_artifact`, collected from a second location. The
+    /// case deduplicates the blob and keeps both arrivals, which is what makes
+    /// "this document reached us twice" answerable.
+    duplicate_artifact: String,
+    /// One observation the extractor recorded from `read_artifact`.
+    observation: String,
     /// The entity that survived the merge.
     canonical: String,
     /// The entity that was absorbed into it.
@@ -56,126 +62,148 @@ fn fixture(name: &str) -> Fixture {
 
     let read_file = dir.join("read.html");
     let unread_file = dir.join("unread.html");
+    // Byte-for-byte identical to read.html, at a different location, so the
+    // case holds one blob and two collections of it.
+    let duplicate_file = dir.join("mirror").join("read.html");
     std::fs::write(&read_file, READ_PAGE).unwrap();
     std::fs::write(&unread_file, UNREAD_PAGE).unwrap();
+    std::fs::create_dir_all(duplicate_file.parent().unwrap()).unwrap();
+    std::fs::write(&duplicate_file, READ_PAGE).unwrap();
 
-    let (read_artifact, unread_artifact, canonical, absorbed) = session
-        .with_case(|open| {
-            let blobs = kokin_blob::BlobStore::new(open.paths.blobs());
-            let mut ingest = |path: &Path, job: &str| {
-                kokin_ingest::ingest_file(
+    let (read_artifact, unread_artifact, duplicate_artifact, observation, canonical, absorbed) =
+        session
+            .with_case(|open| {
+                let blobs = kokin_blob::BlobStore::new(open.paths.blobs());
+                let mut ingest = |path: &Path, job: &str| {
+                    kokin_ingest::ingest_file(
+                        &mut open.conn,
+                        &blobs,
+                        &open.cmk,
+                        path,
+                        &kokin_ingest::IngestContext {
+                            connector: "file_import",
+                            job_id: job,
+                        },
+                    )
+                    .unwrap()
+                    .artifact_id
+                };
+                let read_artifact = ingest(&read_file, "job-read");
+                let unread_artifact = ingest(&unread_file, "job-unread");
+                let duplicate_artifact = ingest(&duplicate_file, "job-mirror");
+
+                // Only one of them is extracted, so the case is honestly incomplete.
+                let extracted = kokin_extract::extract_artifact(
                     &mut open.conn,
                     &blobs,
                     &open.cmk,
-                    path,
-                    &kokin_ingest::IngestContext {
-                        connector: "file_import",
-                        job_id: job,
-                    },
+                    &read_artifact,
+                    kokin_extract::Limits::default(),
                 )
-                .unwrap()
-                .artifact_id
-            };
-            let read_artifact = ingest(&read_file, "job-read");
-            let unread_artifact = ingest(&unread_file, "job-unread");
-
-            // Only one of them is extracted, so the case is honestly incomplete.
-            let extracted = kokin_extract::extract_artifact(
-                &mut open.conn,
-                &blobs,
-                &open.cmk,
-                &read_artifact,
-                kokin_extract::Limits::default(),
-            )
-            .unwrap();
-            let observation = extracted.observation_ids[0].clone();
-
-            let evidence = [Grounding::supporting_observation(&observation)];
-            let first = kokin_graph::create_entity(
-                &mut open.conn,
-                NewEntity {
-                    type_key: "person",
-                    display_name: "A. Mercer",
-                    notes: "named on the contact page",
-                },
-                &evidence,
-            )
-            .unwrap();
-            let second = kokin_graph::create_entity(
-                &mut open.conn,
-                NewEntity {
-                    type_key: "person",
-                    display_name: "Mercer, Alex",
-                    notes: "from the filings",
-                },
-                &evidence,
-            )
-            .unwrap();
-
-            kokin_graph::add_identifier(
-                &mut open.conn,
-                &first,
-                "email_address",
-                "press@acme.example",
-                &evidence,
-            )
-            .unwrap();
-            kokin_graph::add_identifier(&mut open.conn, &second, "username", "amercer", &evidence)
                 .unwrap();
+                let observation = extracted.observation_ids[0].clone();
 
-            // The two rows were judged differently before anyone decided they
-            // were one person. Merging does not settle the argument.
-            for (entity, value) in [(&first, "usually_reliable"), (&second, "mixed")] {
-                kokin_graph::assess(
+                let evidence = [Grounding::supporting_observation(&observation)];
+                let first = kokin_graph::create_entity(
                     &mut open.conn,
-                    Subject {
-                        kind: SubjectKind::Entity,
-                        id: entity,
+                    NewEntity {
+                        type_key: "person",
+                        display_name: "A. Mercer",
+                        notes: "named on the contact page",
                     },
-                    "source_reliability",
-                    value,
-                    "[]",
-                    "user:local",
+                    &evidence,
                 )
                 .unwrap();
-            }
-            // And one dimension both agree on, so "assessed" is exercised too.
-            for entity in [&first, &second] {
-                kokin_graph::assess(
+                let second = kokin_graph::create_entity(
                     &mut open.conn,
-                    Subject {
-                        kind: SubjectKind::Entity,
-                        id: entity,
+                    NewEntity {
+                        type_key: "person",
+                        display_name: "Mercer, Alex",
+                        notes: "from the filings",
                     },
-                    "review_status",
-                    "needs_review",
-                    "[]",
-                    "user:local",
+                    &evidence,
                 )
                 .unwrap();
-            }
 
-            kokin_graph::resolution::merge(
-                &mut open.conn,
-                &first,
-                &second,
-                "user:local",
-                "same email in the filings",
-                None,
-            )
+                kokin_graph::add_identifier(
+                    &mut open.conn,
+                    &first,
+                    "email_address",
+                    "press@acme.example",
+                    &evidence,
+                )
+                .unwrap();
+                kokin_graph::add_identifier(
+                    &mut open.conn,
+                    &second,
+                    "username",
+                    "amercer",
+                    &evidence,
+                )
+                .unwrap();
+
+                // The two rows were judged differently before anyone decided they
+                // were one person. Merging does not settle the argument.
+                for (entity, value) in [(&first, "usually_reliable"), (&second, "mixed")] {
+                    kokin_graph::assess(
+                        &mut open.conn,
+                        Subject {
+                            kind: SubjectKind::Entity,
+                            id: entity,
+                        },
+                        "source_reliability",
+                        value,
+                        "[]",
+                        "user:local",
+                    )
+                    .unwrap();
+                }
+                // And one dimension both agree on, so "assessed" is exercised too.
+                for entity in [&first, &second] {
+                    kokin_graph::assess(
+                        &mut open.conn,
+                        Subject {
+                            kind: SubjectKind::Entity,
+                            id: entity,
+                        },
+                        "review_status",
+                        "needs_review",
+                        "[]",
+                        "user:local",
+                    )
+                    .unwrap();
+                }
+
+                kokin_graph::resolution::merge(
+                    &mut open.conn,
+                    &first,
+                    &second,
+                    "user:local",
+                    "same email in the filings",
+                    None,
+                )
+                .unwrap();
+
+                let canonical = kokin_graph::resolution::canonical_id(&open.conn, &first).unwrap();
+                let absorbed = if canonical == first { second } else { first };
+                Ok((
+                    read_artifact,
+                    unread_artifact,
+                    duplicate_artifact,
+                    observation,
+                    canonical,
+                    absorbed,
+                ))
+            })
             .unwrap();
-
-            let canonical = kokin_graph::resolution::canonical_id(&open.conn, &first).unwrap();
-            let absorbed = if canonical == first { second } else { first };
-            Ok((read_artifact, unread_artifact, canonical, absorbed))
-        })
-        .unwrap();
 
     Fixture {
         dir,
         session,
         read_artifact,
         unread_artifact,
+        duplicate_artifact,
+        observation,
         canonical,
         absorbed,
     }
@@ -274,10 +302,15 @@ fn a_result_list_arrives_with_the_coverage_it_needs() {
     let view = search(&f, "acme");
 
     assert!(!view.hits.is_empty(), "the extracted page was not indexed");
-    assert_eq!(view.coverage.artifacts, 2);
+    // Three artifacts, two of them unread — and one of those two holds the same
+    // bytes as the read one. Deduplication shares a blob and does not share a
+    // reading: the mirrored copy has never been through an extractor, and a
+    // coverage figure that quietly counted it as read because its hash was
+    // familiar would be the exact false reassurance this caveat exists to stop.
+    assert_eq!(view.coverage.artifacts, 3);
     assert_eq!(view.coverage.complete, 1);
-    assert_eq!(view.coverage.never_attempted, 1);
-    assert_eq!(view.coverage.incomplete, 1);
+    assert_eq!(view.coverage.never_attempted, 2);
+    assert_eq!(view.coverage.incomplete, 2);
     assert!(
         !view.coverage.is_complete,
         "a case holding a document nobody read reported itself fully searchable"
@@ -505,6 +538,396 @@ fn an_excerpt_is_verified_against_the_whole_document() {
         ),
         "damage past the excerpt limit was not detected, so the excerpt is unverified"
     );
+}
+
+// ---------------------------------------------------------------------------
+// Evidence and lineage
+// ---------------------------------------------------------------------------
+
+fn evidence(f: &Fixture, artifact_id: &str) -> kokin_osint_lib::EvidenceListView {
+    f.session
+        .with_case(|open| kokin_osint_lib::read::artifact_observations(open, artifact_id, false))
+        .unwrap()
+}
+
+fn observation(f: &Fixture, observation_id: &str) -> kokin_osint_lib::ObservationView {
+    f.session
+        .with_case(|open| kokin_osint_lib::read::observation(open, observation_id))
+        .unwrap()
+}
+
+/// Write an observation whose locator does not support its value.
+///
+/// It has to be an insert. `observation` is append-only — the trigger says
+/// *rerun the extractor, do not edit what it saw* — so a test cannot corrupt an
+/// existing citation, and that is a control working rather than an obstacle.
+///
+/// It also could not come from the extractor: that writes the value and the
+/// locator in the same breath from the same match, so a citation it produces
+/// holds by construction. The check exists for rows something *else* wrote — an
+/// imported package, a later extractor, a bug — and the only honest way to
+/// exercise it is to be that something else.
+fn forge_observation(f: &Fixture, value: &str, locator_json: &str) -> String {
+    let id = format!("obs-forged-{}", value.len());
+    f.session
+        .with_case(|open| {
+            let run_id: String = open
+                .conn
+                .query_row(
+                    "SELECT run_id FROM observation WHERE artifact_id = ?1 LIMIT 1",
+                    [&f.read_artifact],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            open.conn
+                .execute(
+                    "INSERT INTO observation
+                        (id, artifact_id, run_id, kind, value, locator_json, observed_utc)
+                     VALUES (?1, ?2, ?3, 'forged', ?4, ?5, '2026-08-14T00:00:00Z')",
+                    rusqlite::params![id, f.read_artifact, run_id, value, locator_json],
+                )
+                .unwrap();
+            Ok(())
+        })
+        .unwrap();
+    id
+}
+
+/// Every citation this case holds points at bytes that support it.
+///
+/// Asserted over all of them rather than a chosen one, because a spot check
+/// would pass on an extractor that got the common case right and the attribute
+/// case wrong — which is the shape this bug actually takes.
+#[test]
+fn every_observation_quotes_the_bytes_it_says_it_came_from() {
+    let f = fixture("quote");
+    let table = evidence(&f, &f.read_artifact);
+    assert!(
+        table.observations.len() >= 2,
+        "the fixture page yielded only {} observations",
+        table.observations.len()
+    );
+
+    for row in &table.observations {
+        let view = observation(&f, &row.observation_id);
+        match view.quote {
+            kokin_osint_lib::QuoteView::Exact { excerpt } => {
+                assert_eq!(excerpt.quoted, row.value);
+            }
+            kokin_osint_lib::QuoteView::Contains { excerpt } => {
+                assert!(
+                    excerpt.quoted.contains(&row.value),
+                    "{} claims {:?} and quotes {:?}",
+                    row.kind,
+                    row.value,
+                    excerpt.quoted
+                );
+            }
+            other => panic!("{} cites {:?} and got {other:?}", row.kind, row.value),
+        }
+    }
+}
+
+/// The quote is bytes from the document, not the observation read back.
+///
+/// The failure this rules out is the one that looks best: a panel that renders
+/// `value` twice — once as the claim and once as the "quote" — and therefore
+/// agrees with itself no matter what the document says.
+#[test]
+fn the_quote_carries_the_document_around_it_and_not_just_the_value() {
+    let f = fixture("context");
+    let table = evidence(&f, &f.read_artifact);
+    let page = String::from_utf8(READ_PAGE.to_vec()).unwrap();
+
+    let mut with_context = 0;
+    for row in &table.observations {
+        let view = observation(&f, &row.observation_id);
+        if let kokin_osint_lib::QuoteView::Exact { excerpt }
+        | kokin_osint_lib::QuoteView::Contains { excerpt } = view.quote
+        {
+            let rebuilt = format!("{}{}{}", excerpt.before, excerpt.quoted, excerpt.after);
+            assert!(
+                page.contains(&rebuilt),
+                "{:?} is not a substring of the document",
+                rebuilt
+            );
+            if !excerpt.before.is_empty() || !excerpt.after.is_empty() {
+                with_context += 1;
+            }
+        }
+    }
+    assert!(
+        with_context > 0,
+        "no observation came back with any surrounding document"
+    );
+}
+
+/// A-037. A locator that points somewhere else is a disagreement, not a quote.
+#[test]
+fn a_citation_that_does_not_support_its_claim_says_so() {
+    let f = fixture("differs");
+
+    // Byte range 0..6 of the fixture page is `<html>`. The claim is a real
+    // string from that same page, so the row is wrong only in the one way that
+    // matters: the bytes it points at do not say it.
+    let forged = forge_observation(
+        &f,
+        "press@acme.example",
+        r#"{"kind":"html_byte_range","selector":"forged","start":0,"end":6}"#,
+    );
+
+    match observation(&f, &forged).quote {
+        kokin_osint_lib::QuoteView::Differs { excerpt } => {
+            assert_eq!(excerpt.quoted, "<html>");
+        }
+        other => panic!("a forged locator was accepted as {other:?}"),
+    }
+}
+
+/// A locator naming bytes the document does not have.
+#[test]
+fn a_locator_past_the_end_of_the_document_is_out_of_range() {
+    let f = fixture("range");
+    let forged = forge_observation(
+        &f,
+        "anything at all",
+        r#"{"kind":"html_byte_range","selector":"forged","start":0,"end":999999}"#,
+    );
+
+    match observation(&f, &forged).quote {
+        kokin_osint_lib::QuoteView::OutOfRange { byte_length, .. } => {
+            assert_eq!(byte_length, READ_PAGE.len() as i64);
+        }
+        other => panic!("a range past the end was accepted as {other:?}"),
+    }
+}
+
+/// A scheme this build has never seen keeps its raw form and is not guessed at.
+#[test]
+fn an_unknown_locator_scheme_is_shown_rather_than_interpreted() {
+    let f = fixture("scheme");
+    let raw = r#"{"kind":"pdf_page_box","page":3,"start":0,"end":6}"#;
+    let forged = forge_observation(&f, "page three", raw);
+
+    let view = observation(&f, &forged);
+    // `start` and `end` are present and this build must not use them: reading a
+    // page-relative offset as a document-relative one would quote confidently
+    // from the wrong place.
+    match view.quote {
+        kokin_osint_lib::QuoteView::UnknownScheme { scheme } => {
+            assert_eq!(scheme, "pdf_page_box");
+        }
+        other => panic!("an unknown scheme was resolved as {other:?}"),
+    }
+    assert_eq!(view.locator.raw_json, raw);
+    assert_eq!(view.locator.scheme, "pdf_page_box");
+}
+
+/// A quote is never shown from bytes that are not there to be checked.
+#[test]
+fn a_quote_from_a_shredded_document_says_which_kind_of_missing() {
+    let f = fixture("quote-shredded");
+    let target = evidence(&f, &f.read_artifact).observations[0]
+        .observation_id
+        .clone();
+
+    f.session
+        .with_case(|open| {
+            open.conn
+                .execute(
+                    "UPDATE blob SET wrapped_key = NULL, wrapped_nonce = NULL,
+                            shredded_utc = '2026-08-13T00:00:00Z'
+                      WHERE content_hash = (SELECT content_hash FROM artifact WHERE id = ?1)",
+                    [&f.read_artifact],
+                )
+                .unwrap();
+            Ok(())
+        })
+        .unwrap();
+
+    match observation(&f, &target).quote {
+        kokin_osint_lib::QuoteView::Unavailable { document_state } => {
+            assert_eq!(document_state, "shredded");
+        }
+        other => panic!("a shredded document quoted as {other:?}"),
+    }
+}
+
+/// The bytes behind a quote go through the AEAD, like every other read.
+///
+/// An implementation that seeked to the locator instead of streaming would
+/// produce a quote from a document whose remainder had been modified, and it
+/// would look exactly as convincing as a real one.
+#[test]
+fn a_quote_is_not_shown_from_a_document_that_failed_authentication() {
+    let f = fixture("quote-damaged");
+    let target = evidence(&f, &f.read_artifact).observations[0]
+        .observation_id
+        .clone();
+
+    let blob_path = blob_file(&f, &f.read_artifact);
+    let mut bytes = std::fs::read(&blob_path).unwrap();
+    let last = bytes.len() - 1;
+    bytes[last] ^= 0xff;
+    std::fs::write(&blob_path, &bytes).unwrap();
+
+    match observation(&f, &target).quote {
+        kokin_osint_lib::QuoteView::Unavailable { document_state } => {
+            assert_eq!(document_state, "damaged");
+        }
+        other => panic!("a modified document quoted as {other:?}"),
+    }
+}
+
+/// Lineage reaches all the way back to where the bytes came from.
+#[test]
+fn lineage_names_the_run_the_capture_and_the_source() {
+    let f = fixture("lineage");
+    let view = observation(&f, &f.observation);
+
+    assert_eq!(view.lineage.extraction.transform_name, "extract.html");
+    assert_eq!(view.lineage.extraction.status, "succeeded");
+    assert_eq!(view.lineage.artifact.artifact_id, f.read_artifact);
+
+    let collection = view
+        .lineage
+        .collection
+        .expect("an artifact with no recorded collection");
+    assert_eq!(collection.capture.connector, "file_import");
+    assert_eq!(collection.capture.job_id, "job-read");
+    assert!(collection.source.raw_locator.ends_with("read.html"));
+    // The run that collected it, not the run that read it.
+    let ingest = collection.ingest.expect("a capture with no ingest run");
+    assert_ne!(ingest.run_id, view.lineage.extraction.run_id);
+}
+
+/// The same document from two places is two collections of one blob.
+///
+/// A panel naming only the artifact in front of the analyst would report a
+/// single origin for evidence the case knows arrived twice.
+#[test]
+fn a_document_that_arrived_twice_names_both_arrivals() {
+    let f = fixture("duplicate");
+    let view = observation(&f, &f.observation);
+
+    assert_eq!(view.lineage.also_collected.len(), 1);
+    let other = &view.lineage.also_collected[0];
+    assert_eq!(other.artifact_id, f.duplicate_artifact);
+    assert_eq!(other.capture.job_id, "job-mirror");
+    assert_ne!(
+        other.source.canonical_locator,
+        view.lineage
+            .collection
+            .as_ref()
+            .unwrap()
+            .source
+            .canonical_locator
+    );
+}
+
+/// An artifact row says what has read it, in the same words coverage uses.
+#[test]
+fn an_artifact_row_reports_whether_anything_has_read_it() {
+    let f = fixture("artifacts");
+    let rows = f
+        .session
+        .with_case(|open| kokin_osint_lib::read::artifacts(open, None))
+        .unwrap();
+    assert_eq!(rows.len(), 3);
+
+    let by_id = |id: &str| {
+        rows.iter()
+            .find(|r| r.artifact_id == id)
+            .unwrap_or_else(|| panic!("{id} is missing from the artifact list"))
+            .clone()
+    };
+
+    let read = by_id(&f.read_artifact);
+    assert_eq!(read.extraction, "complete");
+    assert!(read.observations > 0);
+    assert!(read.canonical_locator.is_some());
+
+    let unread = by_id(&f.unread_artifact);
+    assert_eq!(unread.extraction, "never_attempted");
+    assert_eq!(unread.observations, 0);
+
+    // Deduplicated, so the bytes are shared and the row still stands on its own.
+    let duplicate = by_id(&f.duplicate_artifact);
+    assert_eq!(duplicate.content_hash, read.content_hash);
+    assert_eq!(duplicate.extraction, "never_attempted");
+}
+
+/// A table that hides withdrawn rows has to say how many it hid.
+#[test]
+fn the_evidence_table_counts_what_it_is_not_showing() {
+    let f = fixture("superseded");
+    let before = evidence(&f, &f.read_artifact);
+    assert_eq!(before.superseded, 0);
+
+    // Re-reading the same document withdraws the first run's observations and
+    // records replacements (ADR-0006).
+    f.session
+        .with_case(|open| {
+            let blobs = kokin_blob::BlobStore::new(open.paths.blobs());
+            kokin_extract::extract_artifact(
+                &mut open.conn,
+                &blobs,
+                &open.cmk,
+                &f.read_artifact,
+                kokin_extract::Limits::default(),
+            )
+            .unwrap();
+            Ok(())
+        })
+        .unwrap();
+
+    let after = evidence(&f, &f.read_artifact);
+    assert!(
+        after.superseded > 0,
+        "a rerun withdrew nothing, so this asserts nothing"
+    );
+    assert!(
+        after.observations.iter().all(|o| !o.superseded),
+        "a withdrawn row was returned in a list that excludes them"
+    );
+    assert_eq!(after.observations.len(), before.observations.len());
+
+    let with_withdrawn = f
+        .session
+        .with_case(|open| {
+            kokin_osint_lib::read::artifact_observations(open, &f.read_artifact, true)
+        })
+        .unwrap();
+    assert!(with_withdrawn.observations.iter().any(|o| o.superseded));
+}
+
+/// A withdrawal that replaced nothing is a stronger claim than a correction.
+#[test]
+fn an_observation_withdrawn_by_a_rerun_names_what_replaced_it() {
+    let f = fixture("withdrawn");
+    let original = evidence(&f, &f.read_artifact).observations[0]
+        .observation_id
+        .clone();
+
+    f.session
+        .with_case(|open| {
+            let blobs = kokin_blob::BlobStore::new(open.paths.blobs());
+            kokin_extract::extract_artifact(
+                &mut open.conn,
+                &blobs,
+                &open.cmk,
+                &f.read_artifact,
+                kokin_extract::Limits::default(),
+            )
+            .unwrap();
+            Ok(())
+        })
+        .unwrap();
+
+    let view = observation(&f, &original);
+    let superseded = view.superseded.expect("the rerun withdrew nothing");
+    assert_ne!(superseded.superseded_by.as_deref(), Some(original.as_str()));
+    assert!(!superseded.run_id.is_empty());
 }
 
 // ---------------------------------------------------------------------------

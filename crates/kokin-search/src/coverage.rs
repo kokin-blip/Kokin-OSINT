@@ -238,20 +238,74 @@ pub fn incomplete_artifacts(conn: &Connection, limit: usize) -> Result<Vec<Artif
             Some(id) => gaps_for_run(conn, id)?,
             None => Vec::new(),
         };
-        let state = match status.as_str() {
-            "never" => CoverageState::NeverAttempted,
-            "failed" => CoverageState::Failed { error_code },
-            "succeeded" => CoverageState::Partial,
-            _ => CoverageState::InProgress,
-        };
         out.push(ArtifactCoverage {
             artifact_id,
             media_type,
-            state,
+            state: state_of(&status, error_code, !gaps.is_empty()),
             gaps,
         });
     }
     Ok(out)
+}
+
+/// How completely one named artifact has been read.
+///
+/// `None` when the case holds no such artifact, which is a different answer from
+/// [`CoverageState::NeverAttempted`] and must not be folded into it: one says
+/// nothing has read this document, the other says there is no document.
+///
+/// This exists because a document panel shows one artifact, and the alternative
+/// — deriving the state in the caller from a run status it queried itself — is
+/// how the same rule comes to have two definitions that agree until they do not.
+pub fn artifact_coverage(conn: &Connection, artifact_id: &str) -> Result<Option<ArtifactCoverage>> {
+    let sql = format!(
+        "{LATEST_RUN}
+         SELECT a.media_type, COALESCE(l.status, 'never'), l.error_code
+           FROM artifact a
+           LEFT JOIN latest l ON l.artifact_id = a.id AND l.n = 1
+          WHERE a.id = ?1"
+    );
+    let row = conn.query_row(&sql, [artifact_id], |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, Option<String>>(2)?,
+        ))
+    });
+    let (media_type, status, error_code) = match row {
+        Ok(found) => found,
+        Err(rusqlite::Error::QueryReturnedNoRows) => return Ok(None),
+        Err(other) => return Err(other.into()),
+    };
+    let gaps = gaps_for_artifact(conn, artifact_id)?;
+    Ok(Some(ArtifactCoverage {
+        artifact_id: artifact_id.to_string(),
+        media_type,
+        state: state_of(&status, error_code, !gaps.is_empty()),
+        gaps,
+    }))
+}
+
+/// The one place a run status becomes a coverage state.
+///
+/// `has_gap` is a parameter rather than an assumption. `incomplete_artifacts`
+/// filters to rows that are already incomplete, so inside it a succeeded run is
+/// necessarily [`CoverageState::Partial`] — and that reasoning is invisible at
+/// the point the mapping is written, which is exactly how it gets copied
+/// somewhere the filter does not apply and starts reporting fully-read documents
+/// as partly read.
+fn state_of(status: &str, error_code: Option<String>, has_gap: bool) -> CoverageState {
+    match (status, has_gap) {
+        ("never", _) => CoverageState::NeverAttempted,
+        ("failed", _) => CoverageState::Failed { error_code },
+        ("succeeded", true) => CoverageState::Partial,
+        ("succeeded", false) => CoverageState::Complete,
+        // 'running', and any status a future transform invents. Counted as
+        // unfinished rather than dropped, for the reason `coverage` gives: a
+        // status this build does not recognise is the last thing that should
+        // quietly become "complete".
+        _ => CoverageState::InProgress,
+    }
 }
 
 /// Everything one artifact's latest run reported it missed.

@@ -27,10 +27,11 @@ pub mod write;
 pub use error::{CommandError, ErrorCode};
 pub use session::Session;
 pub use views::{
-    AssessRequest, CaseView, CoverageView, DocumentContent, DocumentView, EntityView,
-    ExtractRequest, ExtractView, GroundingInput, HitView, IngestFileRequest, IngestView,
-    MergeRequest, NewCaseView, NewEntityRequest, NewIdentifierRequest, NewRelationshipRequest,
-    RejectRequest, ResolutionView, SearchRequest, SearchView, SessionView, SplitRequest, WriteView,
+    ArtifactRowView, AssessRequest, CaseView, CoverageView, DocumentContent, DocumentView,
+    EntityView, EvidenceListView, ExtractRequest, ExtractView, GroundingInput, HitView,
+    IngestFileRequest, IngestView, LineageView, MergeRequest, NewCaseView, NewEntityRequest,
+    NewIdentifierRequest, NewRelationshipRequest, ObservationView, QuoteView, RejectRequest,
+    ResolutionView, SearchRequest, SearchView, SessionView, SplitRequest, WriteView,
 };
 
 use std::path::PathBuf;
@@ -112,6 +113,34 @@ fn artifact_document(
     artifact_id: String,
 ) -> Result<DocumentView, CommandError> {
     session.with_case(|open| read::artifact_document(open, &artifact_id))
+}
+
+/// Every artifact in the case, with how much of each has been read.
+#[tauri::command]
+fn artifacts(
+    session: State<'_, Session>,
+    limit: Option<usize>,
+) -> Result<Vec<ArtifactRowView>, CommandError> {
+    session.with_case(|open| read::artifacts(open, limit))
+}
+
+/// What one artifact yielded, and what the run that read it says it missed.
+#[tauri::command]
+fn artifact_observations(
+    session: State<'_, Session>,
+    artifact_id: String,
+    include_superseded: bool,
+) -> Result<EvidenceListView, CommandError> {
+    session.with_case(|open| read::artifact_observations(open, &artifact_id, include_superseded))
+}
+
+/// One observation, its lineage, and the bytes it cites.
+#[tauri::command]
+fn observation(
+    session: State<'_, Session>,
+    observation_id: String,
+) -> Result<ObservationView, CommandError> {
+    session.with_case(|open| read::observation(open, &observation_id))
 }
 
 /// An entity, read through the merge map.
@@ -213,6 +242,9 @@ pub fn run() {
             search,
             coverage,
             artifact_document,
+            artifacts,
+            artifact_observations,
+            observation,
             entity,
             ingest_file,
             extract,

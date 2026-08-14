@@ -1,6 +1,7 @@
 <script lang="ts">
   import CaseGate from "./lib/CaseGate.svelte";
   import ErrorNotice from "./lib/ErrorNotice.svelte";
+  import Evidence from "./lib/Evidence.svelte";
   import RecoveryKey from "./lib/RecoveryKey.svelte";
   import { storageEncryptionStatus } from "./lib/bindings";
   import { Session } from "./lib/session.svelte";
@@ -86,10 +87,12 @@
       </dl>
 
       <p class="pending">
-        Evidence, entities and search are not wired to this shell yet. The
-        commands exist; the panels are increments 23 to 25.
+        Entities, search and the write flows are not wired to this shell yet.
+        The commands exist; the panels are increments 24 to 26.
       </p>
     </section>
+
+    <Evidence />
   {/if}
 
   <footer>

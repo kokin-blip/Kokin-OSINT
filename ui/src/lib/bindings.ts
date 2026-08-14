@@ -108,6 +108,192 @@ export interface SessionView {
 }
 
 // ---------------------------------------------------------------------------
+// Evidence and lineage
+// ---------------------------------------------------------------------------
+
+/**
+ * How completely one artifact has been read.
+ *
+ * The same five words the case-wide coverage figure is counted from, so a
+ * document's own state and the caveat on a result list cannot disagree.
+ * `complete` means the extractor reported no shortfall — not that the document
+ * was understood.
+ */
+export type ExtractionState =
+  | "never_attempted"
+  | "in_progress"
+  | "failed"
+  | "partial"
+  | "complete";
+
+export interface ArtifactRowView {
+  artifact_id: string;
+  media_type: string;
+  byte_length: number;
+  content_hash: string;
+  collected_utc: string;
+  /** Null when the case recorded no capture for this artifact. */
+  canonical_locator: string | null;
+  observations: number;
+  extraction: ExtractionState;
+}
+
+/** Something the run that read this document reported it did not cover. */
+export interface GapView {
+  gap_kind: string;
+  detail: string;
+  /**
+   * Null when the run did not know how much it missed. That is a real answer
+   * and not a zero — a parser that stopped early cannot report what was left —
+   * so it must never be rendered as `0`.
+   */
+  magnitude: number | null;
+  unit: string | null;
+}
+
+export interface ObservationRowView {
+  observation_id: string;
+  kind: string;
+  value: string;
+  observed_utc: string;
+  superseded: boolean;
+}
+
+export interface EvidenceListView {
+  artifact: ArtifactRowView;
+  observations: ObservationRowView[];
+  /** Withdrawn rows in this artifact, counted whether or not they were sent. */
+  superseded: number;
+  gaps: GapView[];
+}
+
+export interface SupersessionView {
+  /**
+   * Null means a rerun read the same document and no longer found this at all,
+   * which is a stronger statement than a corrected value.
+   */
+  superseded_by: string | null;
+  run_id: string;
+  recorded_utc: string;
+}
+
+export interface LocatorView {
+  scheme: string;
+  selector: string | null;
+  start: number | null;
+  end: number | null;
+  /** Always present, always verbatim, whatever the scheme. */
+  raw_json: string;
+}
+
+export interface ExcerptView {
+  before: string;
+  quoted: string;
+  after: string;
+  lossy: boolean;
+}
+
+/**
+ * Whether the document still says what the observation claims it says.
+ *
+ * Resolved in Rust against bytes the AEAD and the content hash both accepted
+ * (A-037, D-038). The interface renders the verdict and does not compute one:
+ * a panel that compared these itself would be comparing two strings it was
+ * handed, which is how a citation comes to agree with itself.
+ */
+export type QuoteView =
+  | { agreement: "exact"; excerpt: ExcerptView }
+  | { agreement: "contains"; excerpt: ExcerptView }
+  | { agreement: "differs"; excerpt: ExcerptView }
+  | { agreement: "out_of_range"; byte_length: number; start: number; end: number }
+  | { agreement: "too_large"; bytes: number; limit: number }
+  | { agreement: "unknown_scheme"; scheme: string }
+  | { agreement: "unavailable"; document_state: string };
+
+export interface RunView {
+  run_id: string;
+  transform_name: string;
+  transform_version: string;
+  code_version: string;
+  started_utc: string;
+  finished_utc: string | null;
+  status: string;
+  error_code: string | null;
+  error_detail: string | null;
+}
+
+export interface CaptureRefView {
+  capture_id: string;
+  requested_utc: string;
+  http_status: number | null;
+  capture_completeness: string;
+  /** True when these bytes were replayed from a fixture rather than fetched. */
+  from_fixture: boolean;
+  connector: string;
+  job_id: string;
+}
+
+export interface SourceRefView {
+  source_id: string;
+  kind: string;
+  raw_locator: string;
+  canonical_locator: string;
+  first_seen_utc: string;
+}
+
+export interface CollectionView {
+  artifact_id: string;
+  ingest: RunView | null;
+  capture: CaptureRefView;
+  source: SourceRefView;
+}
+
+export interface LineageView {
+  extraction: RunView;
+  artifact: ArtifactRowView;
+  /** Null means an artifact with no recorded capture — a broken case. */
+  collection: CollectionView | null;
+  /**
+   * Other artifacts holding these exact bytes. Not a storage detail: the same
+   * document reaching a case from two places is an investigative fact.
+   */
+  also_collected: CollectionView[];
+}
+
+export interface ObservationView {
+  observation_id: string;
+  kind: string;
+  value: string;
+  observed_utc: string;
+  superseded: SupersessionView | null;
+  locator: LocatorView;
+  quote: QuoteView;
+  lineage: LineageView;
+}
+
+/**
+ * Why a document can or cannot be shown, as five answers.
+ *
+ * `shredded` is the case working correctly and must never be presented as a
+ * fault; `lost` and `damaged` are. Reporting loss as shredding would file an
+ * undetected failure as retention policy (A-032).
+ */
+export type DocumentContent =
+  | { state: "readable"; text: string; truncated_bytes: number; lossy: boolean }
+  | { state: "shredded"; shredded_utc: string | null }
+  | { state: "unrecorded" }
+  | { state: "lost" }
+  | { state: "damaged"; detail: string };
+
+export interface DocumentView {
+  artifact_id: string;
+  media_type: string;
+  byte_length: number;
+  content_hash: string;
+  content: DocumentContent;
+}
+
+// ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
 
@@ -140,4 +326,23 @@ export function closeCase(): Promise<void> {
 
 export function sessionStatus(): Promise<SessionView> {
   return invoke("session_status");
+}
+
+export function artifacts(limit?: number): Promise<ArtifactRowView[]> {
+  return invoke("artifacts", { limit });
+}
+
+export function artifactObservations(
+  artifactId: string,
+  includeSuperseded: boolean,
+): Promise<EvidenceListView> {
+  return invoke("artifact_observations", { artifactId, includeSuperseded });
+}
+
+export function observation(observationId: string): Promise<ObservationView> {
+  return invoke("observation", { observationId });
+}
+
+export function artifactDocument(artifactId: string): Promise<DocumentView> {
+  return invoke("artifact_document", { artifactId });
 }

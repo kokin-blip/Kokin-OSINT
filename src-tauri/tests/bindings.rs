@@ -75,7 +75,25 @@ fn rust_view_structs(source: &str) -> BTreeMap<String, BTreeSet<String>> {
 }
 
 /// View types the interface reads today.
-const BOUND: &[&str] = &["CaseView", "NewCaseView", "SessionView"];
+const BOUND: &[&str] = &[
+    "CaseView",
+    "NewCaseView",
+    "SessionView",
+    "ArtifactRowView",
+    "EvidenceListView",
+    "GapView",
+    "ObservationRowView",
+    "ObservationView",
+    "SupersessionView",
+    "LocatorView",
+    "ExcerptView",
+    "LineageView",
+    "CollectionView",
+    "CaptureRefView",
+    "SourceRefView",
+    "RunView",
+    "DocumentView",
+];
 
 /// View types with no TypeScript yet, and the increment that adds each.
 ///
@@ -84,33 +102,40 @@ const BOUND: &[&str] = &["CaseView", "NewCaseView", "SessionView"];
 /// happens to be bound — silently accepts every type nobody got round to, which
 /// is the state this list exists to make visible. Each later increment deletes
 /// lines from it.
+///
+/// The increment numbers here shifted by one in increment 23. The plan's
+/// milestone B assumed the UI foundation landed at 21; it landed at 22, because
+/// 21 went on the R-014 fix. Corrected in one place rather than left to drift,
+/// which is the same mistake increment 19 found in the reference workflow.
 const NOT_YET_BOUND: &[(&str, &str)] = &[
-    ("SearchRequest", "increment 24: search"),
-    ("HitView", "increment 24: search"),
-    ("CoverageView", "increment 24: search"),
-    ("SearchView", "increment 24: search"),
-    ("DocumentView", "increment 23: evidence and lineage"),
-    ("EntityView", "increment 23: entities"),
-    ("EntityRefView", "increment 23: entities"),
-    ("IdentifierView", "increment 23: entities"),
-    ("EvidenceView", "increment 23: evidence and lineage"),
-    ("DimensionView", "increment 23: confidence"),
-    ("DimensionValueView", "increment 23: confidence"),
-    ("DecisionView", "increment 23: resolution"),
-    ("IngestFileRequest", "increment 25: write flows"),
-    ("IngestView", "increment 25: write flows"),
-    ("ExtractRequest", "increment 25: write flows"),
-    ("ExtractView", "increment 25: write flows"),
-    ("GroundingInput", "increment 25: write flows"),
-    ("NewEntityRequest", "increment 25: write flows"),
-    ("NewIdentifierRequest", "increment 25: write flows"),
-    ("NewRelationshipRequest", "increment 25: write flows"),
-    ("AssessRequest", "increment 25: write flows"),
-    ("MergeRequest", "increment 25: write flows"),
-    ("RejectRequest", "increment 25: write flows"),
-    ("SplitRequest", "increment 25: write flows"),
-    ("WriteView", "increment 25: write flows"),
-    ("ResolutionView", "increment 25: write flows"),
+    ("SearchRequest", "increment 25: search and history"),
+    ("HitView", "increment 25: search and history"),
+    ("CoverageView", "increment 25: search and history"),
+    ("SearchView", "increment 25: search and history"),
+    ("EntityView", "increment 24: entities and confidence"),
+    ("EntityRefView", "increment 24: entities and confidence"),
+    ("IdentifierView", "increment 24: entities and confidence"),
+    ("EvidenceView", "increment 24: entities and confidence"),
+    ("DimensionView", "increment 24: entities and confidence"),
+    (
+        "DimensionValueView",
+        "increment 24: entities and confidence",
+    ),
+    ("DecisionView", "increment 24: entities and confidence"),
+    ("IngestFileRequest", "increment 26: write flows"),
+    ("IngestView", "increment 26: write flows"),
+    ("ExtractRequest", "increment 26: write flows"),
+    ("ExtractView", "increment 26: write flows"),
+    ("GroundingInput", "increment 26: write flows"),
+    ("NewEntityRequest", "increment 26: write flows"),
+    ("NewIdentifierRequest", "increment 26: write flows"),
+    ("NewRelationshipRequest", "increment 26: write flows"),
+    ("AssessRequest", "increment 26: write flows"),
+    ("MergeRequest", "increment 26: write flows"),
+    ("RejectRequest", "increment 26: write flows"),
+    ("SplitRequest", "increment 26: write flows"),
+    ("WriteView", "increment 26: write flows"),
+    ("ResolutionView", "increment 26: write flows"),
 ];
 
 #[test]
@@ -241,6 +266,114 @@ fn snake_case(variant: &str) -> String {
             out.push(c);
         }
     }
+    out
+}
+
+/// A-031. Nothing in this interface can turn a document into markup.
+///
+/// The commonest artifact in this product is an HTML page collected from the
+/// internet, and the more interesting the investigation, the likelier that page
+/// was built to attack whoever opens it. A component that writes a document into
+/// `{@html}` executes attacker-authored markup inside the process holding the
+/// case master key (A-029) — the evidence becomes the delivery vehicle.
+///
+/// The CSP is the outer wall: `script-src 'self'` with no `'unsafe-inline'`
+/// stops injected `<script>` and inline handlers, `frame-src 'none'` stops the
+/// sandboxed-iframe route the original design named, and `object-src 'none'`
+/// and `base-uri 'none'` close the two remaining ways to reach a plugin or
+/// rewrite relative URLs. But CSP does not stop layout: markup rendered into the
+/// page can still position an overlay over the real interface and collect
+/// whatever is typed into it, and no header prevents that.
+///
+/// So the enforcing control is that the primitives never appear (D-037). This
+/// scans for all of them rather than for `{@html}` alone, because Svelte is not
+/// the only way to reach `innerHTML` from a component.
+#[test]
+fn no_part_of_the_interface_can_render_a_document_as_markup() {
+    const FORBIDDEN: &[&str] = &[
+        "{@html",
+        "innerHTML",
+        "outerHTML",
+        "insertAdjacentHTML",
+        "document.write",
+        "createContextualFragment",
+        "DOMParser",
+        "<iframe",
+        "<object",
+        "<embed",
+    ];
+
+    let mut offenders = Vec::new();
+    for (path, text) in ui_sources() {
+        for needle in FORBIDDEN {
+            if text.contains(needle) {
+                offenders.push(format!("{path}: {needle}"));
+            }
+        }
+    }
+
+    assert!(
+        offenders.is_empty(),
+        "evidence in this product is hostile by default and is rendered as text, \
+         never as markup (A-031, D-037): {offenders:?}"
+    );
+}
+
+/// The CSP that backs the rule above, asserted rather than assumed.
+///
+/// `tauri.conf.json` is easy to relax and nothing else would notice. This fails
+/// if any of the four directives that matter is weakened, so relaxing one is a
+/// decision with a failing test attached rather than a diff nobody reads.
+#[test]
+fn the_content_security_policy_still_forbids_every_execution_route() {
+    let config = std::fs::read_to_string(repo_file("tauri.conf.json")).unwrap();
+    let csp = config
+        .lines()
+        .find(|line| line.contains("\"csp\""))
+        .expect("no csp in tauri.conf.json");
+
+    for required in [
+        "script-src 'self'",
+        "frame-src 'none'",
+        "object-src 'none'",
+        "base-uri 'none'",
+    ] {
+        assert!(csp.contains(required), "the CSP no longer sets {required}");
+    }
+    assert!(
+        !csp.contains("script-src 'self' 'unsafe-inline'"),
+        "'unsafe-inline' in script-src re-enables inline handlers on injected markup"
+    );
+}
+
+/// Every `.ts` and `.svelte` file under `ui/src`, with its name.
+fn ui_sources() -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    let mut stack = vec![repo_file("../ui/src")];
+
+    while let Some(dir) = stack.pop() {
+        for entry in std::fs::read_dir(&dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            let Some(ext) = path.extension().and_then(|e| e.to_str()) else {
+                continue;
+            };
+            if !matches!(ext, "ts" | "svelte") {
+                continue;
+            }
+            let name = path.file_name().unwrap().to_string_lossy().to_string();
+            out.push((name, std::fs::read_to_string(&path).unwrap()));
+        }
+    }
+
+    assert!(
+        out.len() >= 5,
+        "the scraper found only {} interface files",
+        out.len()
+    );
     out
 }
 

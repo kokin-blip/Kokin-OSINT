@@ -236,8 +236,261 @@ pub enum DocumentContent {
     Lost,
     /// The ciphertext is here and failed authentication, or did not hash to what
     /// the case recorded. Someone or something modified the case directory
-    /// (A-031), and this is the only state in this enum that is an accusation.
+    /// (A-032), and this is the only state in this enum that is an accusation.
     Damaged { detail: String },
+}
+
+// ---------------------------------------------------------------------------
+// Evidence and lineage
+// ---------------------------------------------------------------------------
+
+/// One artifact in a list of them.
+///
+/// `extraction` is the same five-state coverage vocabulary the case-wide figure
+/// is counted from, per artifact, so "this document has never been read" is
+/// visible in the list rather than only in an aggregate. It is computed by
+/// `kokin_search::coverage::artifact_coverage` and not here — the rule has one
+/// definition (D-029's reasoning, applied to a single row).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ArtifactRowView {
+    pub artifact_id: String,
+    pub media_type: String,
+    pub byte_length: i64,
+    pub content_hash: String,
+    pub collected_utc: String,
+    /// Where this copy came from, if the case recorded a capture for it.
+    pub canonical_locator: Option<String>,
+    /// Observations recorded against it, superseded ones excluded.
+    pub observations: i64,
+    /// `never_attempted`, `in_progress`, `failed`, `partial` or `complete`.
+    pub extraction: String,
+}
+
+/// The observations one artifact yielded, and what the reading missed.
+///
+/// `gaps` travels in the same payload for the reason coverage travels with
+/// search results: a table of forty observations from a document whose text was
+/// truncated is more misleading than an empty one, because a full table does not
+/// get interrogated.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct EvidenceListView {
+    pub artifact: ArtifactRowView,
+    pub observations: Vec<ObservationRowView>,
+    /// Superseded rows in this artifact, whether or not they were returned. A
+    /// count rather than a silence: the case previously asserted these.
+    pub superseded: i64,
+    pub gaps: Vec<GapView>,
+}
+
+/// Something the run that read this document reported it did not cover.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct GapView {
+    /// A stable code, for counting: `text_truncated`, `value_oversize`.
+    pub gap_kind: String,
+    /// The same thing in words, for showing.
+    pub detail: String,
+    /// `None` when the run genuinely did not know how much it missed, which is
+    /// a real answer and not a zero — a parser that stopped early cannot report
+    /// what was left. An interface rendering it as 0 has invented a measurement.
+    pub magnitude: Option<i64>,
+    pub unit: Option<String>,
+}
+
+/// One observation as a row in a table.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ObservationRowView {
+    pub observation_id: String,
+    pub kind: String,
+    pub value: String,
+    pub observed_utc: String,
+    /// True when a later run of the same extractor withdrew this row (ADR-0006).
+    pub superseded: bool,
+}
+
+/// One observation, everything that produced it, and the bytes it points at.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ObservationView {
+    pub observation_id: String,
+    pub kind: String,
+    pub value: String,
+    pub observed_utc: String,
+    /// Present when a later run withdrew this observation.
+    pub superseded: Option<SupersessionView>,
+    pub locator: LocatorView,
+    /// What the document actually says at that locator — see [`QuoteView`].
+    pub quote: QuoteView,
+    pub lineage: LineageView,
+}
+
+/// A withdrawal, and what replaced it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SupersessionView {
+    /// The observation that took its place. `None` means a rerun read the same
+    /// document and no longer found this at all, which is a stronger statement
+    /// than a corrected value and must not render as one.
+    pub superseded_by: Option<String>,
+    pub run_id: String,
+    pub recorded_utc: String,
+}
+
+/// Where in the artifact an observation came from.
+///
+/// `raw_json` is always present and always verbatim. The parsed fields are this
+/// build's reading of a locator scheme, and a case may hold a scheme this build
+/// has never seen — in which case the parsed fields are empty and the raw form
+/// is the only honest thing to show.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct LocatorView {
+    /// `html_byte_range` today. `unrecorded` when the stored JSON names none.
+    pub scheme: String,
+    /// What was being looked for, when the scheme records it.
+    pub selector: Option<String>,
+    pub start: Option<i64>,
+    pub end: Option<i64>,
+    pub raw_json: String,
+}
+
+/// The document's own bytes around a locator, split so the interface never has
+/// to do offset arithmetic.
+///
+/// Three strings rather than one string and two indices, because the one thing
+/// this panel exists to get right is *which bytes are being cited*, and an
+/// off-by-one in the webview would highlight the wrong span while looking
+/// entirely convincing.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ExcerptView {
+    pub before: String,
+    /// The bytes the locator names.
+    pub quoted: String,
+    pub after: String,
+    /// True if these bytes were not valid UTF-8 and were replaced lossily.
+    pub lossy: bool,
+}
+
+/// Whether the document still says what the observation claims it says.
+///
+/// An observation stores a `value` and a `locator_json`, and nothing has ever
+/// checked that the second supports the first (A-037). Showing them side by side
+/// without checking invites the reader to assume a correspondence that no code
+/// asserts, which is the whole failure mode of a citation.
+///
+/// So the check happens here, over bytes the AEAD and the content hash have both
+/// accepted, and the verdict is the tag (D-038). `differs` is a real outcome and
+/// is rendered as one rather than hidden.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "agreement", rename_all = "snake_case")]
+pub enum QuoteView {
+    /// The bytes at the locator are exactly the recorded value.
+    Exact { excerpt: ExcerptView },
+    /// The recorded value appears within the bytes at the locator. Normal: a
+    /// locator commonly spans an element while the value is its text or one
+    /// attribute.
+    Contains { excerpt: ExcerptView },
+    /// The bytes at the locator do not contain the recorded value. Either the
+    /// extractor recorded the wrong range or the value was transformed on its
+    /// way to the row; either way the citation does not support the claim.
+    Differs { excerpt: ExcerptView },
+    /// The locator names a range this artifact does not have.
+    OutOfRange {
+        byte_length: i64,
+        start: i64,
+        end: i64,
+    },
+    /// The locator names more bytes than this panel will hold in memory.
+    ///
+    /// Distinct from every other outcome on purpose: a truncated quote could be
+    /// compared for `contains` but never for `differs`, because the value might
+    /// be in the part that was dropped. Rather than emit a verdict that is sound
+    /// in one direction only, the check declines.
+    TooLarge { bytes: i64, limit: i64 },
+    /// A locator scheme this build cannot resolve. Not a fault — see
+    /// [`LocatorView`] — and the raw locator is still shown.
+    UnknownScheme { scheme: String },
+    /// The bytes are not available to check against. Carries the
+    /// [`DocumentContent`] state that explains why, so a shredded document and a
+    /// damaged one do not both read as "no quote".
+    Unavailable { document_state: String },
+}
+
+/// Everything the case knows about how an observation came to exist.
+///
+/// Read from the `derivation` edges rather than from the convenient foreign
+/// keys. `observation.artifact_id` and `capture.source_id` are denormalisations
+/// of the same facts; the edges are what the provenance model actually promises,
+/// and reading the shortcut would leave the promise untested by anything.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct LineageView {
+    /// The run that read the document and recorded this observation.
+    pub extraction: RunView,
+    pub artifact: ArtifactRowView,
+    /// How this artifact was collected. `None` means the case holds an artifact
+    /// with no recorded capture — a broken case rather than a normal one, and
+    /// worth showing as such instead of rendering an empty panel.
+    pub collection: Option<CollectionView>,
+    /// Other artifacts in this case holding these exact bytes.
+    ///
+    /// Not a storage detail. The same document reaching a case from two places
+    /// is an investigative fact, and a lineage panel naming one of them tells
+    /// the analyst this evidence has a single origin when the case knows it does
+    /// not.
+    pub also_collected: Vec<CollectionView>,
+}
+
+/// One collection of one artifact: the fetch, and where it was fetched from.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CollectionView {
+    pub artifact_id: String,
+    /// The run that performed the collection.
+    pub ingest: Option<RunView>,
+    pub capture: CaptureRefView,
+    pub source: SourceRefView,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CaptureRefView {
+    pub capture_id: String,
+    pub requested_utc: String,
+    pub http_status: Option<i64>,
+    /// `full`, `partial`, and whatever a later collector records. What the
+    /// collector says it got, not what it wanted.
+    pub capture_completeness: String,
+    /// True when these bytes were replayed from a recorded fixture rather than
+    /// fetched. An analyst reading a fixture as a live collection has the wrong
+    /// date on the evidence.
+    pub from_fixture: bool,
+    pub connector: String,
+    pub job_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SourceRefView {
+    pub source_id: String,
+    pub kind: String,
+    /// Exactly what was asked for.
+    pub raw_locator: String,
+    /// The normalised form the case deduplicates on. Shown beside the raw one
+    /// rather than instead of it: the normalisation is this product's opinion,
+    /// and the raw locator is what the analyst typed or the connector produced.
+    pub canonical_locator: String,
+    pub first_seen_utc: String,
+}
+
+/// One transform run, named by what it was and what happened to it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct RunView {
+    pub run_id: String,
+    pub transform_name: String,
+    pub transform_version: String,
+    /// The build that ran it. A case re-read by a later build holds two runs
+    /// whose only difference is this, which is how "why does this document say
+    /// something different now" becomes answerable.
+    pub code_version: String,
+    pub started_utc: String,
+    pub finished_utc: Option<String>,
+    /// `succeeded`, `failed`, `running`.
+    pub status: String,
+    pub error_code: Option<String>,
+    pub error_detail: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
