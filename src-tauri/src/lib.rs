@@ -22,12 +22,15 @@ pub mod error;
 pub mod read;
 pub mod session;
 pub mod views;
+pub mod write;
 
 pub use error::{CommandError, ErrorCode};
 pub use session::Session;
 pub use views::{
-    CaseView, CoverageView, DocumentContent, DocumentView, EntityView, HitView, NewCaseView,
-    SearchRequest, SearchView, SessionView,
+    AssessRequest, CaseView, CoverageView, DocumentContent, DocumentView, EntityView,
+    ExtractRequest, ExtractView, GroundingInput, HitView, IngestFileRequest, IngestView,
+    MergeRequest, NewCaseView, NewEntityRequest, NewIdentifierRequest, NewRelationshipRequest,
+    RejectRequest, ResolutionView, SearchRequest, SearchView, SessionView, SplitRequest, WriteView,
 };
 
 use std::path::PathBuf;
@@ -117,6 +120,81 @@ fn entity(session: State<'_, Session>, entity_id: String) -> Result<EntityView, 
     session.with_case(|open| read::entity(open, &entity_id))
 }
 
+// Writes. Every one of them records `write::ACTOR`, and none of them takes an
+// actor — see the note at the top of [`write`] for why that is the increment's
+// central control rather than a detail of these signatures.
+
+/// Import a local file and record it as provenance.
+#[tauri::command]
+fn ingest_file(
+    session: State<'_, Session>,
+    request: IngestFileRequest,
+) -> Result<IngestView, CommandError> {
+    session.with_case(|open| write::ingest_file(open, &request))
+}
+
+/// Read an artifact already in the case and record what it says.
+#[tauri::command]
+fn extract(
+    session: State<'_, Session>,
+    request: ExtractRequest,
+) -> Result<ExtractView, CommandError> {
+    session.with_case(|open| write::extract(open, &request))
+}
+
+#[tauri::command]
+fn create_entity(
+    session: State<'_, Session>,
+    request: NewEntityRequest,
+) -> Result<WriteView, CommandError> {
+    session.with_case(|open| write::create_entity(open, &request))
+}
+
+#[tauri::command]
+fn add_identifier(
+    session: State<'_, Session>,
+    request: NewIdentifierRequest,
+) -> Result<WriteView, CommandError> {
+    session.with_case(|open| write::add_identifier(open, &request))
+}
+
+#[tauri::command]
+fn relate(
+    session: State<'_, Session>,
+    request: NewRelationshipRequest,
+) -> Result<WriteView, CommandError> {
+    session.with_case(|open| write::relate(open, &request))
+}
+
+#[tauri::command]
+fn assess(session: State<'_, Session>, request: AssessRequest) -> Result<WriteView, CommandError> {
+    session.with_case(|open| write::assess(open, &request))
+}
+
+#[tauri::command]
+fn merge_entities(
+    session: State<'_, Session>,
+    request: MergeRequest,
+) -> Result<ResolutionView, CommandError> {
+    session.with_case(|open| write::merge(open, &request))
+}
+
+#[tauri::command]
+fn reject_merge(
+    session: State<'_, Session>,
+    request: RejectRequest,
+) -> Result<WriteView, CommandError> {
+    session.with_case(|open| write::reject(open, &request))
+}
+
+#[tauri::command]
+fn split_entity(
+    session: State<'_, Session>,
+    request: SplitRequest,
+) -> Result<ResolutionView, CommandError> {
+    session.with_case(|open| write::split(open, &request))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Failing to start the webview is unrecoverable and happens before any case
@@ -136,6 +214,15 @@ pub fn run() {
             coverage,
             artifact_document,
             entity,
+            ingest_file,
+            extract,
+            create_entity,
+            add_identifier,
+            relate,
+            assess,
+            merge_entities,
+            reject_merge,
+            split_entity,
         ])
         .run(tauri::generate_context!())
         .expect("failed to start the Kokin-OSINT window");

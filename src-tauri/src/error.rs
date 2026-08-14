@@ -64,6 +64,58 @@ pub enum ErrorCode {
     /// fix it rather than telling the analyst their case is broken.
     SearchIndexCorrupt,
 
+    /// The write cited nothing. Every analytical row in this product hangs on
+    /// evidence, and the remedy is specific and available: pick the observation
+    /// this claim comes from. An interface receiving this must open the evidence
+    /// picker, which is a different response from any other failure here.
+    EvidenceRequired,
+
+    /// The write recorded a judgement and gave no reason for it. This layer's own
+    /// rule (D-033), not the schema's — see [`crate::write`].
+    ExplanationRequired,
+
+    /// These two entities are already one. Not a failure of anything: the case
+    /// moved on, or the interface was looking at a stale list. The interface can
+    /// act on it by opening the entity they resolve to, which is why it is not
+    /// folded in with the refusal below.
+    AlreadyMerged,
+
+    /// This entity was never merged into anything, so there is no merge to
+    /// undo. Nothing for the interface to offer, which is exactly why it is a
+    /// different code from [`ErrorCode::AlreadyMerged`].
+    NotMerged,
+
+    /// The value is not on the scale, or not on the version of the scale this
+    /// case holds. Usually an interface offering options it read before the case
+    /// was migrated; the remedy is to re-read the scale, not to retry.
+    InvalidValue,
+
+    /// A `rule:` or `ai:` actor tried to do something only a person may do
+    /// (ADR-0008). The product working, not failing.
+    ///
+    /// **No command in this crate can produce this**, because no command lets its
+    /// caller name the actor — see [`crate::write::ACTOR`]. It is mapped because
+    /// the mapping must be right for the in-process callers that will come, and
+    /// because routing a refusal through `Storage` is how a deliberate boundary
+    /// comes to look like a database fault.
+    MachineMayNotAct,
+
+    /// The file the user chose could not be read. Theirs to fix: a different
+    /// file, or a permission on this one.
+    FileUnreadable,
+
+    /// The document is in the case and the extractor could not read it — wrong
+    /// media type, malformed markup, or past a parser limit. The artifact and its
+    /// bytes are untouched, and that distinction is the whole content of this
+    /// code: nothing was lost, one derivation did not happen.
+    ExtractionFailed,
+
+    /// The bytes this operation needed are not available — shredded, or with no
+    /// blob row at all. Distinct from `NotFound`, which is about a row id the
+    /// interface is holding; here the row is fine and the evidence behind it is
+    /// not.
+    EvidenceUnavailable,
+
     /// A bug in this layer. If a user ever sees this, the code above is
     /// missing a case.
     Internal,
@@ -144,30 +196,77 @@ impl From<kokin_search::SearchError> for CommandError {
 }
 
 impl From<kokin_graph::GraphError> for CommandError {
-    /// Variant by variant, and most of these cannot reach a read command at all.
+    /// Variant by variant, and the refusals are the reason.
     ///
-    /// They are listed rather than caught by a wildcard so that a variant added
-    /// later is a compile error here. The write commands will need most of these
-    /// mapped properly — the refusals in particular, which are the product
-    /// working rather than failing — and a wildcard now would mean they arrived
-    /// silently as `Storage` then.
+    /// Increment 16 mapped most of these to `Storage` because no command could
+    /// reach them; the write commands reach nearly all of them. A refusal
+    /// arriving as "the database refused the operation" tells an analyst their
+    /// case is broken when what actually happened is that the product declined to
+    /// record an unsupported claim — and half of these are not failures at all,
+    /// they are the model holding.
     fn from(e: kokin_graph::GraphError) -> Self {
         use kokin_graph::GraphError as G;
         let code = match &e {
             G::SubjectMissing { .. } | G::UnknownEntityType { .. } | G::UnknownScale { .. } => {
                 ErrorCode::NotFound
             }
+            G::Ungrounded { .. } => ErrorCode::EvidenceRequired,
+            G::UnknownScaleValue { .. } => ErrorCode::InvalidValue,
+            G::MachineMayNotAssign { .. } | G::MachineMayNotMerge { .. } => {
+                ErrorCode::MachineMayNotAct
+            }
+            G::SelfMerge { .. } | G::AlreadyMerged { .. } => ErrorCode::AlreadyMerged,
+            G::NotAbsorbed { .. } => ErrorCode::NotMerged,
             G::Store(inner) => return Self::from_store_ref(inner),
-            G::Sqlite(_)
-            | G::Random(_)
-            | G::MalformedScale { .. }
-            | G::Ungrounded { .. }
-            | G::UnknownScaleValue { .. }
-            | G::MachineMayNotAssign { .. }
-            | G::MachineMayNotMerge { .. }
-            | G::SelfMerge { .. }
-            | G::AlreadyMerged { .. }
-            | G::NotAbsorbed { .. } => ErrorCode::Storage,
+            // A scale row this case cannot parse is a damaged case, not a bad
+            // request, and there is nothing the analyst can do about it.
+            G::Sqlite(_) | G::Random(_) | G::MalformedScale { .. } => ErrorCode::Storage,
+        };
+        Self::new(code, e.to_string())
+    }
+}
+
+impl From<kokin_ingest::IngestError> for CommandError {
+    /// The network variants are mapped to `Internal` on purpose.
+    ///
+    /// No command constructs an `HttpCapability`, and the
+    /// workspace holds no live HTTP client at all — `ReplayHttp` replays
+    /// fixtures. So `Http`, `NotSuccessful` and `Url` cannot arise from anything
+    /// this crate calls, and if one ever does, the bug is here rather than in the
+    /// user's request. When `ingest_url` ships they need codes of their own, and
+    /// `Internal` is the mapping most likely to be noticed at that point.
+    fn from(e: kokin_ingest::IngestError) -> Self {
+        use kokin_ingest::IngestError as I;
+        let code = match &e {
+            I::FileUnreadable { .. } => ErrorCode::FileUnreadable,
+            I::BlobOrphaned { .. } => ErrorCode::EvidenceUnavailable,
+            I::Store(inner) => return Self::from_store_ref(inner),
+            I::Sqlite(_) | I::Blob(_) | I::Random(_) => ErrorCode::Storage,
+            I::Http(_) | I::NotSuccessful { .. } | I::Url(_) => ErrorCode::Internal,
+        };
+        Self::new(code, e.to_string())
+    }
+}
+
+impl From<kokin_extract::ExtractError> for CommandError {
+    /// A document that defeats the extractor has not damaged the case.
+    ///
+    /// Every variant under `ExtractionFailed` leaves the artifact, its bytes and
+    /// its provenance exactly as they were; one derivation did not happen. That
+    /// is a materially different thing from a storage failure, and the coverage
+    /// figures already report it honestly as an artifact this case cannot search.
+    fn from(e: kokin_extract::ExtractError) -> Self {
+        use kokin_extract::ExtractError as X;
+        let code = match &e {
+            X::ArtifactMissing { .. } => ErrorCode::NotFound,
+            X::UnsupportedMediaType { .. }
+            | X::Malformed { .. }
+            | X::TooManyObservations { .. }
+            | X::ParserMemory { .. }
+            | X::ParserPanicked { .. } => ErrorCode::ExtractionFailed,
+            X::BlobShredded { .. } | X::BlobMissing { .. } => ErrorCode::EvidenceUnavailable,
+            X::Store(inner) => return Self::from_store_ref(inner),
+            X::Sqlite(_) | X::Blob(_) | X::Keys(_) | X::Random(_) => ErrorCode::Storage,
         };
         Self::new(code, e.to_string())
     }

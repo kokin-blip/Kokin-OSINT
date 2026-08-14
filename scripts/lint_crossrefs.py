@@ -44,7 +44,23 @@ REF_PATTERN = re.compile(r"\b(?:(ADR)-(\d{4})|([DRAS])-(\d{3})|(P[1-8]))\b")
 # Files to scan. Deliberately excludes the CSVs' own id columns, which are
 # definitions rather than references - a registry defining D-012 is not a
 # reference to it.
-SCAN_GLOBS = ["docs/**/*.md", "research/**/*.md", "README.md", "*.md"]
+#
+# The Rust sources are here because that is where most of these references now
+# live. This lint checked Markdown only for sixteen increments, during which the
+# argument for every control moved into the doc comment beside it - so a module
+# note citing a decision that was never written scanned clean, and nine of them
+# had accumulated by increment 17. The same widening the ordering lint needed at
+# increment 16 (D-022), for the same reason: a guard scoped to where a problem
+# has occurred stops covering where it will, and reports OK the whole time.
+SCAN_GLOBS = [
+    "docs/**/*.md",
+    "research/**/*.md",
+    "README.md",
+    "*.md",
+    "crates/**/*.rs",
+    "src-tauri/**/*.rs",
+    "scripts/*.py",
+]
 
 
 def load_ids(problems: list[str]) -> dict[str, set[str]]:

@@ -24,12 +24,12 @@ kokin-keys = { path = "../crates/kokin-keys" }
 kokin-blob = { path = "../crates/kokin-blob" }
 kokin-search = { path = "../crates/kokin-search" }
 kokin-graph = { path = "../crates/kokin-graph" }
+kokin-ingest = { path = "../crates/kokin-ingest" }
+kokin-extract = { path = "../crates/kokin-extract" }
 rusqlite = { version = "0.40.2", features = ["bundled-sqlcipher-vendored-openssl"] }
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-[dev-dependencies]
-# Only the tests write to a case. The command layer reads.
-kokin-ingest = { path = "../crates/kokin-ingest" }
-kokin-extract = { path = "../crates/kokin-extract" }
+# No kokin-net. Ingesting a URL needs an HttpCapability, and there is no live
+# HTTP client in this workspace to be one — see views::IngestFileRequest.

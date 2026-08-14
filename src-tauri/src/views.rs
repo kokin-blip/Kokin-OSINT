@@ -28,6 +28,19 @@
 //! sorts and colours conveniently. [`DimensionView`] carries value *keys* on
 //! named ordinal scales; there is nothing here to average, and
 //! `the_confidence_block_carries_nothing_that_could_be_added_up` asserts it.
+//!
+//! # And a third: no request names its own actor
+//!
+//! Every write in this product records who made it, and `rule:` and `ai:` actors
+//! are refused the decisions only a person may make (ADR-0008). `kokin_graph`
+//! says plainly that no schema can catch automation writing `actor =
+//! "user:local"` — it is a lie rather than a bypass.
+//!
+//! The IPC boundary is where that lie becomes *reachable*, because a request
+//! field is written by the webview. So no `Deserialize` type in this file has an
+//! `actor` field, every write request is `deny_unknown_fields`, and
+//! [`crate::write::ACTOR`] is a constant (D-032, A-034). The webview names the
+//! evidence and the reasoning; it does not name the author.
 
 use serde::{Deserialize, Serialize};
 
@@ -351,4 +364,233 @@ pub struct DecisionView {
     /// Why the analyst thought so. The product, not a debugging aid.
     pub rationale: String,
     pub decided_utc: String,
+}
+
+// ---------------------------------------------------------------------------
+// Collection
+// ---------------------------------------------------------------------------
+
+/// A local file to bring into the case.
+///
+/// There is deliberately no `ingest_url` request beside this one. Fetching needs
+/// an `HttpCapability`, the workspace holds no live HTTP client, and wiring one
+/// is the egress policy, the resolver, the rate limiter and the network activity
+/// log — not a field on a struct.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct IngestFileRequest {
+    pub path: String,
+}
+
+/// What arrived, and where it came from.
+///
+/// The provenance ids are returned rather than kept private because the next
+/// thing an analyst does with a document is cite it, and a caller that cannot
+/// name the observation it is citing will cite the artifact instead — a weaker
+/// claim recorded as if it were the same one.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct IngestView {
+    pub run_id: String,
+    pub source_id: String,
+    pub capture_id: String,
+    pub artifact_id: String,
+    pub content_hash: String,
+    pub size_bytes: u64,
+    /// True when the case already held these exact bytes. An investigative fact
+    /// — the same document reached this case twice — not a storage detail, and
+    /// an interface that renders it as "imported" has thrown that away.
+    pub deduplicated: bool,
+    pub from_fixture: bool,
+}
+
+/// Which artifact to read.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExtractRequest {
+    pub artifact_id: String,
+}
+
+/// What one extraction produced, and what it could not.
+///
+/// `skipped_oversize` and `text_truncated_bytes` are not optional and not
+/// diagnostics. An extraction that succeeded while silently dropping values is
+/// the same lie as a result list without its coverage (D-029): the case now holds
+/// a document it has only partly read, and nothing downstream can tell.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ExtractView {
+    pub run_id: String,
+    pub artifact_id: String,
+    /// How many observations this run recorded.
+    pub observations: usize,
+    /// Values too long to record, and therefore absent from the case.
+    pub skipped_oversize: usize,
+    /// Prose this document holds that search will not find.
+    pub text_truncated_bytes: usize,
+    /// Observations from an earlier run of this extractor that this run
+    /// withdrew. Non-zero means the case previously asserted something it no
+    /// longer does.
+    pub superseded: usize,
+    /// Computed here, for the same reason [`CoverageView::is_complete`] is: it is
+    /// the figure a caveat is written from, and a caller deriving it can derive
+    /// it wrong in the direction of a document looking fully read.
+    pub complete: bool,
+}
+
+// ---------------------------------------------------------------------------
+// Analysis: what the interface may write
+// ---------------------------------------------------------------------------
+
+/// One piece of evidence a write is grounded in.
+///
+/// `kind` is `observation`, `artifact` or `capture` — L0 and L1 only. An
+/// analytical row is never evidence for another analytical row, because that is
+/// how a conclusion comes to support itself.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GroundingInput {
+    pub kind: String,
+    pub id: String,
+    /// `supports`, `contradicts` or `context`. Defaults to `supports`, which is
+    /// the common case; the other two exist so that evidence arguing *against* a
+    /// conclusion has somewhere to live.
+    #[serde(default = "supports")]
+    pub role: String,
+}
+
+fn supports() -> String {
+    "supports".to_string()
+}
+
+/// A new entity, and what says it exists.
+///
+/// `evidence` has no `#[serde(default)]`, so a request that omits it fails to
+/// deserialise rather than arriving as an empty list. That is the point of
+/// putting the requirement in the signature: `kokin_graph` refuses an ungrounded
+/// entity and a trigger refuses it again, but both of those are reached *after* a
+/// caller has been allowed to express the idea.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NewEntityRequest {
+    pub type_key: String,
+    pub display_name: String,
+    #[serde(default)]
+    pub notes: String,
+    pub evidence: Vec<GroundingInput>,
+}
+
+/// An identifier to attach to an entity.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NewIdentifierRequest {
+    pub entity_id: String,
+    /// `email_address`, `username`, `phone_number`, and so on.
+    pub namespace: String,
+    /// Exactly as the evidence gave it. The normalised form used for equality is
+    /// derived in `kokin_graph` and stored beside it, never instead of it.
+    pub value: String,
+    pub evidence: Vec<GroundingInput>,
+}
+
+/// A relationship between two entities.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NewRelationshipRequest {
+    pub from_entity: String,
+    pub to_entity: String,
+    /// The relationship's own type. "Same username", "similar photograph" and
+    /// "same person" are three different kinds and must not be collapsed into
+    /// one.
+    pub kind: String,
+    /// Both optional and both staying optional. Most relationships are asserted
+    /// without a period, and inventing a start date to fill a column is a claim
+    /// the evidence does not make.
+    #[serde(default)]
+    pub started_utc: Option<String>,
+    #[serde(default)]
+    pub ended_utc: Option<String>,
+    pub evidence: Vec<GroundingInput>,
+}
+
+/// One dimension of confidence about one subject (ADR-0007).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AssessRequest {
+    /// `entity`, `identifier` or `relationship`.
+    pub subject_kind: String,
+    pub subject_id: String,
+    /// The scale id: `source_reliability`, `identifier_match`, and so on.
+    pub dimension: String,
+    /// A key on that scale. Never a number, and `insufficient_information` is a
+    /// value somebody chooses rather than a default the code supplies.
+    pub value_key: String,
+    /// Why. Required and required to be non-empty (D-033): this is the "why"
+    /// panel, and a factor that is not recorded cannot be displayed.
+    ///
+    /// Taken as a list of strings and serialised here, so the column always holds
+    /// well-formed JSON — a caller cannot put arbitrary text in a field the rest
+    /// of the product reads as structure.
+    pub contributing_factors: Vec<String>,
+}
+
+/// Two entities an analyst says are one.
+///
+/// There is no "survivor" field. Which row survives is decided by
+/// `kokin_graph::resolution` — the older of the two clusters — so that the same
+/// two merges always produce the same-looking case, and so that a caller cannot
+/// make the choice by accident.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MergeRequest {
+    pub left: String,
+    pub right: String,
+    /// Why they are the same. Required (D-033). A merge dissolves the distinction
+    /// between two records, and ADR-0008 makes it reversible precisely so it can
+    /// be reconsidered — which is impossible without knowing why it was made.
+    pub rationale: String,
+    /// The proposal this decision settles, if it settles one.
+    #[serde(default)]
+    pub candidate_id: Option<String>,
+}
+
+/// Two entities an analyst says are *not* one.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RejectRequest {
+    pub left: String,
+    pub right: String,
+    pub rationale: String,
+    #[serde(default)]
+    pub candidate_id: Option<String>,
+}
+
+/// An entity to take back out of its cluster.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SplitRequest {
+    pub entity: String,
+    pub rationale: String,
+}
+
+/// A row this command wrote, and who it recorded as the author.
+///
+/// `actor` is echoed back deliberately. The interface may display who a write is
+/// attributed to and cannot choose it — see the module note — and returning it
+/// makes that visible rather than merely true.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct WriteView {
+    pub id: String,
+    pub actor: String,
+}
+
+/// A resolution decision, and where the entity ended up.
+///
+/// `canonical_id` is returned because after a merge the id the interface was
+/// holding may no longer be the one to display, and after a split it is again.
+/// An interface left to work that out re-derives identity, which is exactly the
+/// thing ADR-0008 makes a read.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ResolutionView {
+    pub decision_id: String,
+    pub canonical_id: String,
+    pub actor: String,
 }
