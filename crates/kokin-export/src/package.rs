@@ -274,51 +274,16 @@ fn assemble(staging: &Path, dest: &Path, manifest: &Manifest) -> Result<u64> {
 
     let mut staged = Reader::open(staging)?;
     while let Some(entry) = staged.next_entry()? {
-        // Streamed through, not buffered: the database entry is the whole case.
-        let mut sink = EntrySink {
-            writer: &mut out,
-            name: entry.name.clone(),
-            size: entry.size,
-            buffer: Vec::new(),
-        };
+        // Streamed, not buffered. The database entry is the whole case, so the
+        // obvious bridge - read the entry into a Vec, hand the Vec to the writer -
+        // would hold a case in memory to move it four bytes down a file.
+        let mut sink = out.begin_entry(&entry.name, entry.size)?;
         staged.read_entry(&entry, &mut sink)?;
-        sink.flush_entry()?;
+        sink.finish()?;
     }
     out.finish()?;
 
     Ok(std::fs::metadata(dest)?.len())
-}
-
-/// Bridges the reader's `Write` sink to the writer's `Read` source.
-///
-/// The container writes an entry from a reader and reads one into a writer, and
-/// this is the only place both are needed at once. It buffers, which is
-/// acceptable only because `assemble` is a copy of already-written entries and
-/// could be replaced by an in-place seek if a case ever outgrows it — recorded as
-/// a limitation rather than pretended away.
-struct EntrySink<'a> {
-    writer: &'a mut Writer,
-    name: EntryName,
-    size: u64,
-    buffer: Vec<u8>,
-}
-
-impl EntrySink<'_> {
-    fn flush_entry(&mut self) -> Result<()> {
-        self.writer
-            .write_entry(&self.name, self.size, self.buffer.as_slice())?;
-        Ok(())
-    }
-}
-
-impl std::io::Write for EntrySink<'_> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.buffer.extend_from_slice(buf);
-        Ok(buf.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
 }
 
 #[derive(Debug, Clone)]

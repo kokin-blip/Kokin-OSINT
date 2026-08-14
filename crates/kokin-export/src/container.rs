@@ -140,6 +140,29 @@ impl Writer {
         })
     }
 
+    /// Open an entry and return a sink for its bytes.
+    ///
+    /// The streaming form. `assemble` needs it because the container's other
+    /// direction hands bytes to a [`Write`], and bridging the two by buffering
+    /// would hold an entry - which may be the entire case database - in memory.
+    pub fn begin_entry(&mut self, name: &EntryName, size: u64) -> Result<EntryWriter<'_>> {
+        let raw = name.as_str();
+        let name_len = u16::try_from(raw.len())
+            .map_err(|_| ExportError::IllegalEntryName { raw: raw.clone() })?;
+        self.out.write_all(&name_len.to_le_bytes())?;
+        self.out.write_all(raw.as_bytes())?;
+        self.out.write_all(&size.to_le_bytes())?;
+        self.entries += 1;
+
+        Ok(EntryWriter {
+            out: &mut self.out,
+            hasher: blake3::Hasher::new(),
+            name: raw,
+            declared: size,
+            written: 0,
+        })
+    }
+
     /// Stream one entry in, returning the BLAKE3 of what was actually written.
     ///
     /// The hash is computed here rather than by the caller so the manifest can
@@ -152,39 +175,16 @@ impl Writer {
         size: u64,
         mut data: impl Read,
     ) -> Result<String> {
-        let raw = name.as_str();
-        let name_len = u16::try_from(raw.len())
-            .map_err(|_| ExportError::IllegalEntryName { raw: raw.clone() })?;
-        self.out.write_all(&name_len.to_le_bytes())?;
-        self.out.write_all(raw.as_bytes())?;
-        self.out.write_all(&size.to_le_bytes())?;
-
-        let mut hasher = blake3::Hasher::new();
+        let mut entry = self.begin_entry(name, size)?;
         let mut buf = vec![0u8; 64 * 1024];
-        let mut written = 0u64;
         loop {
             let n = data.read(&mut buf)?;
             if n == 0 {
                 break;
             }
-            hasher.update(&buf[..n]);
-            self.out.write_all(&buf[..n])?;
-            written += n as u64;
+            entry.write_all(&buf[..n])?;
         }
-
-        // A short read here would leave the container structurally broken - every
-        // following entry would be parsed at the wrong offset - so it fails now,
-        // while the only thing lost is a package nobody has yet been handed.
-        if written != size {
-            return Err(ExportError::SizeChangedDuringWrite {
-                name: raw,
-                declared: size,
-                written,
-            });
-        }
-
-        self.entries += 1;
-        Ok(hasher.finalize().to_hex().to_string())
+        entry.finish()
     }
 
     pub fn finish(mut self) -> Result<()> {
@@ -194,6 +194,46 @@ impl Writer {
         file.write_all(&self.entries.to_le_bytes())?;
         file.sync_all()?;
         Ok(())
+    }
+}
+
+/// An open entry. Bytes written here are hashed as they go.
+pub struct EntryWriter<'a> {
+    out: &'a mut BufWriter<File>,
+    hasher: blake3::Hasher,
+    name: String,
+    declared: u64,
+    written: u64,
+}
+
+impl EntryWriter<'_> {
+    /// Close the entry, returning the BLAKE3 of what was written.
+    ///
+    /// A short write leaves the container structurally broken - every following
+    /// entry would be parsed at the wrong offset - so it fails here, while the
+    /// only thing lost is a package nobody has yet been handed.
+    pub fn finish(self) -> Result<String> {
+        if self.written != self.declared {
+            return Err(ExportError::SizeChangedDuringWrite {
+                name: self.name,
+                declared: self.declared,
+                written: self.written,
+            });
+        }
+        Ok(self.hasher.finalize().to_hex().to_string())
+    }
+}
+
+impl Write for EntryWriter<'_> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.out.write_all(buf)?;
+        self.hasher.update(buf);
+        self.written += buf.len() as u64;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.out.flush()
     }
 }
 

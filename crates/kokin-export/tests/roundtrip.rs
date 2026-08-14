@@ -257,6 +257,56 @@ fn work_done_immediately_before_the_export_is_in_the_package() {
     assert_eq!(name, "Written Last");
 }
 
+/// A document larger than the copy buffer survives byte-for-byte.
+///
+/// Entries are written in 64 KiB chunks and `assemble` streams them rather than
+/// buffering, so anything bigger than one chunk takes a different path through
+/// the writer than the small fixtures do. A off-by-one in the chunk loop, or a
+/// hasher fed in the wrong order, shows up here and nowhere else — every other
+/// test's blobs fit in a single read.
+#[test]
+fn a_document_larger_than_the_copy_buffer_survives_intact() {
+    let mut f = fixture("large");
+
+    // Incompressible and non-repeating, so a truncated or duplicated chunk
+    // changes the content hash rather than landing on identical bytes.
+    let big: Vec<u8> = (0..(1024u32 * 1024 + 7))
+        .map(|i| (i.wrapping_mul(2_654_435_761) >> 13) as u8)
+        .collect();
+    let path = f.dir.join("large.bin");
+    std::fs::write(&path, &big).unwrap();
+
+    let blobs = kokin_blob::BlobStore::new(f.open.paths.blobs());
+    let ingested = kokin_ingest::ingest_file(
+        &mut f.open.conn,
+        &blobs,
+        &f.open.cmk,
+        &path,
+        &kokin_ingest::IngestContext {
+            connector: "file_import",
+            job_id: "test",
+        },
+    )
+    .unwrap();
+
+    let pkg = f.dir.join("out.kokinpkg");
+    package(&f.open, &pkg, EXPORT_PASSPHRASE, &PackageOptions::default()).unwrap();
+    assert_eq!(verify(&pkg).unwrap().verdict, Verdict::Ok);
+
+    let dest = f.dir.join("restored.kokincase");
+    import(&pkg, &dest, EXPORT_PASSPHRASE).unwrap();
+    let restored = kokin_store::open_case(&dest, EXPORT_PASSPHRASE).unwrap();
+
+    let store = kokin_blob::BlobStore::new(restored.paths.blobs());
+    let access = kokin_store::blob_access(&restored.conn, &ingested.content_hash).unwrap();
+    let kokin_store::BlobAccess::Readable(blob_ref) = access else {
+        panic!("the large document did not come back readable: {access:?}");
+    };
+    let got = store.get(&blob_ref, &restored.cmk).unwrap();
+    assert_eq!(got.len(), big.len(), "the length changed across the trip");
+    assert!(got == big, "the bytes changed across the trip");
+}
+
 /// The audit chain survives as a chain, not as rows that happen to be present.
 #[test]
 fn the_audit_chain_still_verifies_after_the_trip() {

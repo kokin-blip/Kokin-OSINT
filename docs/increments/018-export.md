@@ -18,7 +18,7 @@ This increment writes the transport format: `package`, `verify` and `import`.
 | `crates/kokin-export/src/lib.rs` | The error taxonomy and the module note on what an export is. |
 | `crates/kokin-export/Cargo.toml` | Workspace crates plus `blake3`, `serde_json`, `thiserror`. |
 | `crates/kokin-blob/src/lib.rs` | `relative_path` made public — see below. |
-| `crates/kokin-export/tests/roundtrip.rs` | New. 16 tests against real cases on disk. |
+| `crates/kokin-export/tests/roundtrip.rs` | New. 17 tests against real cases on disk. |
 | `docs/decision-log.csv` | D-034, D-035. |
 | `docs/threat-model/attack-catalog.csv` | A-035, A-036. |
 
@@ -147,7 +147,7 @@ are all unfindable — with every hash still matching.
 
 ```
 KOKIN_NETWORK=deny cargo test --workspace
-    311 passed, 0 failed, 1 ignored     (289 before; +22 export)
+    312 passed, 0 failed, 1 ignored     (289 before; +23 export)
 
 cargo clippy --workspace --all-targets -- -D warnings   clean
 cargo fmt --all --check                                 clean
@@ -184,34 +184,50 @@ any case does. **An equal count would have meant the copy had stopped recording.
 The assertion now checks the packaged head is the event *before* the restored
 case's own open.
 
+## The one comment that was a lie
+
+`assemble` copies the staged package into the final file with the manifest in
+front, and the container writes an entry from a `Read` while reading one into a
+`Write`. Bridging those by buffering was the quick way, and the loop carried the
+comment `// Streamed through, not buffered: the database entry is the whole
+case.` — which said the opposite of what the code did, and gave the correct
+reason for wanting it.
+
+`Writer::begin_entry` now returns an `EntryWriter` that implements `Write` and
+hashes as it goes, so `assemble` streams and the buffer is gone. The whole case
+database is no longer held in memory to move it a few bytes down a file.
+
+`a_document_larger_than_the_copy_buffer_survives_intact` covers the path with a
+1 MiB non-repeating blob, because every other test's evidence fits in a single
+64 KiB read and would not notice a chunk-loop error at all.
+
+The general point is small and worth keeping: **a comment describing an intention
+reads exactly like a comment describing behaviour**, and this one survived being
+written, reviewed and committed inside a document arguing for honest reporting.
+
 ## Known limitations
 
-1. **`assemble` buffers each entry in memory.** The container writes an entry
-   from a `Read` and reads one into a `Write`, and joining them during the
-   manifest-first rewrite currently buffers. A case with a multi-gigabyte blob
-   will use that much memory during export. Everything else in the path streams;
-   this is the one place that does not, and it wants an in-place seek instead.
-2. **The package is written twice.** Once to staging, once to the final file,
+1. **The package is written twice.** Once to staging, once to the final file,
    because the manifest describes hashes that only exist after the bytes are
    written and has to appear first. The alternative reads every blob twice
    instead; neither holds a case in memory but both do double the I/O.
-3. **`verify` does not open the database**, so it cannot check that the case
+2. **`verify` does not open the database**, so it cannot check that the case
    inside is coherent — only that the bytes match the manifest. A package can
    verify `Ok` and contain a corrupt SQLCipher file. That check needs the
    passphrase, which is the whole thing `verify` is designed not to need.
-4. **No command-layer wiring.** `package`, `verify` and `import` are reachable
+3. **No command-layer wiring.** `package`, `verify` and `import` are reachable
    from the test suite and from no Tauri command. Deliberate: the acceptance test
    is next and drives the crates directly.
-5. **`docs/testing/acceptance-plan.csv` does not exist yet.** It maps rows to the
+4. **`docs/testing/acceptance-plan.csv` does not exist yet.** It maps rows to the
    11 reference-workflow steps and belongs with increment 19, which is the test it
    describes. Creating a partial one now would be a document nobody is using.
-6. **No signature, and no RFC 3161 timestamp.** Tamper-evident, not tamper-proof.
+5. **No signature, and no RFC 3161 timestamp.** Tamper-evident, not tamper-proof.
    Deferred with ADR-0014's reasoning, not overlooked.
-7. **Import does not verify first.** It checks every entry against the manifest as
+6. **Import does not verify first.** It checks every entry against the manifest as
    it writes, and refuses and cleans up on a mismatch, but it does not run the
    full `verify` pass — that is a separate call needing no passphrase, and folding
    it in would mean verifying twice or offering an import that quietly skipped it.
-8. **A package cannot be opened by any other tool.** The container is
+7. **A package cannot be opened by any other tool.** The container is
    purpose-built, so there is no `unzip` fallback in an emergency. Accepted: the
    contents are encrypted and unreadable without the passphrase regardless.
 
