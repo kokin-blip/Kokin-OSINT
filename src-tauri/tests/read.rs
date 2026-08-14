@@ -901,6 +901,36 @@ fn the_evidence_table_counts_what_it_is_not_showing() {
     assert!(with_withdrawn.observations.iter().any(|o| o.superseded));
 }
 
+/// The entity list shows people, not rows.
+///
+/// The fixture merges two records. Listing both would put the same person on
+/// screen twice as two people, which is exactly the assertion the analyst has
+/// already rejected (ADR-0008).
+#[test]
+fn the_entity_list_shows_one_row_per_person_not_per_record() {
+    let f = fixture("entity-list");
+    let rows = f
+        .session
+        .with_case(|open| kokin_osint_lib::read::entities(open, None))
+        .unwrap();
+
+    assert_eq!(rows.len(), 1, "a merged-away record was listed as a person");
+    let row = &rows[0];
+    assert_eq!(row.entity_id, f.canonical);
+    assert_eq!(row.merged_count, 1);
+
+    // Counts span the cluster. The absorbed record holds one identifier of its
+    // own, and a count that looked only at the survivor would report one.
+    assert_eq!(row.identifier_count, 2);
+    assert!(row.evidence_count >= 2);
+
+    // Two dimensions were assessed in the fixture, out of the seven the case
+    // knows. This counts whether somebody looked - never what they concluded.
+    assert_eq!(row.assessed_dimensions, 2);
+    assert_eq!(row.total_dimensions, 7);
+    assert!(!rows.iter().any(|r| r.entity_id == f.absorbed));
+}
+
 /// A withdrawal that replaced nothing is a stronger claim than a correction.
 #[test]
 fn an_observation_withdrawn_by_a_rerun_names_what_replaced_it() {

@@ -28,10 +28,10 @@ pub use error::{CommandError, ErrorCode};
 pub use session::Session;
 pub use views::{
     ArtifactRowView, AssessRequest, CaseView, CoverageView, DocumentContent, DocumentView,
-    EntityView, EvidenceListView, ExtractRequest, ExtractView, GroundingInput, HitView,
-    IngestFileRequest, IngestView, LineageView, MergeRequest, NewCaseView, NewEntityRequest,
-    NewIdentifierRequest, NewRelationshipRequest, ObservationView, QuoteView, RejectRequest,
-    ResolutionView, SearchRequest, SearchView, SessionView, SplitRequest, WriteView,
+    EntityRowView, EntityView, EvidenceListView, ExtractRequest, ExtractView, GroundingInput,
+    HitView, IngestFileRequest, IngestView, LineageView, MergeRequest, NewCaseView,
+    NewEntityRequest, NewIdentifierRequest, NewRelationshipRequest, ObservationView, QuoteView,
+    RejectRequest, ResolutionView, SearchRequest, SearchView, SessionView, SplitRequest, WriteView,
 };
 
 use std::path::PathBuf;
@@ -143,6 +143,15 @@ fn observation(
     session.with_case(|open| read::observation(open, &observation_id))
 }
 
+/// Every entity in the case, canonical rows only.
+#[tauri::command]
+fn entities(
+    session: State<'_, Session>,
+    limit: Option<usize>,
+) -> Result<Vec<EntityRowView>, CommandError> {
+    session.with_case(|open| read::entities(open, limit))
+}
+
 /// An entity, read through the merge map.
 #[tauri::command]
 fn entity(session: State<'_, Session>, entity_id: String) -> Result<EntityView, CommandError> {
@@ -245,6 +254,7 @@ pub fn run() {
             artifacts,
             artifact_observations,
             observation,
+            entities,
             entity,
             ingest_file,
             extract,

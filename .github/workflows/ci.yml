@@ -88,6 +88,15 @@ jobs:
         working-directory: ui
         run: npm run check
 
+      # Component tests. Increments 22 and 23 both closed naming the same gap:
+      # every UI claim rested on screenshots, so a change that made the
+      # recovery-key gate skippable, or rendered a shredded document as a fault,
+      # would pass every check in this file. These cover the handful of
+      # components where the rendering IS the product.
+      - name: Frontend component tests
+        working-directory: ui
+        run: npm test
+
       # The Tauri CLI resolves src-tauri/tauri.conf.json by searching downward,
       # so it must run from the repository root, not from ui/. It builds the
       # frontend itself via beforeBuildCommand.

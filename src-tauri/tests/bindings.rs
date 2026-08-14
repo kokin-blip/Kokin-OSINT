@@ -93,6 +93,14 @@ const BOUND: &[&str] = &[
     "SourceRefView",
     "RunView",
     "DocumentView",
+    "EntityRowView",
+    "EntityView",
+    "EntityRefView",
+    "IdentifierView",
+    "EvidenceView",
+    "DimensionView",
+    "DimensionValueView",
+    "DecisionView",
 ];
 
 /// View types with no TypeScript yet, and the increment that adds each.
@@ -112,16 +120,6 @@ const NOT_YET_BOUND: &[(&str, &str)] = &[
     ("HitView", "increment 25: search and history"),
     ("CoverageView", "increment 25: search and history"),
     ("SearchView", "increment 25: search and history"),
-    ("EntityView", "increment 24: entities and confidence"),
-    ("EntityRefView", "increment 24: entities and confidence"),
-    ("IdentifierView", "increment 24: entities and confidence"),
-    ("EvidenceView", "increment 24: entities and confidence"),
-    ("DimensionView", "increment 24: entities and confidence"),
-    (
-        "DimensionValueView",
-        "increment 24: entities and confidence",
-    ),
-    ("DecisionView", "increment 24: entities and confidence"),
     ("IngestFileRequest", "increment 26: write flows"),
     ("IngestView", "increment 26: write flows"),
     ("ExtractRequest", "increment 26: write flows"),

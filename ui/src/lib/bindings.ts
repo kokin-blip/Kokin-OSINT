@@ -294,6 +294,113 @@ export interface DocumentView {
 }
 
 // ---------------------------------------------------------------------------
+// Entities and confidence
+// ---------------------------------------------------------------------------
+
+/**
+ * One entity in a list.
+ *
+ * `assessed_dimensions` counts dimensions somebody has judged, out of the seven
+ * the case knows. It is **not** a score and must never be rendered as one: it
+ * says whether anyone looked, not what they concluded, so "7 of 7" describes a
+ * thoroughly examined entity that may be thoroughly doubtful (A-033).
+ */
+export interface EntityRowView {
+  entity_id: string;
+  type_key: string;
+  display_name: string;
+  merged_count: number;
+  identifier_count: number;
+  evidence_count: number;
+  assessed_dimensions: number;
+  total_dimensions: number;
+}
+
+export interface EntityRefView {
+  entity_id: string;
+  display_name: string;
+  type_key: string;
+}
+
+export interface IdentifierView {
+  identifier_id: string;
+  /** The row it hangs on, which after a merge is often not the canonical one. */
+  entity_id: string;
+  namespace: string;
+  /** Exactly as the evidence gave it. */
+  value: string;
+}
+
+export interface EvidenceView {
+  link_id: string;
+  entity_id: string;
+  evidence_kind: string;
+  evidence_id: string;
+  /**
+   * `supports`, `contradicts` or `context`. Evidence arguing against a
+   * conclusion has somewhere to live, and rendering all three alike throws that
+   * away.
+   */
+  role: string;
+}
+
+/**
+ * One assessment.
+ *
+ * `value_key` is a key on a named ordinal scale, never a number, and
+ * `scale_version` is the only numeric field in this whole block. There is
+ * deliberately nothing here to average.
+ */
+export interface DimensionValueView {
+  entity_id: string;
+  value_key: string;
+  label: string;
+  scale_version: number;
+  actor: string;
+  assessed_utc: string;
+  contributing_factors_json: string;
+}
+
+/**
+ * One dimension, whether or not anybody has assessed it.
+ *
+ * All seven are always present (D-031). A sparse list renders as absence and
+ * absence reads as "no concern", which is the opposite of what an unassessed
+ * dimension means.
+ */
+export interface DimensionView {
+  dimension: string;
+  title: string;
+  /** The scale's own question, from the case's copy of the scale. */
+  question: string;
+  /** `unassessed`, `assessed`, or `disagreed`. */
+  agreement: string;
+  values: DimensionValueView[];
+}
+
+export interface DecisionView {
+  action: string;
+  actor: string;
+  /** Why. The product, not a debugging aid (D-033). */
+  rationale: string;
+  decided_utc: string;
+}
+
+export interface EntityView {
+  requested_id: string;
+  entity_id: string;
+  redirected: boolean;
+  type_key: string;
+  display_name: string;
+  notes: string;
+  merged_from: EntityRefView[];
+  identifiers: IdentifierView[];
+  evidence: EvidenceView[];
+  confidence: DimensionView[];
+  history: DecisionView[];
+}
+
+// ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
 
@@ -345,4 +452,12 @@ export function observation(observationId: string): Promise<ObservationView> {
 
 export function artifactDocument(artifactId: string): Promise<DocumentView> {
   return invoke("artifact_document", { artifactId });
+}
+
+export function entities(limit?: number): Promise<EntityRowView[]> {
+  return invoke("entities", { limit });
+}
+
+export function entity(entityId: string): Promise<EntityView> {
+  return invoke("entity", { entityId });
 }

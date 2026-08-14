@@ -537,6 +537,31 @@ pub struct EntityRefView {
     pub type_key: String,
 }
 
+/// One entity in a list of them.
+///
+/// Only canonical entities appear: a list showing both halves of a merge asserts
+/// that two people exist, which is the same failure `resolve_merged` exists to
+/// prevent in search (ADR-0008).
+///
+/// `assessed_dimensions` is a count of dimensions with at least one assessment,
+/// out of the seven the case knows. It is deliberately **not** a score and
+/// cannot become one: it counts whether somebody looked, not what they
+/// concluded, so "7 of 7" describes a thoroughly examined entity that may be
+/// thoroughly doubtful (A-033).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct EntityRowView {
+    pub entity_id: String,
+    pub type_key: String,
+    pub display_name: String,
+    /// Rows merged into this one. Non-zero means this record is a projection
+    /// over several, which changes what its identifier list means.
+    pub merged_count: i64,
+    pub identifier_count: i64,
+    pub evidence_count: i64,
+    pub assessed_dimensions: i64,
+    pub total_dimensions: i64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct IdentifierView {
     pub identifier_id: String,

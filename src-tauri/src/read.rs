@@ -23,10 +23,10 @@ use rusqlite::Connection;
 use crate::error::{CommandError, ErrorCode};
 use crate::views::{
     ArtifactRowView, CaptureRefView, CollectionView, CoverageView, DecisionView,
-    DimensionValueView, DimensionView, DocumentContent, DocumentView, EntityRefView, EntityView,
-    EvidenceListView, EvidenceView, ExcerptView, GapView, HitView, IdentifierView, LineageView,
-    LocatorView, ObservationRowView, ObservationView, QuoteView, RunView, SearchRequest,
-    SearchView, SourceRefView, SupersessionView,
+    DimensionValueView, DimensionView, DocumentContent, DocumentView, EntityRefView, EntityRowView,
+    EntityView, EvidenceListView, EvidenceView, ExcerptView, GapView, HitView, IdentifierView,
+    LineageView, LocatorView, ObservationRowView, ObservationView, QuoteView, RunView,
+    SearchRequest, SearchView, SourceRefView, SupersessionView,
 };
 
 /// A database failure that is not an answer about anything.
@@ -900,6 +900,106 @@ pub fn entity(open: &OpenCase, entity_id: &str) -> Result<EntityView, CommandErr
         confidence: confidence(conn, &members)?,
         history: history(conn, &canonical)?,
     })
+}
+
+/// The most entities one call will list.
+const MAX_ENTITIES: usize = 500;
+
+/// Every entity in the case, canonical rows only.
+///
+/// Listing merged-away rows would put both halves of a merge on screen as two
+/// people, which is the thing an analyst already decided is not true. They are
+/// reachable from the entity they resolve to, where the merge is visible as a
+/// merge.
+pub fn entities(open: &OpenCase, limit: Option<usize>) -> Result<Vec<EntityRowView>, CommandError> {
+    let limit = limit.unwrap_or(MAX_ENTITIES).min(MAX_ENTITIES);
+    let conn = &open.conn;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT e.id, e.type_key, e.display_name
+               FROM entity e
+              WHERE NOT EXISTS (SELECT 1 FROM er_merge_map m
+                                 WHERE m.entity_id = e.id AND m.active = 1)
+              ORDER BY e.display_name, e.rowid
+              LIMIT ?1",
+        )
+        .map_err(storage)?;
+    let rows = stmt
+        .query_map([limit as i64], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+            ))
+        })
+        .map_err(storage)?;
+
+    let mut found = Vec::new();
+    for row in rows {
+        found.push(row.map_err(storage)?);
+    }
+
+    let total_dimensions = case_scales(conn)?.len() as i64;
+    let mut out = Vec::with_capacity(found.len());
+    for (entity_id, type_key, display_name) in found {
+        // Every count spans the cluster, for the reason `entity` gathers across
+        // it: a merge does not move rows, so counting only the survivor's would
+        // report the absorbed record's identifiers and evidence as absent at
+        // exactly the moment they became most relevant.
+        let absorbed = kokin_graph::resolution::cluster(conn, &entity_id)?;
+        let mut members = absorbed;
+        let merged_count = members.len() as i64;
+        members.push(entity_id.clone());
+
+        out.push(EntityRowView {
+            merged_count,
+            identifier_count: count_over(conn, "identifier", "entity_id", &members)?,
+            evidence_count: count_over(conn, "evidence_link", "subject_id", &members)?,
+            assessed_dimensions: assessed_dimensions(conn, &members)?,
+            total_dimensions,
+            entity_id,
+            type_key,
+            display_name,
+        });
+    }
+    Ok(out)
+}
+
+/// Rows in `table` whose `column` is any of `members`.
+fn count_over(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    members: &[String],
+) -> Result<i64, CommandError> {
+    // `table` and `column` are literals from this module, never from a caller;
+    // only the member ids are bound, and they are ids this module just read.
+    let sql = format!(
+        "SELECT COUNT(*) FROM {table} WHERE {column} IN ({})",
+        placeholders(members.len())
+    );
+    conn.query_row(&sql, rusqlite::params_from_iter(members.iter()), |r| {
+        r.get(0)
+    })
+    .map_err(storage)
+}
+
+/// How many distinct dimensions anybody has assessed across the cluster.
+///
+/// A count of *whether somebody looked*, never of what they concluded. Nothing
+/// downstream can turn it into a confidence, because it does not know one
+/// (A-033).
+fn assessed_dimensions(conn: &Connection, members: &[String]) -> Result<i64, CommandError> {
+    let sql = format!(
+        "SELECT COUNT(DISTINCT dimension) FROM assessment
+          WHERE subject_kind = 'entity' AND subject_id IN ({})",
+        placeholders(members.len())
+    );
+    conn.query_row(&sql, rusqlite::params_from_iter(members.iter()), |r| {
+        r.get(0)
+    })
+    .map_err(storage)
 }
 
 fn entity_row(conn: &Connection, id: &str) -> rusqlite::Result<(String, String, String)> {

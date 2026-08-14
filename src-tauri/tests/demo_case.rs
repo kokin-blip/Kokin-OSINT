@@ -135,6 +135,107 @@ fn build_a_case_to_look_at() {
             )
             .unwrap();
 
+            // Two people who turn out to be one, judged differently before
+            // anyone decided that, so the confidence block has a disagreement
+            // to show and the merge has something to be a projection over.
+            let observations: Vec<String> = {
+                let mut stmt = open
+                    .conn
+                    .prepare("SELECT id FROM observation WHERE artifact_id = ?1 ORDER BY rowid")
+                    .unwrap();
+                let rows = stmt
+                    .query_map([&hostile], |r| r.get::<_, String>(0))
+                    .unwrap();
+                rows.map(|r| r.unwrap()).collect()
+            };
+            let evidence: Vec<kokin_graph::Grounding> = observations
+                .iter()
+                .map(|id| kokin_graph::Grounding::supporting_observation(id))
+                .collect();
+
+            let first = kokin_graph::create_entity(
+                &mut open.conn,
+                kokin_graph::NewEntity {
+                    type_key: "person",
+                    display_name: "Tungsten Holdings press office",
+                    notes: "named on the contact page",
+                },
+                &evidence[..1],
+            )
+            .unwrap();
+            let second = kokin_graph::create_entity(
+                &mut open.conn,
+                kokin_graph::NewEntity {
+                    type_key: "person",
+                    display_name: "press@tungsten.example",
+                    notes: "the address itself, before anyone connected it",
+                },
+                &evidence[..1],
+            )
+            .unwrap();
+
+            kokin_graph::add_identifier(
+                &mut open.conn,
+                &first,
+                "email_address",
+                "press@tungsten.example",
+                &evidence[..1],
+            )
+            .unwrap();
+
+            for (entity, value, why) in [
+                (
+                    &first,
+                    "usually_reliable",
+                    "the registration number checks out",
+                ),
+                (
+                    &second,
+                    "mixed",
+                    "the page also carries a credential harvester",
+                ),
+            ] {
+                kokin_graph::assess(
+                    &mut open.conn,
+                    kokin_graph::Subject {
+                        kind: kokin_graph::SubjectKind::Entity,
+                        id: entity,
+                    },
+                    "source_reliability",
+                    value,
+                    &format!("[{:?}]", why),
+                    "user:local",
+                )
+                .unwrap();
+            }
+            // One dimension a rule judged, so an automated actor is on screen
+            // beside the human ones. It has to be a machine-assignable value:
+            // kokin_graph refuses a rule the right to record
+            // insufficient_information, because "we could not establish this"
+            // is a conclusion a person reaches, not one a matcher reports.
+            kokin_graph::assess(
+                &mut open.conn,
+                kokin_graph::Subject {
+                    kind: kokin_graph::SubjectKind::Entity,
+                    id: &first,
+                },
+                "identifier_match",
+                "similar_unverified",
+                "[\"one address, seen once, no corroboration\"]",
+                "rule:shared_identifier",
+            )
+            .unwrap();
+
+            kokin_graph::resolution::merge(
+                &mut open.conn,
+                &first,
+                &second,
+                "user:local",
+                "the address on the contact page is the press office's own",
+                None,
+            )
+            .unwrap();
+
             // Destroy the key, keep the record. The observations survive their
             // source, which is the whole reason crypto-shredding is not deletion.
             open.conn
