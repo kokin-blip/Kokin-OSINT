@@ -2048,11 +2048,14 @@ dependencies = [
 name = "kokin-osint"
 version = "0.0.1"
 dependencies = [
+ "blake3",
  "kokin-blob",
+ "kokin-export",
  "kokin-extract",
  "kokin-graph",
  "kokin-ingest",
  "kokin-keys",
+ "kokin-net",
  "kokin-search",
  "kokin-store",
  "rusqlite",

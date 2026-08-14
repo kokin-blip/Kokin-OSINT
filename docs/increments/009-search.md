@@ -1,8 +1,12 @@
 # Increment 9 — search
 
-Reference-workflow step 6. L0, L1 and L2 all held rows after increment 8, and
+Reference-workflow step 8. L0, L1 and L2 all held rows after increment 8, and
 none of them could be found without already knowing an id. This increment makes
 a case answerable.
+
+> **Corrected in increment 19.** This said "step 6". Step 6 is showing a
+> relationship with its evidence; search is step 8, together with the activity
+> history. See `docs/testing/reference-workflow.md`.
 
 The index is a **projection**, never a source of truth. Every row in it is
 derived by a trigger from a row in L1 or L2, and `rebuild()` reproduces it from

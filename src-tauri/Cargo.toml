@@ -31,5 +31,16 @@ tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-# No kokin-net. Ingesting a URL needs an HttpCapability, and there is no live
-# HTTP client in this workspace to be one — see views::IngestFileRequest.
+# No kokin-net in [dependencies]. Ingesting a URL needs an HttpCapability, and
+# there is no live HTTP client in this workspace to be one — see
+# views::IngestFileRequest. It appears below as a dev-dependency only, so the
+# acceptance test can hand `ingest_url` a ReplayHttp; nothing shipped can reach
+# it, and the CI import lint holds regardless.
+
+[dev-dependencies]
+# The acceptance test walks the whole reference workflow, so it needs the two
+# ends the command layer does not expose yet: step 2 (ingest_url, which takes an
+# HttpCapability) and step 10 (export/restore).
+kokin-net = { path = "../crates/kokin-net" }
+kokin-export = { path = "../crates/kokin-export" }
+blake3 = "1.5"
