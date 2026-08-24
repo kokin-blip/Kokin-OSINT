@@ -112,8 +112,8 @@ These are enforced by CI, not by convention:
   attribution, and offline mode at once.
 - **The whole test suite passes with no network.** `KOKIN_NETWORK=deny` is set
   in CI; connectors are exercised against recorded, sanitised fixtures.
-- **No copyleft dependencies.** `cargo-deny` enforces a permissive-only
-  allowlist.
+- **GPL dependencies are now permitted.** The project allows copyleft components
+  (GPL-3.0/AGPL-3.0) to directly integrate open-source OSINT tools. See `deny.toml`.
 - **Case databases are genuinely encrypted.** A byte-level test asserts
   `case.db` contains no plaintext and lacks the SQLite magic header — catching a
   build that silently linked plain SQLite.
