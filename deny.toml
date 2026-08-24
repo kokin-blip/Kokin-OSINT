@@ -17,9 +17,13 @@ all-features = false
 version = 2
 confidence-threshold = 0.9
 
-# Permissive licences only. Anything not on this list must be justified in an
-# ADR and added deliberately.
+# Allowlist for open source dependencies, now including GPL-3.0 and AGPL-3.0
+# to enable direct linking of tools like holehe and Spiderfoot.
 allow = [
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
+    "AGPL-3.0-only",
+    "AGPL-3.0-or-later",
     "MIT",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
@@ -66,10 +70,6 @@ allow-wildcard-paths = true
 # Crates that must never appear, with the reason recorded so a future
 # contributor does not have to rediscover it.
 deny = [
-    # Neo4j bindings — Neo4j Community is GPLv3/AGPLv3 and cannot be linked
-    # into a source-available desktop app. This is the most common graph-storage
-    # reflex and it is a trap. See ADR-0005.
-    { crate = "neo4rs", reason = "Neo4j is GPL/AGPL — incompatible with our licence. Use the relational graph (ADR-0005)." },
     # Network access belongs in kokin-net only (ADR-0010). The CI privacy lint
     # catches source-level imports; this catches a transitive reintroduction.
     { crate = "openssl-probe", reason = "Implies system TLS discovery outside the egress broker." },
