@@ -1,8 +1,9 @@
 <script lang="ts">
+  import Restore from "./lib/Restore.svelte";
   import CaseGate from "./lib/CaseGate.svelte";
-  import Entities from "./lib/Entities.svelte";
+  import Workbench from "./lib/Workbench.svelte";
   import ErrorNotice from "./lib/ErrorNotice.svelte";
-  import Evidence from "./lib/Evidence.svelte";
+
   import RecoveryKey from "./lib/RecoveryKey.svelte";
   import { storageEncryptionStatus } from "./lib/bindings";
   import { Session } from "./lib/session.svelte";
@@ -32,10 +33,10 @@
   });
 </script>
 
-<main>
-  <header>
+<main class:case-open={session.openCase !== null}>
+  <header hidden={session.phase.kind === 'open'}>
     <h1>Kokin-OSINT</h1>
-    {#if session.openCase}
+    {#if session.openCase && session.phase.kind !== 'open'}
       <div class="case">
         <span class="name">{session.openCase.case_id}</span>
         <span class="path" title={session.openCase.root}>{session.openCase.root}</span>
@@ -64,6 +65,7 @@
     <p role="status" aria-live="polite">Starting…</p>
   {:else if session.phase.kind === "closed"}
     <CaseGate {session} />
+    <Restore/>
   {:else if session.phase.kind === "recovery-key"}
     <RecoveryKey
       caseId={session.phase.case.case_id}
@@ -71,30 +73,9 @@
       onacknowledge={() => session.acknowledgeRecoveryKey()}
     />
   {:else}
-    <section aria-labelledby="case-title">
-      <h2 id="case-title">Case open</h2>
-      <dl>
-        <dt>Schema version</dt>
-        <dd>{session.phase.case.schema_version}</dd>
-        <dt>Recovery key</dt>
-        <dd>
-          {#if session.phase.case.has_recovery_key}
-            Available — a forgotten passphrase can still be recovered from.
-          {:else}
-            <strong>None.</strong> If the passphrase is forgotten, this case cannot
-            be opened again by anyone.
-          {/if}
-        </dd>
-      </dl>
-
-      <p class="pending">
-        Search and the write flows are not wired to this shell yet. The commands
-        exist; the panels are increments 25 and 26.
-      </p>
-    </section>
-
-    <Evidence />
-    <Entities />
+    {#key session.phase.case.root}
+      <Workbench generation={session.phase.case.session_generation} caseView={session.phase.case} onclose={()=>void session.close()} caseBusy={session.busy}/>
+    {/key}
   {/if}
 
   <footer>
@@ -112,62 +93,10 @@
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    line-height: 1.5;
-    background: #14161a;
-    color: #e6e8eb;
-  }
-
-  :global(button) {
-    font: inherit;
-    background: #232a33;
-    color: #e6e8eb;
-    border: 1px solid #39424f;
-    border-radius: 4px;
-    padding: 0.4rem 0.8rem;
-    cursor: pointer;
-  }
-
-  :global(button:hover:not(:disabled)) {
-    background: #2b333f;
-  }
-
-  :global(button:disabled) {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  :global(button.primary) {
-    background: #2f4a6d;
-    border-color: #3f6394;
-  }
-
-  :global(button.primary:hover:not(:disabled)) {
-    background: #375880;
-  }
-
-  :global(input) {
-    font: inherit;
-    background: #0f1216;
-    color: #e6e8eb;
-    border: 1px solid #39424f;
-    border-radius: 4px;
-    padding: 0.4rem 0.5rem;
-  }
-
-  /* Focus is never removed and never relies on colour alone — an outline with
-     an offset is visible against every background this app uses. */
-  :global(:focus-visible) {
-    outline: 2px solid #8fb8e8;
-    outline-offset: 2px;
-  }
-
   main {
-    max-width: 52rem;
+    max-width: 100rem;
     margin: 0 auto;
-    padding: 2.5rem 1.5rem;
+    padding: 24px;
   }
 
   header {
@@ -176,7 +105,7 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 24px;
   }
 
   h1 {
@@ -204,34 +133,10 @@
     white-space: nowrap;
   }
 
-  h2 {
-    font-size: 1.05rem;
-    margin: 0 0 0.75rem;
-  }
 
-  dl {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 0.4rem 1rem;
-    margin: 0 0 1.5rem;
-  }
-
-  dt {
-    color: #8b95a1;
-  }
-
-  dd {
-    margin: 0;
-  }
-
-  .pending {
-    color: #8b95a1;
-    font-size: 0.875rem;
-  }
 
   .notice {
     border: 1px solid #8a4a4a;
-    border-left-width: 3px;
     border-radius: 4px;
     background: #241b1b;
     padding: 0.75rem 1rem;
@@ -266,7 +171,7 @@
     margin-top: 3rem;
     padding-top: 1.5rem;
     border-top: 1px solid #262b32;
-    color: #6b7480;
+    color: #aeb8c6;
     font-size: 0.875rem;
   }
 
@@ -276,4 +181,9 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  main.case-open { max-width: none; padding: 0; }
+  .case-open > header { border-bottom: 1px solid var(--border); padding: 12px 24px; margin-bottom: 0; align-items: center; }
+  header[hidden] { display: none; }
+  .case-open footer { margin-top: 0; padding: 8px 24px; font-size: 12px; }
 </style>

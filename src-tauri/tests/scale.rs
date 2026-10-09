@@ -76,6 +76,8 @@ const BUDGET: Duration = Duration::from_millis(200);
 enum Kind {
     /// The product's real query path. Must hold the budget.
     Contract,
+    /// Published diagnostic; does not change the warm reference budget.
+    Diagnostic,
     /// A slower form kept only as evidence for why the contract form is shaped
     /// the way it is. Never asserted.
     CounterExample,
@@ -159,7 +161,7 @@ impl Latencies {
     fn violates(&self) -> bool {
         match self.kind {
             Kind::Contract => self.p95 > BUDGET,
-            Kind::CounterExample => false,
+            Kind::CounterExample | Kind::Diagnostic => false,
             Kind::TrackedGap { ceiling, .. } => self.p95 > ceiling,
         }
     }
@@ -169,6 +171,14 @@ impl Latencies {
             Kind::Contract if self.within_budget() => "OK".to_string(),
             Kind::Contract => "OVER BUDGET".to_string(),
             Kind::CounterExample => "counter-example".to_string(),
+            Kind::Diagnostic => format!(
+                "diagnostic; {}",
+                if self.within_budget() {
+                    "within 200ms"
+                } else {
+                    "over 200ms"
+                }
+            ),
             // Not "the risk is closed" - this query simply does not trigger it.
             // Whether R-014 closes is a question about the query that does.
             Kind::TrackedGap { risk, .. } if self.within_budget() => {
@@ -707,4 +717,86 @@ fn seed(open: &mut OpenCase, observations: usize, entities: usize, relationships
     // ANALYZE once after loading, which is what a real case gets over its life
     // and what the planner needs to choose the indexes that exist.
     open.conn.execute_batch("ANALYZE;").unwrap();
+}
+
+/// Reopened SQLCipher caches are cold; the operating system cache is not flushed.
+#[test]
+#[ignore = "100k search timing; run deliberately"]
+fn merged_search_warm_reopened_and_concurrent_writes() {
+    let dir = std::env::temp_dir().join(format!("kokin-search-timing-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let case = dir.join("timing.kokincase");
+    let pass = "correct horse battery staple";
+    let (mut open, _) = kokin_store::create_case(&case, "search-timing", pass).unwrap();
+    kokin_graph::initialise(&open.conn).unwrap();
+    seed(&mut open, OBSERVATIONS, ENTITIES, RELATIONSHIPS);
+    kokin_graph::resolution::merge(
+        &mut open.conn,
+        "ent-1",
+        "ent-2",
+        "user:local",
+        "timing",
+        None,
+    )
+    .unwrap();
+    let query = Query::parse("mercer");
+    let options = SearchOptions::default();
+    let warm = Latencies::measure("merged search warm", Kind::Contract, || {
+        kokin_search::search(&open.conn, &query, &options)
+            .unwrap()
+            .len()
+    });
+    warm.report();
+    let cold = Latencies::measure(
+        "merged search evicted SQLite cache",
+        Kind::Diagnostic,
+        || {
+            open.conn.execute_batch("PRAGMA shrink_memory").unwrap();
+            kokin_search::search(&open.conn, &query, &options)
+                .unwrap()
+                .len()
+        },
+    );
+    cold.report();
+    let writer = kokin_store::open_case(&case, pass).unwrap();
+    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let writer_stop = stop.clone();
+    let worker = std::thread::spawn(move || {
+        let mut n = 0;
+        while !writer_stop.load(std::sync::atomic::Ordering::Relaxed) {
+            kokin_store::audit::append(
+                &writer.conn,
+                &kokin_store::audit::NewAuditEvent {
+                    actor: "user:local",
+                    action: "benchmark.write",
+                    subject_kind: None,
+                    subject_id: None,
+                    payload_json: "{}",
+                },
+            )
+            .unwrap();
+            n += 1;
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        n
+    });
+    let concurrent = Latencies::measure(
+        "merged search concurrent audit writes",
+        Kind::Diagnostic,
+        || {
+            kokin_search::search(&open.conn, &query, &options)
+                .unwrap()
+                .len()
+        },
+    );
+    stop.store(true, std::sync::atomic::Ordering::Relaxed);
+    concurrent.report();
+    println!("writes={}", worker.join().unwrap());
+    assert!(
+        warm.p95 <= BUDGET,
+        "warm merged search exceeds the unchanged reference target"
+    );
+    drop(open);
+    std::fs::remove_dir_all(dir).unwrap();
 }

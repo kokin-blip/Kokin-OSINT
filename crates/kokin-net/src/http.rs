@@ -61,6 +61,9 @@ pub enum HttpError {
 
     #[error("live HTTP is not implemented in this build")]
     LiveNotImplemented,
+
+    #[error("{0}")]
+    Refused(String),
 }
 
 /// A request a connector wants to make.
@@ -129,6 +132,11 @@ pub struct HttpResponse {
     #[serde(default)]
     pub headers: BTreeMap<String, String>,
     pub body: String,
+    /// Raw bytes for live captures; absent in legacy text fixtures.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub body_bytes: Option<Vec<u8>>,
+    #[serde(default)]
+    pub redirect_chain: Vec<String>,
     /// Where this response came from, recorded so a capture can state honestly
     /// that it was replayed rather than fetched.
     #[serde(default)]
@@ -138,6 +146,8 @@ pub struct HttpResponse {
 /// A stored request/response pair.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Fixture {
+    #[serde(default = "legacy_fixture_version")]
+    pub format_version: u32,
     pub key: String,
     pub request: HttpRequest,
     pub response: HttpResponse,
@@ -146,6 +156,10 @@ pub struct Fixture {
     pub recorded_utc: String,
     #[serde(default)]
     pub note: Option<String>,
+}
+
+fn legacy_fixture_version() -> u32 {
+    1
 }
 
 /// The capability a connector is handed. It cannot construct one itself.
@@ -212,6 +226,12 @@ impl HttpCapability for ReplayHttp {
                 reason: e.to_string(),
             })?;
 
+        if !(1..=2).contains(&fixture.format_version) {
+            return Err(HttpError::FixtureUnreadable {
+                path: path.display().to_string(),
+                reason: "unsupported fixture version".into(),
+            });
+        }
         let mut response = fixture.response;
         // Set here rather than trusted from the file, so a capture can never
         // claim to be live when it was replayed.
@@ -238,12 +258,15 @@ mod tests {
 
     fn fixture_for(request: &HttpRequest, body: &str) -> Fixture {
         Fixture {
+            format_version: 1,
             key: request.fixture_key().unwrap(),
             request: request.clone(),
             response: HttpResponse {
                 status: 200,
                 headers: BTreeMap::new(),
                 body: body.to_string(),
+                body_bytes: None,
+                redirect_chain: Vec::new(),
                 from_fixture: false,
             },
             recorded_utc: "2026-08-12T00:00:00Z".to_string(),

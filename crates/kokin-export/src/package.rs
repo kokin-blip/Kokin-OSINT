@@ -48,7 +48,25 @@ pub fn package(
     if dest.exists() {
         return Err(ExportError::DestinationExists(dest.display().to_string()));
     }
+    let parent = dest
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let pending = tempfile::NamedTempFile::new_in(parent)?;
+    let report = package_into(open, pending.path(), passphrase, options)?;
+    pending.as_file().sync_all()?;
+    pending
+        .persist_noclobber(dest)
+        .map_err(|e| ExportError::Io(e.error))?;
+    Ok(report)
+}
 
+fn package_into(
+    open: &OpenCase,
+    dest: &Path,
+    passphrase: &str,
+    options: &PackageOptions,
+) -> Result<PackageReport> {
     // A-036. Everything written since the last checkpoint lives in `case.db-wal`, not in
     // `case.db`. Copying the database file without this produces a package that
     // is internally consistent, hashes correctly, verifies `Ok`, and is missing
@@ -73,11 +91,11 @@ pub fn package(
     // twice from disk, and this way reads it once and writes it twice. For a case
     // whose blobs are the bulk of it, the second is the cheaper trade and neither
     // holds a case in memory.
-    let staging = dest.with_extension("kokinpkg-staging");
-    let _ = std::fs::remove_file(&staging);
+    let staged = tempfile::NamedTempFile::new_in(dest.parent().unwrap_or_else(|| Path::new(".")))?;
+    let staging = staged.path();
     let mut entries = Vec::new();
 
-    let mut writer = Writer::create(&staging)?;
+    let mut writer = Writer::create(staging)?;
     entries.push(write_bytes(&mut writer, EntryName::Header, &header_json)?);
     entries.push(write_file(
         &mut writer,
@@ -106,8 +124,7 @@ pub fn package(
         omissions: omissions.clone(),
     };
 
-    let bytes = assemble(&staging, dest, &manifest)?;
-    let _ = std::fs::remove_file(&staging);
+    let bytes = assemble(staging, dest, &manifest)?;
 
     Ok(PackageReport {
         case_id: source_header.case_id,
@@ -305,7 +322,32 @@ pub fn import(source: &Path, dest: &Path, passphrase: &str) -> Result<ImportRepo
     if dest.exists() {
         return Err(ExportError::DestinationExists(dest.display().to_string()));
     }
+    // Validate the whole container before publishing a restored case. Staging
+    // owns every partial file, so errors (including wrong keys and disk full)
+    // remove it rather than leaving an openable half-case at the destination.
+    let verification = crate::verify::verify(source)?;
+    if verification.verdict == crate::verify::Verdict::Failed {
+        return Err(ExportError::Malformed(
+            "package is modified or damaged".into(),
+        ));
+    }
+    let parent = dest
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let staging = tempfile::tempdir_in(parent)?;
+    let inner = staging.path().join("case");
+    let mut report = import_into(source, &inner, passphrase)?;
+    kokin_store::validate_case(&inner, passphrase)?;
+    if dest.exists() {
+        return Err(ExportError::DestinationExists(dest.display().to_string()));
+    }
+    std::fs::rename(&inner, dest)?;
+    report.root = dest.to_path_buf();
+    Ok(report)
+}
 
+fn import_into(source: &Path, dest: &Path, passphrase: &str) -> Result<ImportReport> {
     let mut reader = Reader::open(source)?;
     let Some(first) = reader.next_entry()? else {
         return Err(ExportError::NoManifest);

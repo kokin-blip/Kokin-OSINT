@@ -79,12 +79,15 @@ fn install_fixture(dir: &Path) -> ReplayHttp {
     );
 
     http.store(&Fixture {
+        format_version: 1,
         key: request.fixture_key().unwrap(),
         request,
         response: HttpResponse {
             status: 200,
             headers,
             body: page(),
+            body_bytes: None,
+            redirect_chain: Vec::new(),
             from_fixture: true,
         },
         recorded_utc: "2026-08-14T00:00:00Z".to_string(),

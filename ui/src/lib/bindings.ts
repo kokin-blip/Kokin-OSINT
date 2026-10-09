@@ -79,6 +79,7 @@ export function asCommandError(error: unknown): CommandError {
 // ---------------------------------------------------------------------------
 
 export interface CaseView {
+  session_generation: number;
   case_id: string;
   root: string;
   schema_version: number;
@@ -104,6 +105,7 @@ export interface NewCaseView {
 }
 
 export interface SessionView {
+  session_generation: number;
   case: CaseView | null;
 }
 
@@ -460,4 +462,238 @@ export function entities(limit?: number): Promise<EntityRowView[]> {
 
 export function entity(entityId: string): Promise<EntityView> {
   return invoke("entity", { entityId });
+}
+
+export interface SearchRequest {
+  query: string;
+  limit: number | null;
+  offset: number;
+  kinds: Array<string>;
+  facets: Array<string>;
+  include_superseded: boolean;
+  resolve_merged: boolean | null;
+  typeahead: boolean;
+}
+
+export interface HitView {
+  subject_kind: string;
+  subject_id: string;
+  title: string;
+  snippet: string;
+  facet: string;
+  superseded: boolean;
+  canonical_id: string | null;
+}
+
+export interface CoverageView {
+  artifacts: number;
+  never_attempted: number;
+  in_progress: number;
+  failed: number;
+  partial: number;
+  complete: number;
+  incomplete: number;
+  is_complete: boolean;
+}
+
+export interface SearchView {
+  hits: Array<HitView>;
+  total: number;
+  coverage: CoverageView;
+}
+
+export interface IngestFileRequest {
+  path: string;
+}
+
+export interface IngestView {
+  run_id: string;
+  source_id: string;
+  capture_id: string;
+  artifact_id: string;
+  content_hash: string;
+  size_bytes: number;
+  deduplicated: boolean;
+  from_fixture: boolean;
+}
+
+export interface ExtractRequest {
+  artifact_id: string;
+}
+
+export interface ExtractView {
+  run_id: string;
+  artifact_id: string;
+  observations: number;
+  skipped_oversize: number;
+  text_truncated_bytes: number;
+  superseded: number;
+  complete: boolean;
+}
+
+export interface GroundingInput {
+  kind: string;
+  id: string;
+  role: string;
+}
+
+export interface NewEntityRequest {
+  type_key: string;
+  display_name: string;
+  notes: string;
+  evidence: Array<GroundingInput>;
+}
+
+export interface NewIdentifierRequest {
+  entity_id: string;
+  namespace: string;
+  value: string;
+  evidence: Array<GroundingInput>;
+}
+
+export interface NewRelationshipRequest {
+  from_entity: string;
+  to_entity: string;
+  kind: string;
+  started_utc: string | null;
+  ended_utc: string | null;
+  evidence: Array<GroundingInput>;
+}
+
+export interface AssessRequest {
+  subject_kind: string;
+  subject_id: string;
+  dimension: string;
+  value_key: string;
+  contributing_factors: Array<string>;
+}
+
+export interface MergeRequest {
+  left: string;
+  right: string;
+  rationale: string;
+  candidate_id: string | null;
+}
+
+export interface RejectRequest {
+  left: string;
+  right: string;
+  rationale: string;
+  candidate_id: string | null;
+}
+
+export interface SplitRequest {
+  entity: string;
+  rationale: string;
+}
+
+export interface WriteView {
+  id: string;
+  actor: string;
+}
+
+export interface ResolutionView {
+  decision_id: string;
+  canonical_id: string;
+  actor: string;
+}
+
+export interface PageRequest {
+  offset: number;
+  limit: number | null;
+}
+
+export interface PageView<T> {
+  rows: Array<T>;
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface AuditRowView {
+  id: number;
+  occurred_utc: string;
+  actor: string;
+  action: string;
+  subject_kind: string | null;
+  subject_id: string | null;
+  payload_json: string;
+}
+
+export interface ActivityView {
+  page: PageView<AuditRowView>;
+  chain_status: string;
+  chain_detail: string;
+}
+
+export interface SubjectView {
+  subject_kind: string;
+  subject_id: string;
+  title: string;
+  fields: Array<[string, string]>;
+  evidence: Array<EvidenceView>;
+  confidence: Array<DimensionView>;
+}
+
+export interface ScaleOptionView {
+  dimension: string;
+  title: string;
+  values: Array<[string, string]>;
+}
+
+export const artifactPage = (offset = 0) => invoke<PageView<ArtifactRowView>>("artifact_page", {request:{offset,limit:50}});
+export const entityPage = (offset = 0) => invoke<PageView<EntityRowView>>("entity_page", {request:{offset,limit:50}});
+export const observationPage = (artifactId: string, includeSuperseded = false, offset = 0) => invoke<[EvidenceListView, PageView<ObservationRowView>]>("observation_page", {artifactId,includeSuperseded,request:{offset,limit:50}});
+export const searchCase = (request: Partial<SearchRequest>) => invoke<SearchView>("search", {request});
+export const activityPage = (offset = 0) => invoke<ActivityView>("activity", {request:{offset,limit:50}});
+export const subject = (subjectKind:string,subjectId:string) => invoke<SubjectView>("subject",{subjectKind,subjectId});
+export const scaleOptions = () => invoke<ScaleOptionView[]>("scales");
+export const createEntity = (request:NewEntityRequest) => invoke<WriteView>("create_entity",{request});
+export const addIdentifier = (request:NewIdentifierRequest) => invoke<WriteView>("add_identifier",{request});
+export const relate = (request:NewRelationshipRequest) => invoke<WriteView>("relate",{request});
+export const assess = (request:AssessRequest) => invoke<WriteView>("assess",{request});
+export const mergeEntities = (request:MergeRequest) => invoke<ResolutionView>("merge_entities",{request});
+export const rejectMerge = (request:RejectRequest) => invoke<WriteView>("reject_merge",{request});
+export const splitEntity = (request:SplitRequest) => invoke<ResolutionView>("split_entity",{request});
+export const extractArtifact = (artifactId:string) => invoke<ExtractView>("extract",{request:{artifact_id:artifactId}});
+
+export interface OperationView {
+  operation_id: string;
+  status: string;
+  stage: string;
+  cancellable: boolean;
+  result_json: string | null;
+  error: CommandError | null;
+}
+
+export const selectPath = (purpose: "import"|"export"|"package"|"restore", expectedGeneration:number) => invoke<string|null>("select_path",{purpose,expectedGeneration});
+export const startOperation = (kind:string,args:unknown,expectedGeneration:number) => invoke<string>("start_operation",{kind,args,expectedGeneration});
+export const operationStatus = (operationId:string) => invoke<OperationView>("operation_status",{operationId});
+export const cancelOperation = (operationId:string) => invoke<void>("cancel_operation",{operationId});
+export const networkMode = () => invoke<boolean>("network_mode");
+export const setNetworkMode = (online:boolean) => invoke<boolean>("set_network_mode",{online});
+export const entityTypes = () => invoke<Array<[string,string]>>("entity_types");
+
+export const evidenceTarget=(kind:string,id:string)=>invoke<[string,string]>("evidence_target",{kind,id});
+export const relationships=(id:string,offset=0)=>invoke<PageView<SubjectView>>("relationships",{id,request:{offset,limit:50}});
+
+export interface GraphNodeView {
+  id: string;
+  name: string;
+  canonical_id: string;
+  depth: number;
+}
+
+export interface GraphEdgeView {
+  id: string;
+  from: string;
+  to: string;
+  kind: string;
+}
+
+export interface GraphView {
+  nodes: Array<GraphNodeView>;
+  edges: Array<GraphEdgeView>;
+  truncated: boolean;
+  completed_hops: number;
 }

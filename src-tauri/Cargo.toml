@@ -18,7 +18,12 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+[features]
+desktop-test = ["dep:tauri-plugin-wdio", "dep:tauri-plugin-wdio-webdriver"]
+
 [dependencies]
+tauri-plugin-wdio = {version="1",optional=true}
+tauri-plugin-wdio-webdriver = {version="1",optional=true}
 kokin-store = { path = "../crates/kokin-store" }
 kokin-keys = { path = "../crates/kokin-keys" }
 kokin-blob = { path = "../crates/kokin-blob" }
@@ -26,21 +31,16 @@ kokin-search = { path = "../crates/kokin-search" }
 kokin-graph = { path = "../crates/kokin-graph" }
 kokin-ingest = { path = "../crates/kokin-ingest" }
 kokin-extract = { path = "../crates/kokin-extract" }
+kokin-net = { path = "../crates/kokin-net" }
+kokin-export = { path = "../crates/kokin-export" }
+rfd = "0.15"
+getrandom = "0.4"
 rusqlite = { version = "0.40.2", features = ["bundled-sqlcipher-vendored-openssl"] }
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-# No kokin-net in [dependencies]. Ingesting a URL needs an HttpCapability, and
-# there is no live HTTP client in this workspace to be one — see
-# views::IngestFileRequest. It appears below as a dev-dependency only, so the
-# acceptance test can hand `ingest_url` a ReplayHttp; nothing shipped can reach
-# it, and the CI import lint holds regardless.
-
 [dev-dependencies]
-# The acceptance test walks the whole reference workflow, so it needs the two
-# ends the command layer does not expose yet: step 2 (ingest_url, which takes an
-# HttpCapability) and step 10 (export/restore).
-kokin-net = { path = "../crates/kokin-net" }
-kokin-export = { path = "../crates/kokin-export" }
+# Backend acceptance remains window-free; desktop acceptance exercises the
+# collection and package controls separately with debug-only fixtures.
 blake3 = "1.5"

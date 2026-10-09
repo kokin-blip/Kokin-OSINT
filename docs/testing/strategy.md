@@ -1,73 +1,64 @@
 # Testing strategy
 
-The spec requires that live-source tests be clearly separated from
-deterministic suites. This document states how, and what CI enforces today.
+Updated 2026-10-08. The default Rust and frontend suites are deterministic and
+offline. Replay misses fail; they never become live calls. Set `KOKIN_NETWORK=deny`
+for backend and desktop fixture runs. Live-service tests and scale probes are
+explicit, separate checks.
 
-## The rule
+## Current verification layers
 
-**The entire default test suite runs with no network access.** CI sets
-`KOKIN_NETWORK=deny`. A test that needs a live service is not a slow test — it
-is a different category of test, and it does not run by default.
+- Rust contracts: encrypted SQLCipher/blob round-trips, tampering, incorrect
+  credentials, migration failure, evidence grounding, seven separate confidence
+  dimensions, reversible resolution, extraction/citation validation, search
+  paging/canonical totals/facets and package omission/integrity/restore behavior.
+- Command/read contracts: case generation rejects stale writes; paginated lists
+  carry totals; relationship/identifier reads carry their own supporting/opposing
+  evidence; native-selection tokens expire, are single-use and case-bound, and
+  revalidate metadata. These do not automate native dialogs.
+- Frontend components: recovery-key gate, text-only document states and entity
+  confidence rendering. Workbench tests now cover paging beyond caps and coverage on nonempty search results; broader analytical-flow regression coverage remains needed.
+- Desktop: `ui/tests/desktop/lifecycle.spec.mjs` and `workflow.spec.mjs`, using
+  the WDIO embedded driver on a separate debug-only build. The full workflow
+  uses replay-only collection and picker-selection instrumentation, then compares
+  persisted identities/lineage after reopen and restore and repeats in a fresh case.
+  Actual native dialog interaction remains a separate bounded manual check.
+- Graph: indexed bounded/cancellable expansion with stable ordering, explicit
+  truncation, preserved evidence attribution and UI evidence navigation checks.
+- Deliberate scale: `src-tauri/tests/scale.rs`; distinguish warm, evicted SQLite
+  cache and concurrent writes. Eviction is not operating-system cold cache.
 
-This is not only a speed or flakiness concern. A test suite that silently
-reaches the network cannot prove the product's central privacy claim, because
-it cannot distinguish "offline mode works" from "offline mode happens to not
-have been exercised".
+## Commands
 
-## Categories
+```sh
+KOKIN_NETWORK=deny cargo test --workspace --all-targets
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+npm --prefix ui ci
+npm --prefix ui run check
+npm --prefix ui test
+npm --prefix ui run build
+```
 
-| Category | Runs by default | Network | Where |
-|---|---|---|---|
-| Unit | yes | none | alongside the code |
-| Connector contract | yes | recorded fixtures via `ReplayHttp` | `tests/` per connector |
-| Parser regression | yes | none | `tests/fixtures/` corpora |
-| Hostile-content | yes | none | `tests/fixtures/hostile/` |
-| Migration | yes | none | `kokin-store` |
-| Acceptance (11-step workflow) | yes | fixtures only | `tests/` |
-| **Live-source** | **no** | real | `#[ignore]`, run explicitly |
+Run the existing CI boundary/fixture/markup checks and `cargo deny check` as well.
+Dependency review includes optional desktop tooling; release trees must exclude
+it. Sources must not add network clients outside `kokin-net`.
 
-Under replay, a fixture cache miss is a **test failure, never a live call**.
-That single rule is what stops the deterministic suite from quietly degrading
-into a live one.
+An explicit `.github/workflows/desktop.yml` runs desktop acceptance on Windows
+and macOS; it has not been dispatched during this implementation.
 
-## What CI enforces now
+For desktop testing build with `VITE_DESKTOP_TEST=1`, `--debug --features
+desktop-test --config src-tauri/desktop-test.conf.json`, then run `npm run
+test:desktop` from `ui`. The test config grants global Tauri access/driver
+permissions exclusively to this build. Release compilation with the feature is
+an error; normal frontend production builds eliminate the driver import.
 
-Implemented in `.github/workflows/ci.yml` as of increment 1:
+The actual Mac passed both desktop specs on 2026-10-08. The full eleven-step
+workflow repeats offline and compares exact persisted identities/lineage after
+reopen/restore. Windows execution remains pending. See increment 30.
 
-1. **No network crates outside `kokin-net`.** A `grep` for `reqwest`, `hyper`,
-   `ureq`, `std::net`, and `tokio::net` across `crates/` and `src-tauri/`,
-   excluding `kokin-net`. Verified against a planted violation — the lint was
-   confirmed to actually catch one, rather than passing because it matches
-   nothing.
-2. **Fixture secret hygiene.** A `grep` over `tests/fixtures/` for cookie,
-   authorization, bearer, API-key, and password patterns. Fails the build on a
-   hit, so a sanitiser miss cannot be committed.
-3. **Licence and advisory checks** via `cargo-deny`, with a permissive-only
-   allowlist.
-4. **Build and test on both platforms**, `windows-latest` and `macos-14`.
+## Release checks still required
 
-## Storage tests specifically
-
-`kokin-store` carries three tests that exist because of a specific failure mode
-rather than for coverage:
-
-- round-trip through close and reopen,
-- a *named* wrong-passphrase error, distinguishable from corruption,
-- **a byte-level assertion that the case file contains no plaintext and lacks
-  the `SQLite format 3\0` magic header.**
-
-The third one matters most. A build that linked plain SQLite instead of
-SQLCipher would pass every functional test while writing unencrypted evidence
-to disk. Only a byte-level check catches that.
-
-## Not yet implemented
-
-Named here so their absence is deliberate rather than forgotten. Each arrives
-with the increment that makes it meaningful:
-
-- Graph integrity, confidence-scoring, and AI-grounding tests
-- Database migration tests (increment 3)
-- Import/export round-trip tests (increment 11)
-- Crash-recovery and disk-full tests
-- Performance tests against small/medium/large case fixtures (PoC P2)
-- Windows and macOS packaging tests beyond "the bundle builds"
+Windows execution of the eleven-step desktop repeat and restored identity/lineage
+checks, integrated cancellation/disk-full/interrupted import,
+manual Mac and Windows dialog/focus/scaling/launch/recovery checks, and explicit
+production driver exclusion. Do not label backend acceptance as desktop acceptance.

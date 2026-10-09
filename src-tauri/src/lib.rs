@@ -18,7 +18,14 @@
 //! [`session::NewCaseView`]). `kokin_store::OpenCase` holds the case master key
 //! and does not implement `Serialize`; it must never gain it.
 
+#[cfg(all(feature = "desktop-test", not(debug_assertions)))]
+compile_error!("desktop-test must never be enabled in release binaries");
+
+#[cfg(feature = "desktop-test")]
+pub mod desktop_test;
+
 pub mod error;
+pub mod operations;
 pub mod read;
 pub mod session;
 pub mod views;
@@ -85,8 +92,12 @@ fn open_case_with_recovery_key(
 }
 
 #[tauri::command]
-fn close_case(session: State<'_, Session>) -> Result<(), CommandError> {
-    session.close()
+async fn close_case(app: tauri::AppHandle) -> Result<(), CommandError> {
+    use tauri::Manager;
+    app.state::<operations::Operations>().cancel_all();
+    tauri::async_runtime::spawn_blocking(move || app.state::<Session>().close())
+        .await
+        .map_err(|_| CommandError::new(ErrorCode::Internal, "case close failed"))?
 }
 
 #[tauri::command]
@@ -162,15 +173,6 @@ fn entity(session: State<'_, Session>, entity_id: String) -> Result<EntityView, 
 // actor — see the note at the top of [`write`] for why that is the increment's
 // central control rather than a detail of these signatures.
 
-/// Import a local file and record it as provenance.
-#[tauri::command]
-fn ingest_file(
-    session: State<'_, Session>,
-    request: IngestFileRequest,
-) -> Result<IngestView, CommandError> {
-    session.with_case(|open| write::ingest_file(open, &request))
-}
-
 /// Read an artifact already in the case and record what it says.
 #[tauri::command]
 fn extract(
@@ -233,15 +235,114 @@ fn split_entity(
     session.with_case(|open| write::split(open, &request))
 }
 
+#[tauri::command]
+fn artifact_page(
+    session: State<'_, Session>,
+    request: views::PageRequest,
+) -> Result<views::PageView<ArtifactRowView>, CommandError> {
+    session.with_case(|open| read::artifact_page(open, &request))
+}
+#[tauri::command]
+fn entity_page(
+    session: State<'_, Session>,
+    request: views::PageRequest,
+) -> Result<views::PageView<EntityRowView>, CommandError> {
+    session.with_case(|open| read::entity_page(open, &request))
+}
+#[tauri::command]
+fn observation_page(
+    session: State<'_, Session>,
+    artifact_id: String,
+    include_superseded: bool,
+    request: views::PageRequest,
+) -> Result<(EvidenceListView, views::PageView<views::ObservationRowView>), CommandError> {
+    session
+        .with_case(|open| read::observation_page(open, &artifact_id, include_superseded, &request))
+}
+#[tauri::command]
+fn activity(
+    session: State<'_, Session>,
+    request: views::PageRequest,
+) -> Result<views::ActivityView, CommandError> {
+    session.with_case(|open| read::activity(open, &request))
+}
+#[tauri::command]
+fn subject(
+    session: State<'_, Session>,
+    subject_kind: String,
+    subject_id: String,
+) -> Result<views::SubjectView, CommandError> {
+    session.with_case(|open| read::subject(open, &subject_kind, &subject_id))
+}
+#[tauri::command]
+fn scales(session: State<'_, Session>) -> Result<Vec<views::ScaleOptionView>, CommandError> {
+    session.with_case(|open| read::scales(open))
+}
+
+#[tauri::command]
+fn entity_types(session: State<'_, Session>) -> Result<Vec<(String, String)>, CommandError> {
+    session.with_case(|open| {
+        let mut stmt = open
+            .conn
+            .prepare("SELECT key,label FROM entity_type ORDER BY key")
+            .map_err(|e| CommandError::new(ErrorCode::Storage, e.to_string()))?;
+        let rows = stmt
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .map_err(|e| CommandError::new(ErrorCode::Storage, e.to_string()))?;
+        rows.collect::<rusqlite::Result<Vec<_>>>()
+            .map_err(|e| CommandError::new(ErrorCode::Storage, e.to_string()))
+    })
+}
+
+#[tauri::command]
+fn evidence_target(
+    session: State<'_, Session>,
+    kind: String,
+    id: String,
+) -> Result<(String, String), CommandError> {
+    session.with_case(|open| read::evidence_target(open, &kind, &id))
+}
+#[tauri::command]
+fn relationships(
+    session: State<'_, Session>,
+    id: String,
+    request: views::PageRequest,
+) -> Result<views::PageView<views::SubjectView>, CommandError> {
+    session.with_case(|open| read::relationships(open, &id, &request))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[allow(clippy::expect_used)]
 pub fn run() {
     // Failing to start the webview is unrecoverable and happens before any case
     // is open, so there is no case data to lose. This is the one deliberate
     // panic in the application; everything downstream returns errors instead.
-    #[allow(clippy::expect_used)]
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(feature = "desktop-test")]
+    let builder = builder
+        .plugin(tauri_plugin_wdio::init())
+        .plugin(tauri_plugin_wdio_webdriver::init());
+    builder
         .manage(Session::default())
+        .manage(operations::Operations::default())
         .invoke_handler(tauri::generate_handler![
+            #[cfg(feature = "desktop-test")]
+            desktop_test::test_control,
+            evidence_target,
+            relationships,
+            entity_types,
+            artifact_page,
+            entity_page,
+            observation_page,
+            activity,
+            subject,
+            scales,
+            operations::select_path,
+            operations::start_operation,
+            operations::operation_status,
+            operations::cancel_operation,
+            operations::network_mode,
+            operations::set_network_mode,
             storage_encryption_status,
             create_case,
             open_case,
@@ -256,7 +357,6 @@ pub fn run() {
             observation,
             entities,
             entity,
-            ingest_file,
             extract,
             create_entity,
             add_identifier,

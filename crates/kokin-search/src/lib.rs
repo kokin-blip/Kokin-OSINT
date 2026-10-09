@@ -161,24 +161,37 @@ pub fn search(conn: &Connection, query: &Query, options: &SearchOptions) -> Resu
     let mut inner = matched_documents();
     push_filters(&mut inner, &mut params, options);
 
-    let body = one_row_per(
-        &inner,
-        "subject_kind, subject_id, title, snippet, facet, superseded,
-         relevance, resolved_id",
-        collapse_aliases(conn, options)?,
-    );
-
+    let collapse = collapse_aliases(conn, options)?;
     let limit_at = params.len() + 1;
-    // `subject_id` breaks relevance ties. Unlike the run ordering in
-    // `coverage`, an arbitrary winner here is not a wrong answer — two aliases
-    // with identical BM25 are equally good representatives — so any stable key
-    // will do, and stability is the whole requirement: without it the same
-    // query returns a different alias each time it is run.
-    let sql = format!(
-        "{body} ORDER BY relevance, subject_id LIMIT ?{} OFFSET ?{}",
-        limit_at,
-        limit_at + 1
-    );
+    let sql = if collapse {
+        // Rank only keys. Materialising snippets before LIMIT makes a tiny merge
+        // pay for every matching document's text, regardless of the window size.
+        let mut keys = matched_keys();
+        let mut key_params = vec![Value::Text(query.to_fts5().unwrap_or_default())];
+        push_filters(&mut keys, &mut key_params, options);
+        let body = one_row_per(
+            &keys,
+            "subject_kind, subject_id, facet, relevance, resolved_id",
+            true,
+        );
+        format!("WITH page AS MATERIALIZED ({body} ORDER BY relevance, subject_id LIMIT ?{limit_at} OFFSET ?{})
+                 SELECT d.subject_kind, d.subject_id, d.title,
+                        snippet(search_index, 1, '[', ']', '…', 12),
+                        d.facet, d.superseded, page.relevance, page.resolved_id
+                   FROM page JOIN search_document d ON d.subject_kind=page.subject_kind AND d.subject_id=page.subject_id
+                   JOIN search_index ON search_index.rowid=d.id
+                  WHERE search_index MATCH ?1 ORDER BY page.relevance, page.subject_id", limit_at+1)
+    } else {
+        let body = one_row_per(
+            &inner,
+            "subject_kind, subject_id, title, snippet, facet, superseded, relevance, resolved_id",
+            false,
+        );
+        format!(
+            "{body} ORDER BY relevance, subject_id LIMIT ?{limit_at} OFFSET ?{}",
+            limit_at + 1
+        )
+    };
     params.push(Value::Integer(options.limit as i64));
     params.push(Value::Integer(options.offset as i64));
 
@@ -305,16 +318,36 @@ fn one_row_per(inner: &str, columns: &str, collapse: bool) -> String {
     if !collapse {
         return format!("WITH matched AS ({inner}) SELECT {columns} FROM matched");
     }
+    // Only entity rows in an active cluster need deduplication. In particular,
+    // observations cannot be aliases even if their id happens to match an entity.
+    // Both the canonical row and absorbed rows participate, so the best matching
+    // alias remains the representative and pagination keeps its existing semantics.
+    let fields = if inner.contains("AS snippet") {
+        "subject_kind, subject_id, title, snippet, facet, superseded, relevance, resolved_id"
+    } else {
+        "subject_kind, subject_id, facet, relevance, resolved_id"
+    };
     format!(
-        "WITH matched AS ({inner}),
+        "WITH matched AS NOT MATERIALIZED ({inner}),
+              affected AS MATERIALIZED (
+                  SELECT * FROM matched
+                   WHERE subject_kind = 'entity' AND resolved_id IN
+                         (SELECT canonical_id FROM er_merge_map WHERE active = 1)
+              ),
               ranked AS (
                   SELECT *, ROW_NUMBER() OVER (
                       PARTITION BY subject_kind, resolved_id
                       ORDER BY relevance, subject_id
-                  ) AS alias_rank
-                    FROM matched
+                  ) AS alias_rank FROM affected
+              ),
+              selected AS (
+                  SELECT * FROM matched
+                   WHERE NOT (subject_kind = 'entity' AND resolved_id IN
+                              (SELECT canonical_id FROM er_merge_map WHERE active = 1))
+                  UNION ALL
+                  SELECT {fields} FROM ranked WHERE alias_rank = 1
               )
-         SELECT {columns} FROM ranked WHERE alias_rank = 1"
+         SELECT {columns} FROM selected"
     )
 }
 

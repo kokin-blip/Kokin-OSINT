@@ -56,6 +56,7 @@ use serde::{Deserialize, Serialize};
 /// the interface hands back.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct CaseView {
+    pub session_generation: u64,
     pub case_id: String,
     /// Displayed in the title bar, so the analyst can see which case this is.
     pub root: String,
@@ -86,6 +87,7 @@ pub struct NewCaseView {
 /// Whether anything is open, for an interface deciding what to render.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SessionView {
+    pub session_generation: u64,
     pub case: Option<CaseView>,
 }
 
@@ -871,4 +873,87 @@ pub struct ResolutionView {
     pub decision_id: String,
     pub canonical_id: String,
     pub actor: String,
+}
+
+// Workbench reads. Page metadata makes every limit visible to the caller.
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default, deny_unknown_fields)]
+pub struct PageRequest {
+    pub offset: usize,
+    pub limit: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PageView<T> {
+    pub rows: Vec<T>,
+    pub total: i64,
+    pub offset: usize,
+    pub limit: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AuditRowView {
+    pub id: i64,
+    pub occurred_utc: String,
+    pub actor: String,
+    pub action: String,
+    pub subject_kind: Option<String>,
+    pub subject_id: Option<String>,
+    pub payload_json: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ActivityView {
+    pub page: PageView<AuditRowView>,
+    pub chain_status: String,
+    pub chain_detail: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SubjectView {
+    pub subject_kind: String,
+    pub subject_id: String,
+    pub title: String,
+    pub fields: Vec<(String, String)>,
+    pub evidence: Vec<EvidenceView>,
+    pub confidence: Vec<DimensionView>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ScaleOptionView {
+    pub dimension: String,
+    pub title: String,
+    pub values: Vec<(String, String)>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct OperationView {
+    pub operation_id: String,
+    pub status: String,
+    pub stage: String,
+    pub cancellable: bool,
+    pub result_json: Option<String>,
+    pub error: Option<crate::error::CommandError>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GraphNodeView {
+    pub id: String,
+    pub name: String,
+    pub canonical_id: String,
+    pub depth: usize,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct GraphEdgeView {
+    pub id: String,
+    pub from: String,
+    pub to: String,
+    pub kind: String,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct GraphView {
+    pub nodes: Vec<GraphNodeView>,
+    pub edges: Vec<GraphEdgeView>,
+    pub truncated: bool,
+    pub completed_hops: usize,
 }

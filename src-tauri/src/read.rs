@@ -22,11 +22,12 @@ use rusqlite::Connection;
 
 use crate::error::{CommandError, ErrorCode};
 use crate::views::{
-    ArtifactRowView, CaptureRefView, CollectionView, CoverageView, DecisionView,
-    DimensionValueView, DimensionView, DocumentContent, DocumentView, EntityRefView, EntityRowView,
-    EntityView, EvidenceListView, EvidenceView, ExcerptView, GapView, HitView, IdentifierView,
-    LineageView, LocatorView, ObservationRowView, ObservationView, QuoteView, RunView,
-    SearchRequest, SearchView, SourceRefView, SupersessionView,
+    ActivityView, ArtifactRowView, AuditRowView, CaptureRefView, CollectionView, CoverageView,
+    DecisionView, DimensionValueView, DimensionView, DocumentContent, DocumentView, EntityRefView,
+    EntityRowView, EntityView, EvidenceListView, EvidenceView, ExcerptView, GapView, HitView,
+    IdentifierView, LineageView, LocatorView, ObservationRowView, ObservationView, PageRequest,
+    PageView, QuoteView, RunView, ScaleOptionView, SearchRequest, SearchView, SourceRefView,
+    SubjectView, SupersessionView,
 };
 
 /// A database failure that is not an answer about anything.
@@ -263,13 +264,21 @@ pub fn artifacts(
     open: &OpenCase,
     limit: Option<usize>,
 ) -> Result<Vec<ArtifactRowView>, CommandError> {
-    let limit = limit.unwrap_or(MAX_ARTIFACTS).min(MAX_ARTIFACTS);
+    artifact_rows(open, limit, 0)
+}
+
+fn artifact_rows(
+    open: &OpenCase,
+    limit: Option<usize>,
+    offset: usize,
+) -> Result<Vec<ArtifactRowView>, CommandError> {
+    let limit = limit.unwrap_or(MAX_ARTIFACTS).clamp(1, MAX_ARTIFACTS);
     let mut stmt = open
         .conn
-        .prepare("SELECT id FROM artifact ORDER BY created_utc DESC, rowid DESC LIMIT ?1")
+        .prepare("SELECT id FROM artifact ORDER BY created_utc DESC, rowid DESC LIMIT ?1 OFFSET ?2")
         .map_err(storage)?;
     let rows = stmt
-        .query_map([limit as i64], |r| r.get::<_, String>(0))
+        .query_map([limit as i64, offset as i64], |r| r.get::<_, String>(0))
         .map_err(storage)?;
 
     let mut ids = Vec::new();
@@ -294,6 +303,16 @@ pub fn artifact_observations(
     artifact_id: &str,
     include_superseded: bool,
 ) -> Result<EvidenceListView, CommandError> {
+    observation_rows(open, artifact_id, include_superseded, 0, MAX_OBSERVATIONS)
+}
+
+fn observation_rows(
+    open: &OpenCase,
+    artifact_id: &str,
+    include_superseded: bool,
+    offset: usize,
+    limit: usize,
+) -> Result<EvidenceListView, CommandError> {
     let artifact = artifact_row(&open.conn, artifact_id)?;
 
     let sql = "SELECT o.id, o.kind, o.value, o.observed_utc,
@@ -304,14 +323,15 @@ pub fn artifact_observations(
                   AND (?2 = 1 OR NOT EXISTS (SELECT 1 FROM observation_supersession s
                                               WHERE s.superseded_id = o.id))
                 ORDER BY o.kind, o.rowid
-                LIMIT ?3";
+                LIMIT ?3 OFFSET ?4";
     let mut stmt = open.conn.prepare(sql).map_err(storage)?;
     let rows = stmt
         .query_map(
             rusqlite::params![
                 artifact_id,
                 i64::from(include_superseded),
-                MAX_OBSERVATIONS as i64
+                limit as i64,
+                offset as i64
             ],
             |r| {
                 Ok(ObservationRowView {
@@ -912,7 +932,15 @@ const MAX_ENTITIES: usize = 500;
 /// reachable from the entity they resolve to, where the merge is visible as a
 /// merge.
 pub fn entities(open: &OpenCase, limit: Option<usize>) -> Result<Vec<EntityRowView>, CommandError> {
-    let limit = limit.unwrap_or(MAX_ENTITIES).min(MAX_ENTITIES);
+    entity_rows(open, limit, 0)
+}
+
+fn entity_rows(
+    open: &OpenCase,
+    limit: Option<usize>,
+    offset: usize,
+) -> Result<Vec<EntityRowView>, CommandError> {
+    let limit = limit.unwrap_or(MAX_ENTITIES).clamp(1, MAX_ENTITIES);
     let conn = &open.conn;
 
     let mut stmt = conn
@@ -922,11 +950,11 @@ pub fn entities(open: &OpenCase, limit: Option<usize>) -> Result<Vec<EntityRowVi
               WHERE NOT EXISTS (SELECT 1 FROM er_merge_map m
                                  WHERE m.entity_id = e.id AND m.active = 1)
               ORDER BY e.display_name, e.rowid
-              LIMIT ?1",
+              LIMIT ?1 OFFSET ?2",
         )
         .map_err(storage)?;
     let rows = stmt
-        .query_map([limit as i64], |r| {
+        .query_map([limit as i64, offset as i64], |r| {
             Ok((
                 r.get::<_, String>(0)?,
                 r.get::<_, String>(1)?,
@@ -1054,17 +1082,19 @@ fn identifiers(conn: &Connection, members: &[String]) -> Result<Vec<IdentifierVi
 /// it. Reading `kokin_graph::scales()` here instead would quietly make the
 /// binary the authority on what a case is allowed to say.
 fn confidence(conn: &Connection, members: &[String]) -> Result<Vec<DimensionView>, CommandError> {
+    subject_confidence(conn, members, kokin_graph::SubjectKind::Entity)
+}
+
+fn subject_confidence(
+    conn: &Connection,
+    members: &[String],
+    kind: kokin_graph::SubjectKind,
+) -> Result<Vec<DimensionView>, CommandError> {
     let dimensions = case_scales(conn)?;
     let mut assessed: BTreeMap<String, Vec<DimensionValueView>> = BTreeMap::new();
 
     for id in members {
-        for a in kokin_graph::assessments_for(
-            conn,
-            kokin_graph::Subject {
-                kind: kokin_graph::SubjectKind::Entity,
-                id,
-            },
-        )? {
+        for a in kokin_graph::assessments_for(conn, kokin_graph::Subject { kind, id })? {
             let label = value_label(conn, &a.dimension, a.scale_version, &a.value_key)?;
             assessed
                 .entry(a.dimension.clone())
@@ -1164,4 +1194,264 @@ fn placeholders(n: usize) -> String {
         .map(|i| format!("?{i}"))
         .collect::<Vec<_>>()
         .join(",")
+}
+
+fn bounds(request: &PageRequest, maximum: usize) -> Result<(usize, usize), CommandError> {
+    if request.offset > i64::MAX as usize {
+        return Err(CommandError::new(
+            ErrorCode::InvalidValue,
+            "page offset is too large",
+        ));
+    }
+    Ok((
+        request.offset,
+        request.limit.unwrap_or(50).clamp(1, maximum),
+    ))
+}
+
+pub fn artifact_page(
+    open: &OpenCase,
+    request: &PageRequest,
+) -> Result<PageView<ArtifactRowView>, CommandError> {
+    let (offset, limit) = bounds(request, MAX_ARTIFACTS)?;
+    Ok(PageView {
+        rows: artifact_rows(open, Some(limit), offset)?,
+        total: open
+            .conn
+            .query_row("SELECT COUNT(*) FROM artifact", [], |r| r.get(0))
+            .map_err(storage)?,
+        offset,
+        limit,
+    })
+}
+
+pub fn entity_page(
+    open: &OpenCase,
+    request: &PageRequest,
+) -> Result<PageView<EntityRowView>, CommandError> {
+    let (offset, limit) = bounds(request, MAX_ENTITIES)?;
+    let total = open.conn.query_row("SELECT COUNT(*) FROM entity e WHERE NOT EXISTS (SELECT 1 FROM er_merge_map m WHERE m.entity_id=e.id AND m.active=1)", [], |r| r.get(0)).map_err(storage)?;
+    Ok(PageView {
+        rows: entity_rows(open, Some(limit), offset)?,
+        total,
+        offset,
+        limit,
+    })
+}
+
+pub fn observation_page(
+    open: &OpenCase,
+    artifact_id: &str,
+    include_superseded: bool,
+    request: &PageRequest,
+) -> Result<(EvidenceListView, PageView<ObservationRowView>), CommandError> {
+    let (offset, limit) = bounds(request, MAX_OBSERVATIONS)?;
+    let table = observation_rows(open, artifact_id, include_superseded, offset, limit)?;
+    let total = open.conn.query_row("SELECT COUNT(*) FROM observation o WHERE artifact_id=?1 AND (?2=1 OR NOT EXISTS (SELECT 1 FROM observation_supersession s WHERE s.superseded_id=o.id))", rusqlite::params![artifact_id, i64::from(include_superseded)], |r| r.get(0)).map_err(storage)?;
+    let page = PageView {
+        rows: table.observations.clone(),
+        total,
+        offset,
+        limit,
+    };
+    Ok((table, page))
+}
+
+pub fn activity(open: &OpenCase, request: &PageRequest) -> Result<ActivityView, CommandError> {
+    let (offset, limit) = bounds(request, 200)?;
+    let total = open
+        .conn
+        .query_row("SELECT COUNT(*) FROM audit_event", [], |r| r.get(0))
+        .map_err(storage)?;
+    let mut stmt = open.conn.prepare("SELECT id, occurred_utc, actor, action, subject_kind, subject_id, payload_json FROM audit_event ORDER BY id DESC LIMIT ?1 OFFSET ?2").map_err(storage)?;
+    let rows = stmt
+        .query_map([limit as i64, offset as i64], |r| {
+            Ok(AuditRowView {
+                id: r.get(0)?,
+                occurred_utc: r.get(1)?,
+                actor: r.get(2)?,
+                action: r.get(3)?,
+                subject_kind: r.get(4)?,
+                subject_id: r.get(5)?,
+                payload_json: r.get(6)?,
+            })
+        })
+        .map_err(storage)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(storage)?;
+    let (chain_status, chain_detail) = match kokin_store::audit::verify_chain(&open.conn)? {
+        kokin_store::audit::ChainStatus::Intact { events } => {
+            ("intact", format!("{events} events verified"))
+        }
+        kokin_store::audit::ChainStatus::Broken { at_id, reason } => {
+            ("broken", format!("Event {at_id}: {reason}"))
+        }
+    };
+    Ok(ActivityView {
+        page: PageView {
+            rows,
+            total,
+            offset,
+            limit,
+        },
+        chain_status: chain_status.into(),
+        chain_detail,
+    })
+}
+
+pub fn subject(open: &OpenCase, subject_kind: &str, id: &str) -> Result<SubjectView, CommandError> {
+    let (kind, title, fields) = match subject_kind {
+        "identifier" => {
+            let (entity_id, namespace, value): (String, String, String) = open
+                .conn
+                .query_row(
+                    "SELECT entity_id, namespace, value FROM identifier WHERE id=?1",
+                    [id],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .map_err(missing_subject)?;
+            (
+                kokin_graph::SubjectKind::Identifier,
+                value,
+                vec![
+                    ("entity".into(), entity_id),
+                    ("namespace".into(), namespace),
+                ],
+            )
+        }
+        "relationship" => {
+            let (from,to,kind,start,end): (String,String,String,Option<String>,Option<String>) = open.conn.query_row("SELECT from_entity,to_entity,kind,started_utc,ended_utc FROM relationship WHERE id=?1", [id], |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?))).map_err(missing_subject)?;
+            let mut fields = vec![("from_entity".into(), from), ("to_entity".into(), to)];
+            if let Some(v) = start {
+                fields.push(("started_utc".into(), v));
+            }
+            if let Some(v) = end {
+                fields.push(("ended_utc".into(), v));
+            }
+            (kokin_graph::SubjectKind::Relationship, kind, fields)
+        }
+        _ => {
+            return Err(CommandError::new(
+                ErrorCode::InvalidValue,
+                "unsupported subject kind",
+            ))
+        }
+    };
+    let evidence = kokin_graph::evidence_for(&open.conn, kokin_graph::Subject { kind, id })?
+        .into_iter()
+        .map(|e| EvidenceView {
+            link_id: e.link_id,
+            entity_id: id.into(),
+            evidence_kind: e.evidence_kind,
+            evidence_id: e.evidence_id,
+            role: e.role,
+        })
+        .collect();
+    Ok(SubjectView {
+        subject_kind: subject_kind.into(),
+        subject_id: id.into(),
+        title,
+        fields,
+        evidence,
+        confidence: subject_confidence(&open.conn, &[id.into()], kind)?,
+    })
+}
+
+fn missing_subject(e: rusqlite::Error) -> CommandError {
+    if matches!(e, rusqlite::Error::QueryReturnedNoRows) {
+        CommandError::new(ErrorCode::NotFound, "subject is not in this case")
+    } else {
+        storage(e)
+    }
+}
+
+pub fn scales(open: &OpenCase) -> Result<Vec<ScaleOptionView>, CommandError> {
+    let mut result = Vec::new();
+    for (dimension, title, _) in case_scales(&open.conn)? {
+        let mut stmt=open.conn.prepare("SELECT value_key,label FROM scale_value WHERE scale_id=?1 AND scale_version=(SELECT MAX(version) FROM scale WHERE id=?1) ORDER BY rowid").map_err(storage)?;
+        let values = stmt
+            .query_map([&dimension], |r| Ok((r.get(0)?, r.get(1)?)))
+            .map_err(storage)?
+            .collect::<rusqlite::Result<Vec<_>>>()
+            .map_err(storage)?;
+        result.push(ScaleOptionView {
+            dimension,
+            title,
+            values,
+        });
+    }
+    Ok(result)
+}
+
+/// Resolve an L0 citation without inventing a new analytical link.
+pub fn evidence_target(
+    open: &OpenCase,
+    kind: &str,
+    id: &str,
+) -> Result<(String, String), CommandError> {
+    match kind {
+        "observation" | "artifact" => Ok((kind.into(), id.into())),
+        "capture" => {
+            let artifact=open.conn.query_row("SELECT a.id FROM capture c JOIN artifact a ON a.content_hash=c.content_hash WHERE c.id=?1 ORDER BY a.rowid LIMIT 1",[id],|r|r.get::<_,String>(0)).map_err(missing_subject)?;
+            Ok(("artifact".into(), artifact))
+        }
+        _ => Err(CommandError::new(
+            ErrorCode::InvalidValue,
+            "unsupported evidence kind",
+        )),
+    }
+}
+
+pub fn relationships(
+    open: &OpenCase,
+    id: &str,
+    request: &PageRequest,
+) -> Result<PageView<SubjectView>, CommandError> {
+    let canonical = kokin_graph::resolution::canonical_id(&open.conn, id)?;
+    let mut members = kokin_graph::resolution::cluster(&open.conn, &canonical)?;
+    members.push(canonical);
+    let (offset, limit) = bounds(request, 200)?;
+    let slots = placeholders(members.len());
+    let filter =
+        format!("FROM relationship WHERE from_entity IN ({slots}) OR to_entity IN ({slots})");
+    let total = open
+        .conn
+        .query_row(
+            &format!("SELECT COUNT(*) {filter}"),
+            rusqlite::params_from_iter(members.iter()),
+            |r| r.get(0),
+        )
+        .map_err(storage)?;
+    let mut stmt = open
+        .conn
+        .prepare(&format!(
+            "SELECT id {filter} ORDER BY rowid LIMIT ?{} OFFSET ?{}",
+            members.len() + 1,
+            members.len() + 2
+        ))
+        .map_err(storage)?;
+    let mut params = members
+        .iter()
+        .cloned()
+        .map(rusqlite::types::Value::Text)
+        .collect::<Vec<_>>();
+    params.push((limit as i64).into());
+    params.push((offset as i64).into());
+    let ids = stmt
+        .query_map(rusqlite::params_from_iter(params), |r| {
+            r.get::<_, String>(0)
+        })
+        .map_err(storage)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(storage)?;
+    let rows = ids
+        .iter()
+        .map(|id| subject(open, "relationship", id))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(PageView {
+        rows,
+        total,
+        offset,
+        limit,
+    })
 }

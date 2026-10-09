@@ -10,6 +10,7 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+tempfile = "3"
 kokin-store = { path = "../kokin-store" }
 kokin-keys = { path = "../kokin-keys" }
 kokin-blob = { path = "../kokin-blob" }

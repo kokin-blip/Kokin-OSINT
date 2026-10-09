@@ -4,10 +4,43 @@ A local-first desktop investigation workspace, where every entity, claim,
 connection, location, event, image, and AI observation traces back to the
 evidence that supports it.
 
-> **Status: pre-alpha skeleton (v0.0.1).** No collection, storage, or analysis
-> features are implemented yet. The repository currently contains the
-> architecture decisions, the risk register, and a proven encrypted-storage
-> round-trip. See `docs/adr/` for what has been decided and why.
+> **Status: pre-alpha (v0.0.1), core-workflow implementation in progress.**
+> The desktop now exposes evidence import/extraction, public static collection,
+> analysis, search, activity and export/restore. The eleven-step desktop
+> workflow repeat passes offline on Mac; the personal-use release gate remains open.
+
+## Current features
+
+| Area | Available controls |
+|---|---|
+| Cases | Encrypted creation/open/recovery/close and recovery-key acknowledgement |
+| Evidence | Native file import, deduplication, explicit HTML extraction, paginated observations and text-only source bytes with verified citations |
+| Collection | Offline by default; opt-in public static HTTP(S), disclosure, broker address/redirect checks, response caps and bounded timeouts |
+| Analysis | Evidence-grounded entities/identifiers/relationships, all seven confidence dimensions, assessments and merge preview/reject/split |
+| Workbench | Evidence, Entities, Search, Activity; shared detail/back history, paging, search filters and coverage on every result set |
+| Graph | Bounded per-hop expansion from entity detail, visible truncation, directed edges and evidence navigation; list alternative |
+| Packages | Export with explicit omissions, verification and restore to a new folder; no package recovery key or digital signature |
+| Operations | Background jobs, operation status/cancellation before atomic commit, serialized writes and case-generation checks |
+
+HTML remains the only extraction format. Collected markup is displayed as text.
+Recording exists as an explicit developer transport; arbitrary recordings still
+need secret review before publication. Case-folder entry remains typed.
+
+## Roadmap and verification
+
+[The authoritative roadmap](docs/ROADMAP.md) distinguishes implemented, backend
+only, planned and proposed capabilities. Graph exploration is available in entity
+details. PDF/images/OCR,
+DNS/RDAP → crt.sh → Wayback, hardware-aware optional AI/semantic search and offline
+maps follow the core reliability gate. PR #1 and licensing changes remain separate.
+
+The eleven-step workflow now passes through the desktop twice offline on Mac,
+including exact persisted identity/lineage comparison after reopen and restore.
+Native dialogs, integrated fault injection, Windows execution/manual checks,
+reference-machine performance, production test-driver exclusion and a tagged
+personal-use build remain release work. See [testing strategy](docs/testing/strategy.md)
+and [graph/desktop report](docs/increments/30-graph-and-desktop-acceptance.md).
+Builds remain unsigned/unnotarized; no public-release readiness is claimed.
 
 ## What this is
 
@@ -25,8 +58,9 @@ that transformation's version, and when it ran.
 - Not chain of custody. The audit log is tamper-*evident* within the
   application's trust boundary; anyone holding the case key can rewrite it. See
   `docs/limitations/`.
-- Not a claim that network collection is invisible. The application shows which
-  connector contacted which service, when, and what it transmitted.
+- Not a claim that network collection is invisible. The live collection
+  workflow discloses which connector contacted which service, when, and
+  what it transmitted.
 
 ## Prerequisites
 
@@ -91,10 +125,12 @@ crates/
   kokin-keys/       key hierarchy (Argon2id, case master key, KEK wrapping)
   kokin-blob/       content-addressed encrypted blob store
   kokin-net/        the ONLY socket-capable crate — egress broker
+  kokin-ingest/     file and fixture-backed URL ingestion, provenance
   kokin-extract/    parsers producing observations
+  kokin-graph/      evidence-grounded analysis and entity resolution
   kokin-search/     FTS5 search
   kokin-export/     case packaging and integrity verification
-  kokin-ai/         hardware detection, local inference
+  kokin-ai/         stub for planned hardware detection and local AI
 src-tauri/          desktop shell (thin — no business logic)
 ui/                 Svelte frontend
 docs/adr/           architecture decision records
@@ -111,13 +147,14 @@ These are enforced by CI, not by convention:
   would bypass the SSRF guard, rate limiter, byte caps, per-connector
   attribution, and offline mode at once.
 - **The whole test suite passes with no network.** `KOKIN_NETWORK=deny` is set
-  in CI; connectors are exercised against recorded, sanitised fixtures.
+  in CI; URL ingestion is exercised against synthetic replay fixtures. Live
+  recording and connector implementations are still planned.
 - **No copyleft dependencies.** `cargo-deny` enforces a permissive-only
   allowlist.
 - **Case databases are genuinely encrypted.** A byte-level test asserts
   `case.db` contains no plaintext and lacks the SQLite magic header — catching a
   build that silently linked plain SQLite.
-- **The case header carries no key material.** A test asserts neither the
+- **The case header carries no plaintext key material.** A test asserts neither the
   passphrase nor the recovery key appears in the plaintext `header.json`.
 
 ## What a case looks like on disk

@@ -1,0 +1,56 @@
+:root {
+  color-scheme: dark;
+  --surface-canvas: #08090b;
+  --surface-panel: #0c0e11;
+  --surface-raised: #11151b;
+  --surface-hover: #171d26;
+  --foreground: #f1f3f7;
+  --foreground-secondary: #b5bfd0;
+  --foreground-muted: #8e9aaf;
+  --border: #252b34;
+  --border-strong: #465268;
+  --accent: #3395ff;
+  --accent-action: #007aff;
+  --accent-surface: #071d35;
+  --success: #63d59c;
+  --warning: #e4bb79;
+  --danger: #f0a0a5;
+  --warning-surface: #211b12;
+  --danger-surface: #28181e;
+  --focus: #94c8ff;
+  --radius-control: 8px;
+  --radius-panel: 14px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --text-small: 12px;
+  --text-caption: 14px;
+  --text-body: 16px;
+  --text-title: 24px;
+  --motion-feedback: 120ms;
+  --motion-disclosure: 160ms;
+  --motion-layout: 200ms;
+  --motion-ease: cubic-bezier(.2, .8, .2, 1);
+  --layer-overlay: 20;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface-canvas); color: var(--foreground); font: 14px/1.5 var(--font-body); }
+button, input, select, textarea { font: inherit; }
+button { color: var(--foreground); background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-control); padding: 8px 14px; min-height: 36px; cursor: pointer; transition: background var(--motion-feedback), border-color var(--motion-feedback); }
+button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--border-strong); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--accent-action); border-color: var(--accent-action); color: white; }
+button.primary:hover:not(:disabled) { background: #006de5; }
+input, select, textarea { background: var(--surface-canvas); color: var(--foreground); border: 1px solid var(--border-strong); border-radius: var(--radius-control); padding: 8px 12px; min-width: 0; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+code, pre { font-family: var(--font-mono); overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

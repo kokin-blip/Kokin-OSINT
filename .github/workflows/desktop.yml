@@ -1,0 +1,40 @@
+name: Desktop acceptance (explicit)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            bundle: '--bundles app'
+          - os: windows-latest
+            bundle: '--no-bundle'
+    runs-on: ${{ matrix.os }}
+    env:
+      KOKIN_NETWORK: deny
+      VITE_DESKTOP_TEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: perl -V:osname -V:version
+      - run: npm ci
+        working-directory: ui
+      - name: Build instrumented debug app only
+        run: node ui/node_modules/@tauri-apps/cli/tauri.js build --debug ${{ matrix.bundle }} --features desktop-test --config src-tauri/desktop-test.conf.json
+      - run: npm run test:desktop
+        working-directory: ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-test-logs-${{ matrix.os }}
+          path: ui/logs/

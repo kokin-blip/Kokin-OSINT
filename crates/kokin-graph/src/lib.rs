@@ -27,6 +27,7 @@
 
 use rusqlite::Connection;
 
+pub mod explore;
 pub mod resolution;
 pub mod scales;
 
@@ -39,6 +40,8 @@ pub use scales::{scales, seed_scales, Scale, ScaleValue, INSUFFICIENT_INFORMATIO
 /// that value", and collapsing them would hide the second behind the first.
 #[derive(Debug, thiserror::Error)]
 pub enum GraphError {
+    #[error("graph expansion cancelled")]
+    ExpansionCancelled,
     #[error("sqlite error: {0}")]
     Sqlite(#[from] rusqlite::Error),
 

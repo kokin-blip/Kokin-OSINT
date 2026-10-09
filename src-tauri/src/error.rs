@@ -207,6 +207,7 @@ impl From<kokin_graph::GraphError> for CommandError {
     fn from(e: kokin_graph::GraphError) -> Self {
         use kokin_graph::GraphError as G;
         let code = match &e {
+            G::ExpansionCancelled => ErrorCode::InvalidValue,
             G::SubjectMissing { .. } | G::UnknownEntityType { .. } | G::UnknownScale { .. } => {
                 ErrorCode::NotFound
             }

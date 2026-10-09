@@ -195,6 +195,21 @@ pub fn open_case(root: impl AsRef<Path>, passphrase: &str) -> Result<OpenCase> {
     finish_open(paths, &header, cmk, "passphrase")
 }
 
+/// Validate a staged case without recording a human open or changing its schema.
+/// Restore uses this before publishing a directory; validation is not activity.
+pub fn validate_case(root: impl AsRef<Path>, passphrase: &str) -> Result<()> {
+    let paths = CasePaths::new(root);
+    let header = read_header(&paths)?;
+    let cmk = unlock_with_passphrase(&header, passphrase)?;
+    let conn = open_database(&paths, &cmk)?;
+    verify_readable(&conn)?;
+    let integrity: String = conn.query_row("PRAGMA integrity_check", [], |r| r.get(0))?;
+    if integrity != "ok" {
+        return Err(StoreError::WrongPassphraseOrNotACase);
+    }
+    Ok(())
+}
+
 /// Open an existing case with the recovery key, for a forgotten passphrase.
 pub fn open_case_with_recovery_key(
     root: impl AsRef<Path>,

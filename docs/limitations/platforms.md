@@ -16,19 +16,17 @@ run `xattr -dr com.apple.quarantine /Applications/Kokin-OSINT.app`.
 ($99/year). The owner decided on 2026-08-12 not to purchase one at this stage.
 This is a deliberate, revisitable trade-off, not an oversight (risk R-002).
 
-## macOS is built and tested only in CI
+## Apple Silicon macOS verification
 
-There is no Mac available to the developer. Every macOS build and test runs on
-GitHub Actions `macos-14` (Apple Silicon) runners.
-
-**Consequence:** automated tests cover macOS, but *interactive* behaviour —
-window chrome, WKWebView rendering differences, drag-and-drop, file dialogs,
-keyboard shortcuts, display scaling — is **not manually verified**. Bugs in
-those areas will reach users before they reach the developer.
-
-The CI matrix exists from the first commit specifically so that this gap stays
-as small as possible. It is still a real gap. macOS bug reports with screenshots
-are disproportionately valuable.
+An actual Mac is available in this workspace. On 2026-10-08 the debug app bundle
+launched and the embedded WDIO lifecycle test passed: create, recovery challenge,
+offline navigation, close and reopen. The case gate and shared observation detail were visually inspected. A native
+file picker imported synthetic HTML, explicit extraction recorded two observations,
+and the observation opened its verified source-byte lineage.
+This is partial acceptance. Additional dialogs, keyboard
+navigation, scaling, installation and integrated recovery still need the bounded
+manual pass. Windows manual verification has not occurred in this implementation
+slice; the existing CI matrix remains the automated platform build path.
 
 **Not covered at all:** Intel Macs. CI builds `aarch64-apple-darwin` only. An
 `x86_64-apple-darwin` leg can be added, but it would be even less verified than

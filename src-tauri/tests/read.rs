@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use kokin_graph::{Grounding, NewEntity, Subject, SubjectKind};
+use kokin_osint_lib::read;
 use kokin_osint_lib::{DocumentContent, ErrorCode, SearchRequest, Session};
 use serde_json::Value;
 
@@ -1195,4 +1196,203 @@ fn a_missing_artifact_and_a_missing_entity_are_both_not_found() {
         .with_case(|open| kokin_osint_lib::read::entity(open, "no-such-entity"))
         .unwrap_err();
     assert_eq!(err.code, ErrorCode::NotFound);
+}
+
+#[test]
+fn workbench_pages_reach_the_remainder_without_repeating_rows() {
+    let f = fixture("workbench-pages");
+    f.session
+        .with_case(|open| {
+            let first = read::artifact_page(
+                open,
+                &kokin_osint_lib::views::PageRequest {
+                    offset: 0,
+                    limit: Some(1),
+                },
+            )?;
+            let second = read::artifact_page(
+                open,
+                &kokin_osint_lib::views::PageRequest {
+                    offset: 1,
+                    limit: Some(1),
+                },
+            )?;
+            assert_eq!(first.total, 3);
+            assert_eq!(second.total, 3);
+            assert_ne!(first.rows[0].artifact_id, second.rows[0].artifact_id);
+            let (_, first) = read::observation_page(
+                open,
+                &f.read_artifact,
+                false,
+                &kokin_osint_lib::views::PageRequest {
+                    offset: 0,
+                    limit: Some(1),
+                },
+            )?;
+            let (_, second) = read::observation_page(
+                open,
+                &f.read_artifact,
+                false,
+                &kokin_osint_lib::views::PageRequest {
+                    offset: 1,
+                    limit: Some(1),
+                },
+            )?;
+            assert!(first.total > 1);
+            assert_eq!(first.total, second.total);
+            assert_ne!(first.rows[0].observation_id, second.rows[0].observation_id);
+            let activity = read::activity(
+                open,
+                &kokin_osint_lib::views::PageRequest {
+                    offset: 0,
+                    limit: Some(1),
+                },
+            )?;
+            assert_eq!(activity.chain_status, "intact");
+            assert_eq!(activity.page.rows.len(), 1);
+            assert!(activity.page.total > 1);
+            let entity = read::entity_page(
+                open,
+                &kokin_osint_lib::views::PageRequest {
+                    offset: 0,
+                    limit: Some(1),
+                },
+            )?;
+            assert_eq!(entity.total, 1);
+            Ok(())
+        })
+        .unwrap();
+}
+
+#[test]
+fn identifier_and_relationship_details_open_their_own_evidence() {
+    let f = fixture("subject-details");
+    f.session
+        .with_case(|open| {
+            let entity = read::entity(open, &f.canonical)?;
+            let identifier =
+                read::subject(open, "identifier", &entity.identifiers[0].identifier_id)?;
+            assert!(!identifier.evidence.is_empty());
+            assert_eq!(identifier.confidence.len(), 7);
+            let row = kokin_osint_lib::write::relate(
+                open,
+                &kokin_osint_lib::views::NewRelationshipRequest {
+                    from_entity: f.canonical.clone(),
+                    to_entity: f.absorbed.clone(),
+                    kind: "shared_identifier".into(),
+                    started_utc: None,
+                    ended_utc: None,
+                    evidence: vec![kokin_osint_lib::views::GroundingInput {
+                        kind: "observation".into(),
+                        id: f.observation.clone(),
+                        role: "contradicts".into(),
+                    }],
+                },
+            )?;
+            let edge = read::subject(open, "relationship", &row.id)?;
+            assert_eq!(edge.evidence[0].role, "contradicts");
+            assert_eq!(edge.evidence[0].evidence_id, f.observation);
+            assert_eq!(edge.confidence.len(), 7);
+            let related = read::relationships(open, &f.canonical, &Default::default())?;
+            assert_eq!(related.total, 1);
+            assert_eq!(related.rows[0].subject_id, row.id);
+            Ok(())
+        })
+        .unwrap();
+}
+
+#[test]
+fn a_closed_case_generation_cannot_commit_into_a_reopened_case() {
+    let f = fixture("generation");
+    let before = f.session.generation();
+    let view = f.session.view().unwrap().case.unwrap();
+    assert_eq!(view.session_generation, before);
+    f.session.close().unwrap();
+    f.session
+        .open(&PathBuf::from(view.root), PASSPHRASE)
+        .unwrap();
+    assert!(f
+        .session
+        .with_generation::<()>(before, |_| panic!("stale work ran"))
+        .is_err());
+    let current = f.session.generation();
+    assert!(current > before);
+    assert_eq!(
+        f.session.view().unwrap().case.unwrap().session_generation,
+        current
+    );
+}
+
+#[test]
+fn graph_expansion_is_bounded_cancellable_and_edges_keep_their_evidence() {
+    use std::sync::atomic::AtomicBool;
+    let f = fixture("graph-expansion");
+    f.session
+        .with_case(|open| {
+            for n in 0..8 {
+                let entity = kokin_osint_lib::write::create_entity(
+                    open,
+                    &kokin_osint_lib::views::NewEntityRequest {
+                        type_key: "person".into(),
+                        display_name: format!("Neighbour {n}"),
+                        notes: String::new(),
+                        evidence: vec![kokin_osint_lib::views::GroundingInput {
+                            kind: "observation".into(),
+                            id: f.observation.clone(),
+                            role: "supports".into(),
+                        }],
+                    },
+                )?;
+                kokin_osint_lib::write::relate(
+                    open,
+                    &kokin_osint_lib::views::NewRelationshipRequest {
+                        from_entity: f.canonical.clone(),
+                        to_entity: entity.id,
+                        kind: "knows".into(),
+                        started_utc: None,
+                        ended_utc: None,
+                        evidence: vec![kokin_osint_lib::views::GroundingInput {
+                            kind: "observation".into(),
+                            id: f.observation.clone(),
+                            role: "supports".into(),
+                        }],
+                    },
+                )?;
+            }
+            let cancel = AtomicBool::new(false);
+            let limited = kokin_graph::explore::expand(&open.conn, &f.canonical, 2, 3, 2, &cancel)?;
+            assert!(limited.truncated);
+            assert!(limited.nodes.len() <= 3);
+            assert!(limited.edges.len() <= 2);
+            for edge in &limited.edges {
+                assert!(limited.nodes.iter().any(|n| n.id == edge.from));
+                assert!(limited.nodes.iter().any(|n| n.id == edge.to));
+                assert_eq!(
+                    read::subject(open, "relationship", &edge.id)?.evidence[0].evidence_id,
+                    f.observation
+                );
+            }
+            let full = kokin_graph::explore::expand(&open.conn, &f.canonical, 2, 30, 32, &cancel)?;
+            assert_eq!(full.nodes.len(), 9);
+            assert_eq!(full.edges.len(), 8);
+            assert!(!full.truncated);
+            let same = kokin_graph::explore::expand(&open.conn, &f.canonical, 2, 30, 32, &cancel)?;
+            assert_eq!(
+                full.nodes.iter().map(|n| &n.id).collect::<Vec<_>>(),
+                same.nodes.iter().map(|n| &n.id).collect::<Vec<_>>()
+            );
+            assert!(matches!(
+                kokin_graph::explore::expand(
+                    &open.conn,
+                    &f.canonical,
+                    2,
+                    30,
+                    32,
+                    &AtomicBool::new(true)
+                ),
+                Err(kokin_graph::GraphError::ExpansionCancelled)
+            ));
+            Ok(())
+        })
+        .unwrap();
 }

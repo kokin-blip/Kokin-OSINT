@@ -13,6 +13,7 @@
 //! is the failure this product exists to prevent.
 
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
 use crate::error::{CommandError, ErrorCode};
@@ -22,6 +23,7 @@ use crate::views::{CaseView, NewCaseView, SessionView};
 #[derive(Default)]
 pub struct Session {
     case: Mutex<Option<kokin_store::OpenCase>>,
+    generation: AtomicU64,
 }
 
 impl Session {
@@ -37,6 +39,26 @@ impl Session {
         let mut guard = self.lock()?;
         let case = guard.as_mut().ok_or_else(CommandError::no_case_open)?;
         f(case)
+    }
+
+    pub fn generation(&self) -> u64 {
+        self.generation.load(Ordering::SeqCst)
+    }
+
+    pub fn with_generation<T>(
+        &self,
+        generation: u64,
+        work: impl FnOnce(&mut kokin_store::OpenCase) -> Result<T, CommandError>,
+    ) -> Result<T, CommandError> {
+        self.with_case(|open| {
+            if self.generation() != generation {
+                return Err(CommandError::new(
+                    ErrorCode::NoCaseOpen,
+                    "the originating case has closed; this operation was not committed",
+                ));
+            }
+            work(open)
+        })
     }
 
     /// Create a case and make it the open one.
@@ -62,12 +84,14 @@ impl Session {
         }
 
         let (open, recovery) = kokin_store::create_case(root, case_id, passphrase)?;
-        let view = describe(&open, case_id)?;
+        kokin_graph::initialise(&open.conn)?;
+        let mut view = describe(&open, case_id)?;
         // The rendered key lives exactly as long as this function. Zeroizing
         // wraps it up to the point it becomes the response, which is as far as
         // this layer can carry it.
         let recovery_key = kokin_keys::to_phrase(&recovery).to_string();
         *guard = Some(open);
+        view.session_generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
 
         Ok(NewCaseView {
             case: view,
@@ -82,8 +106,10 @@ impl Session {
             return Err(already_open());
         }
         let open = kokin_store::open_case(root, passphrase)?;
-        let view = describe_from_header(&open)?;
+        kokin_graph::initialise(&open.conn)?;
+        let mut view = describe_from_header(&open)?;
         *guard = Some(open);
+        view.session_generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
         Ok(view)
     }
 
@@ -103,8 +129,10 @@ impl Session {
             return Err(already_open());
         }
         let open = kokin_store::open_case_with_recovery_key(root, &recovery)?;
-        let view = describe_from_header(&open)?;
+        kokin_graph::initialise(&open.conn)?;
+        let mut view = describe_from_header(&open)?;
         *guard = Some(open);
+        view.session_generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
         Ok(view)
     }
 
@@ -117,6 +145,7 @@ impl Session {
         // The drop is the point of this function. `OpenCase` owns the only
         // handle to the connection and the only copy of the case master key,
         // and `CaseMasterKey` zeroizes on drop.
+        self.generation.fetch_add(1, Ordering::SeqCst);
         *guard = None;
         Ok(())
     }
@@ -125,10 +154,17 @@ impl Session {
     pub fn view(&self) -> Result<SessionView, CommandError> {
         let guard = self.lock()?;
         let case = match guard.as_ref() {
-            Some(open) => Some(describe_from_header(open)?),
+            Some(open) => {
+                let mut view = describe_from_header(open)?;
+                view.session_generation = self.generation();
+                Some(view)
+            }
             None => None,
         };
-        Ok(SessionView { case })
+        Ok(SessionView {
+            case,
+            session_generation: self.generation(),
+        })
     }
 
     fn lock(
@@ -157,6 +193,7 @@ fn already_open() -> CommandError {
 /// Describe a case whose id is already known, without re-reading the header.
 fn describe(open: &kokin_store::OpenCase, case_id: &str) -> Result<CaseView, CommandError> {
     Ok(CaseView {
+        session_generation: 0,
         case_id: case_id.to_string(),
         root: open.paths.root.display().to_string(),
         schema_version: schema_version(&open.conn)?,
@@ -167,6 +204,7 @@ fn describe(open: &kokin_store::OpenCase, case_id: &str) -> Result<CaseView, Com
 fn describe_from_header(open: &kokin_store::OpenCase) -> Result<CaseView, CommandError> {
     let header = header(open)?;
     Ok(CaseView {
+        session_generation: 0,
         case_id: header.case_id,
         root: open.paths.root.display().to_string(),
         schema_version: schema_version(&open.conn)?,

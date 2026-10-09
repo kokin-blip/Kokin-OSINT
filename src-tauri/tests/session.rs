@@ -55,7 +55,10 @@ fn a_case_can_be_created_closed_and_opened_again() {
     assert_eq!(session.view().unwrap().case, None);
 
     let reopened = session.open(&path, PASSPHRASE).unwrap();
-    assert_eq!(reopened, created.case);
+    assert!(reopened.session_generation > created.case.session_generation);
+    let mut expected = created.case.clone();
+    expected.session_generation = reopened.session_generation;
+    assert_eq!(reopened, expected);
 
     cleanup(&path);
 }
@@ -77,7 +80,10 @@ fn the_recovery_key_shown_at_creation_opens_the_case() {
     // As a user would retype it: lowercase, spaces instead of dashes.
     let retyped = written_down.to_lowercase().replace('-', " ");
     let opened = session.open_with_recovery_key(&path, &retyped).unwrap();
-    assert_eq!(opened, created.case);
+    assert!(opened.session_generation > created.case.session_generation);
+    let mut expected = created.case.clone();
+    expected.session_generation = opened.session_generation;
+    assert_eq!(opened, expected);
 
     cleanup(&path);
 }
@@ -222,7 +228,13 @@ fn the_views_carry_exactly_these_fields_and_no_key_material() {
     fields.sort_unstable();
     assert_eq!(
         fields,
-        ["case_id", "has_recovery_key", "root", "schema_version"]
+        [
+            "case_id",
+            "has_recovery_key",
+            "root",
+            "schema_version",
+            "session_generation"
+        ]
     );
 
     // The recovery key is returned by creation and by nothing else. Any later
@@ -251,4 +263,35 @@ fn an_error_serialises_as_a_code_the_interface_can_match_on() {
 
     assert_eq!(json["code"], "no_case_open");
     assert!(json["message"].as_str().unwrap().len() > 10);
+}
+
+#[test]
+fn fresh_case_has_analysis_choices_before_the_first_write() {
+    let path = case_path("analysis-choices");
+    let session = Session::default();
+    session.create(&path, "choices", PASSPHRASE).unwrap();
+    let choices = || {
+        session
+            .with_case(|open| {
+                let types: i64 = open
+                    .conn
+                    .query_row(
+                        "SELECT count(*) FROM entity_type WHERE key IN ('person','organisation')",
+                        [],
+                        |r| r.get(0),
+                    )
+                    .unwrap();
+                let scales = kokin_osint_lib::read::scales(open)?;
+                assert_eq!(types, 2);
+                assert_eq!(scales.len(), 7);
+                Ok(())
+            })
+            .unwrap()
+    };
+    choices();
+    session.close().unwrap();
+    session.open(&path, PASSPHRASE).unwrap();
+    choices();
+    session.close().unwrap();
+    cleanup(&path);
 }

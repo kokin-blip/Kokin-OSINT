@@ -682,3 +682,15 @@ fn packaging_cleans_up_after_itself() {
 fn is_file(path: &Path) -> bool {
     path.metadata().map(|m| m.is_file()).unwrap_or(false)
 }
+
+#[test]
+fn wrong_restore_credentials_leave_no_destination_or_staging() {
+    let f = fixture("wrong-restore");
+    let pkg = f.dir.join("out.kokinpkg");
+    package(&f.open, &pkg, EXPORT_PASSPHRASE, &PackageOptions::default()).unwrap();
+    let before = std::fs::read_dir(&f.dir).unwrap().count();
+    let dest = f.dir.join("restored.kokincase");
+    assert!(import(&pkg, &dest, "wrong export passphrase").is_err());
+    assert!(!dest.exists());
+    assert_eq!(std::fs::read_dir(&f.dir).unwrap().count(), before);
+}

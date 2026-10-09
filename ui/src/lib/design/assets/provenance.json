@@ -1,0 +1,35 @@
+{
+  "icons": {
+    "source": "https://github.com/tailwindlabs/heroicons/tree/v2.2.0",
+    "license": "MIT"
+  },
+  "night-ledger-banner.png": {
+    "source": "Built-in image_gen, original generated asset, 2026-10-08",
+    "prompt": "Use case: stylized-concept. Asset type: original decorative header artwork for a local desktop app. Input image: selected Night Ledger UI mockup, visual reference only. Generate ONLY a wide 3:1 abstract purple folded satin/glass sculpture banner like the small artwork at upper right, no interface, no text, no icons. Black violet backdrop, sculptural smooth undulating surface with soft violet rim light, restrained highlights and rich black shadows. Edge-to-edge 1536x512 composition. This is decorative case branding, not evidence imagery. Original composition; do not reproduce any UI or proprietary template artwork."
+  },
+  "sha256": {
+    "night-ledger-banner.png": "9782c3f0ef14c01175a008d563cb3cbf83f798f892164b63a44a7ca3aab63710",
+    "kokin-icon.png": "9f850fafb4215bbbf1461e3dc54542c661f43bb97c877ab100aba12eaf6a31e7",
+    "icons/user.svg": "73fa969e35b58fdf764fb90fce1f848c4ca4c4b20184ce8bf9bd442700456356",
+    "icons/adjustments-horizontal.svg": "33ccc1e3273217f72e3436f535000036e069935618877e6636124b2b930bbf5e",
+    "icons/LICENSE": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+    "icons/chevron-right.svg": "db9cc118ca95a91b0ffe68dbf1052d5c5820bf5cc46b4f9f9109ac5bfc3a5fe6",
+    "icons/bars-3.svg": "0e76cceaeef6685444adf1ccb47d743d791d30e19181289ce19d3fb5e5c7ed74",
+    "icons/arrow-down-tray.svg": "03f6611b7a55dfc2f4fe9ab62da600ddab28e5aa418a168adfb066a76c23e44a",
+    "icons/plus.svg": "f3bd7870b4ac4bcb2153705981bdd9663f185c4563af496998803e245aca0d54",
+    "icons/x-mark.svg": "f44f8d4070a779c324f07a199122b4cc8686b5a8d9705727dc38d0cfd3bb27ec",
+    "icons/document-text.svg": "71f9dc980c507b7cfd044b7b322790f826e69cffcb6b06802c898502328a85b5",
+    "icons/clock.svg": "373d9798f3bde27f665fd49fd4b78b6896de13e1b30670c1930d9553cd1ff3e3",
+    "icons/command-line.svg": "c7e67e51e62986aa267fda4607fa1f2f701dbe1a8aaa1042582aff9c8dce10d1",
+    "icons/share.svg": "036b1908bbb0c4ae0f95a980a52b71a02396ef1851b75b8ee9d986aefcfbf55c",
+    "icons/arrow-left.svg": "2b41e74fb69b4e6f36762808b3370b9a156d5baefcc36e3868a57a526c6e8016",
+    "icons/magnifying-glass.svg": "3566eaf416d279baea18ebc5ccb5a9500f646a1afd42d1dc04f48581e24797eb",
+    "icons/lock-closed.svg": "339b23156b86e081a7c2676d7636229ad4e5cad52e3c2e3b00852bee720e5c70",
+    "icons/shield-check.svg": "db8ceec9867b8dcb63efb1da7afaf6c66729e93f0e94b4352e97d6249d83680f"
+  },
+  "font_decision": "Inter v4.1 inspected but not bundled: OFL-1.1 is outside the existing license allowlist. Use native system font pending a separate licensing decision.",
+  "kokin-icon.png": {
+    "source": "src-tauri/icons/32x32.png",
+    "license": "First-party application branding; copied unchanged"
+  }
+}

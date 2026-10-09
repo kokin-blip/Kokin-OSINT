@@ -115,7 +115,10 @@ pub fn ingest_url(
 
         // Bytes go to the blob store before the transaction opens: it writes to
         // the filesystem, which cannot participate in a SQL transaction anyway.
-        let bytes = response.body.as_bytes();
+        let bytes = response
+            .body_bytes
+            .as_deref()
+            .unwrap_or(response.body.as_bytes());
         let stored = store_stream(conn, blobs, cmk, || Ok(bytes))?;
 
         let retrieved = Retrieved {
@@ -124,6 +127,8 @@ pub fn ingest_url(
             canonical_locator: normalised.canonical_locator.clone(),
             http_status: Some(i64::from(response.status)),
             request_json: serde_json::to_string(&request).unwrap_or_else(|_| "{}".into()),
+            redirect_chain_json: serde_json::to_string(&response.redirect_chain)
+                .unwrap_or_else(|_| "[]".into()),
             response_headers_json: serde_json::to_string(&response.headers)
                 .unwrap_or_else(|_| "{}".into()),
             // Phase 1 fetches static HTML only. Recording this on every capture
@@ -177,6 +182,7 @@ pub fn ingest_file(
             request_json: "{}".to_string(),
             response_headers_json: "{}".to_string(),
             // Unlike a static-HTML fetch, every byte of the file was read.
+            redirect_chain_json: "[]".into(),
             completeness: "complete",
             from_fixture: false,
             media_type: media_type_of_path(path),
@@ -245,6 +251,7 @@ struct Retrieved {
     http_status: Option<i64>,
     request_json: String,
     response_headers_json: String,
+    redirect_chain_json: String,
     completeness: &'static str,
     from_fixture: bool,
     media_type: String,
@@ -318,7 +325,7 @@ fn record(
             (id, source_id, content_hash, requested_utc, http_status, request_json,
              response_headers_json, redirect_chain_json, capture_completeness,
              from_fixture, connector, job_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, '[]', ?8, ?9, ?10, ?11)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?12, ?8, ?9, ?10, ?11)",
         rusqlite::params![
             capture_id,
             source_id,
@@ -331,6 +338,7 @@ fn record(
             i64::from(retrieved.from_fixture),
             ctx.connector,
             ctx.job_id,
+            retrieved.redirect_chain_json,
         ],
     )?;
 
@@ -677,12 +685,15 @@ mod tests {
 
             self.http
                 .store(&Fixture {
+                    format_version: 1,
                     key: request.fixture_key().unwrap(),
                     request,
                     response: HttpResponse {
                         status,
                         headers,
                         body: body.to_string(),
+                        body_bytes: None,
+                        redirect_chain: Vec::new(),
                         from_fixture: false,
                     },
                     recorded_utc: "2026-08-12T00:00:00Z".to_string(),

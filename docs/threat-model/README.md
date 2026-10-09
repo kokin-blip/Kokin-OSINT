@@ -1,21 +1,24 @@
 # Threat model
 
-Status: **draft**, to be revised at gate 5.
+Status: implementation summary updated 2026-10-08; release security verification remains open.
 
-STRIDE per trust boundary. Every attack class in this document has a row in
-`attack-catalog.csv` carrying a control, the crate that implements it, and a
-`test_id`. A control without a test is a wish, so the catalog's `status` column
-distinguishes `active` (test exists and runs in CI) from `planned`.
+SQLCipher and encrypted blobs, parameterized writes, citation verification,
+text-only evidence display, machine-actor restrictions, and evidence grounding
+have deterministic contract tests. Live HTTP now routes exclusively through
+`kokin-net`: vetted/pinned destination addresses, TLS hostname verification,
+redirect checks, no proxy inheritance, rate/size/time limits and offline policy.
+Transport tests are synthetic; live-service behavior needs separate verification.
 
-Current state: **3 active, 7 partial, 7 planned, 1 accepted limitation.**
+Native file selections produce short-lived single-use generation-bound tokens;
+background collection takes no case lock during network I/O. Writes are serialized
+and stale generations cannot commit. Atomic writes become non-cancellable once
+started. Restore/export stage before publishing; failed stages are cleaned up.
+Filesystem metadata checks do not eliminate all races with hostile local writers.
 
-`partial` is doing real work in that count. The egress-broker rows (A-001 to
-A-004, A-011) have their policy implemented and tested exhaustively offline —
-but **no live transport routes through them yet**, so nothing is actually being
-protected in production. They are not `active` and must not be described as
-though they were. That ratio is the honest measure of how far the security
-architecture is from implemented, and it should be quoted whenever this
-project's security posture is described.
+AI, browser execution and third-party plugins remain planned. The historical
+attack catalog records granular controls, not a current security score: its
+original aggregate counts are no longer authoritative. Audit chains are tamper-
+evident within the application trust boundary, not signatures or chain of custody.
 
 ## Assets, in priority order
 
