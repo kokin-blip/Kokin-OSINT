@@ -2,10 +2,8 @@
   /**
    * What you see when no case is open: create one, or open one.
    *
-   * Paths are typed rather than picked, because there is no native file dialog
-   * yet (increment 25, which is also what closes A-034). That is poor and it is
-   * honest about being poor — a placeholder showing the shape of a case path is
-   * more use than a browse button that does not exist.
+   * Creation accepts an optional typed path; an empty path is resolved by Rust
+   * to a unique folder in OS application data. Opening still needs a path.
    */
   import type { Session } from "./session.svelte";
 
@@ -26,7 +24,7 @@
 
   let canSubmit = $derived(
     !session.busy &&
-      path.trim().length > 0 &&
+      (mode === "create" || path.trim().length > 0) &&
       (mode === "create"
         ? caseId.trim().length > 0 && passphrase.length > 0
         : useRecoveryKey
@@ -77,13 +75,15 @@
         type="text"
         bind:value={path}
         placeholder={mode === "create"
-          ? "C:\\Cases\\Ferry Road.kokincase"
+          ? "Leave blank to create in the app’s local data folder"
           : "path to an existing .kokincase folder"}
         autocomplete="off"
         spellcheck="false"
-        required
+        required={mode === "open"}
       />
     </label>
+
+    <p class="hint">{mode === "create" ? "Optional. Leave blank to create a unique case folder in the app’s local data folder. The chosen path is shown after creation." : "Enter the folder of an existing case."}</p>
 
     {#if mode === "create"}
       <label>
@@ -143,11 +143,13 @@
 </section>
 
 <style>
+  section { max-width: 640px; padding: 28px; border: 1px solid var(--border); border-radius: var(--radius-panel); background: var(--surface-panel); }
+
   h2 {
-    font-size: 1.05rem;
+    font-size: 24px;
     text-transform: none;
     letter-spacing: normal;
-    color: #e6e8eb;
+    color: var(--foreground);
     margin: 0 0 0.75rem;
   }
 
@@ -158,9 +160,9 @@
   }
 
   .modes button[aria-pressed="true"] {
-    background: #2b333f;
-    border-color: #4a5768;
-    color: #e6e8eb;
+    background: var(--accent-surface);
+    border-color: var(--border-strong);
+    color: var(--foreground);
   }
 
   form {
@@ -180,7 +182,7 @@
     display: block;
     margin-bottom: 0.25rem;
     font-size: 0.875rem;
-    color: #c3ccd6;
+    color: var(--foreground-secondary);
   }
 
   input {
@@ -194,7 +196,7 @@
 
   .hint {
     margin: 0;
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-size: 0.875rem;
   }
 
@@ -202,7 +204,7 @@
     background: none;
     border: none;
     padding: 0;
-    color: #8fb8e8;
+    color: var(--accent);
     text-decoration: underline;
     cursor: pointer;
     font-size: 0.875rem;

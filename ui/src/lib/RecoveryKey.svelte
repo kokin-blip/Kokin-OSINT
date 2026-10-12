@@ -26,11 +26,12 @@
    */
   interface Props {
     caseId: string;
+    casePath?: string;
     recoveryKey: string;
     onacknowledge: () => void;
   }
 
-  let { caseId, recoveryKey, onacknowledge }: Props = $props();
+  let { caseId, casePath, recoveryKey, onacknowledge }: Props = $props();
 
   // Crockford base32 in eight groups of seven (kokin_keys::phrase).
   let segments = $derived(recoveryKey.split("-"));
@@ -78,6 +79,7 @@
 <div class="backdrop">
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="rk-title">
     <h2 id="rk-title">Write this down before continuing</h2>
+    {#if casePath}<p>Case folder: <span style="overflow-wrap:anywhere">{casePath}</span></p>{/if}
 
     <p class="lede">
       This is the recovery key for <strong>{caseId}</strong>. It is the only way
@@ -156,8 +158,8 @@
   }
 
   .panel {
-    background: #171a20;
-    border: 1px solid #2f3742;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
     border-radius: 8px;
     padding: 1.5rem;
     max-width: 34rem;
@@ -169,7 +171,7 @@
     font-size: 1.15rem;
     text-transform: none;
     letter-spacing: normal;
-    color: #e6e8eb;
+    color: var(--foreground);
   }
 
   .lede,
@@ -178,15 +180,15 @@
   }
 
   .once {
-    color: #ffd9a0;
+    color: var(--warning);
   }
 
   .key {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
-    background: #0f1216;
-    border: 1px solid #2f3742;
+    background: var(--surface-panel);
+    border: 1px solid var(--border-strong);
     border-radius: 4px;
     padding: 0.75rem;
     margin-bottom: 0.75rem;
@@ -202,7 +204,7 @@
 
   hr {
     border: 0;
-    border-top: 1px solid #262b32;
+    border-top: 1px solid var(--border);
     margin: 1.25rem 0;
   }
 
@@ -225,7 +227,7 @@
 
   .hint {
     margin: 0.25rem 0 0.75rem;
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-size: 0.875rem;
   }
 

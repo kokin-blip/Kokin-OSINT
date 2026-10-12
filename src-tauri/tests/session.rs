@@ -295,3 +295,37 @@ fn fresh_case_has_analysis_choices_before_the_first_write() {
     session.close().unwrap();
     cleanup(&path);
 }
+
+#[test]
+fn automatic_case_folders_are_unique_and_reopenable() {
+    let directory = case_path("automatic-parent");
+    std::fs::create_dir_all(&directory).unwrap();
+    let existing = directory.join("existing.kokincase");
+    std::fs::write(&existing, b"do not replace").unwrap();
+    let session = Session::default();
+    let first = session
+        .create_auto(&directory, "../same name", PASSPHRASE)
+        .unwrap();
+    let first_path = PathBuf::from(&first.case.root);
+    assert_eq!(first_path.parent(), Some(directory.as_path()));
+    assert!(first_path
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .starts_with("Case-"));
+    assert!(first_path.join("case.db").is_file());
+    session.close().unwrap();
+    let second = session
+        .create_auto(&directory, "../same name", PASSPHRASE)
+        .unwrap();
+    assert_ne!(second.case.root, first.case.root);
+    assert_eq!(std::fs::read(&existing).unwrap(), b"do not replace");
+    session.close().unwrap();
+    assert_eq!(
+        session.open(&first_path, PASSPHRASE).unwrap().case_id,
+        "../same name"
+    );
+    session.close().unwrap();
+    cleanup(&directory);
+}

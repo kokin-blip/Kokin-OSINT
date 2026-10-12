@@ -1,4 +1,8 @@
 <script lang="ts">
+  import SettingsDialog from './lib/features/settings/SettingsDialog.svelte';
+  import {installPreferences} from './lib/stores/preferences.svelte';
+  installPreferences();
+  let showSettings=$state(false);
   import Restore from "./lib/Restore.svelte";
   import CaseGate from "./lib/CaseGate.svelte";
   import Workbench from "./lib/Workbench.svelte";
@@ -36,6 +40,7 @@
 <main class:case-open={session.openCase !== null}>
   <header hidden={session.phase.kind === 'open'}>
     <h1>Kokin-OSINT</h1>
+    {#if session.phase.kind === "closed"}<button type="button" onclick={()=>showSettings=true}>Settings</button>{/if}
     {#if session.openCase && session.phase.kind !== 'open'}
       <div class="case">
         <span class="name">{session.openCase.case_id}</span>
@@ -69,6 +74,7 @@
   {:else if session.phase.kind === "recovery-key"}
     <RecoveryKey
       caseId={session.phase.case.case_id}
+      casePath={session.phase.case.root}
       recoveryKey={session.phase.recoveryKey}
       onacknowledge={() => session.acknowledgeRecoveryKey()}
     />
@@ -77,6 +83,8 @@
       <Workbench generation={session.phase.case.session_generation} caseView={session.phase.case} onclose={()=>void session.close()} caseBusy={session.busy}/>
     {/key}
   {/if}
+
+  {#if showSettings}<SettingsDialog onclose={()=>showSettings=false}/>{/if}
 
   <footer>
     <p>
@@ -125,7 +133,7 @@
   }
 
   .path {
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-size: 0.8rem;
     max-width: 22rem;
     overflow: hidden;
@@ -136,9 +144,9 @@
 
 
   .notice {
-    border: 1px solid #8a4a4a;
+    border: 1px solid var(--danger);
     border-radius: 4px;
-    background: #241b1b;
+    background: var(--danger-surface);
     padding: 0.75rem 1rem;
     margin: 1rem 0;
   }
@@ -155,23 +163,23 @@
     letter-spacing: 0.08em;
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
-    background: #4a2b2b;
-    color: #ffc9c9;
+    background: var(--danger-surface);
+    color: var(--danger);
     margin-right: 0.5rem;
     vertical-align: 0.1em;
   }
 
   .notice .detail {
     margin: 0.4rem 0 0;
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-size: 0.875rem;
   }
 
   footer {
     margin-top: 3rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #262b32;
-    color: #aeb8c6;
+    border-top: 1px solid var(--border);
+    color: var(--foreground-secondary);
     font-size: 0.875rem;
   }
 

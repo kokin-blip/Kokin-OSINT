@@ -1,10 +1,15 @@
 <script lang="ts">
+  import ResizeHandle from '../../design/components/ResizeHandle.svelte';
   import SourceCitation from "./SourceCitation.svelte";
   import type { Snippet } from "svelte";
   import type { DimensionView, EntityView, ObservationView, PageView, SubjectView } from "../../bindings";
 
   interface Props {
     context?: Snippet;
+    inspectorWidth?: number;
+    showInspector?: boolean;
+    oncollapse?: ()=>void;
+    onwidth?: (width:number)=>void;
     activity?: Snippet;
     source?: ObservationView | null;
     sourceError?: string;
@@ -16,7 +21,7 @@
     onevidence?: (kind: string, id: string) => void;
   }
 
-  let { context, activity, entity, onevidence, source = null, sourceError = "", relationships = null, onopen, onpage }: Props = $props();
+  let { inspectorWidth=$bindable(330), showInspector=true, onwidth, oncollapse, context, activity, entity, onevidence, source = null, sourceError = "", relationships = null, onopen, onpage }: Props = $props();
 
   /**
    * **There is no total, and there is nowhere to put one.**
@@ -79,7 +84,7 @@
   }
 </script>
 
-<article class="entity" aria-labelledby="entity-title">
+<article class="entity" class:inspector-hidden={!showInspector} style={`--inspector-width:${inspectorWidth}px`} aria-labelledby="entity-title">
 <div class="dossier-main">
   <header class="dossier-heading"><h3 id="entity-title">
     <span class="type">{entity.type_key}</span>
@@ -205,7 +210,8 @@
   {/if}
 </div>
 </div>
-<aside class="dossier-inspector" aria-label="Entity assessment">{#if context}{@render context()}{/if}
+{#if showInspector}<div class="resize-slot"><ResizeHandle controls="entity-inspector" {oncollapse} bind:value={inspectorWidth} oncommit={(width)=>onwidth?.(width)}/></div>{/if}
+<aside id="entity-inspector" hidden={!showInspector} class="dossier-inspector" aria-label="Entity assessment">{#if context}{@render context()}{/if}
   <section class="confidence-panel" aria-labelledby="confidence-title">
     <h4 id="confidence-title">Confidence</h4>
     <!-- All seven, always, assessed or not (D-031). A sparse list renders as
@@ -278,11 +284,16 @@
     border: none;
     padding: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
-    gap: var(--space-5);
+    grid-template-columns: minmax(0, 1fr) 12px var(--inspector-width);
+    gap: 12px;
   }
 
+  .entity.inspector-hidden{grid-template-columns:1fr;}
+  .resize-slot{display:flex;align-self:stretch;}
+  .dossier-inspector[hidden]{display:none;}
+
   h3 {
+    min-width:0; overflow-wrap:anywhere;
     margin: 0 0 0.5rem;
     font-size: var(--text-title);
   }
@@ -322,7 +333,7 @@
   }
 
   .redirected {
-    border-left: 3px solid var(--border-strong);
+    border: 1px solid var(--border-strong); border-radius:var(--radius-control);
     background: var(--surface-raised);
     padding: 0.5rem 0.75rem;
     margin: 0 0 0.75rem;
@@ -348,7 +359,6 @@
 
   .dimension {
     border: 1px solid var(--border);
-    border-left-width: 3px;
     border-radius: 4px;
     padding: 0.5rem 0.75rem;
   }
@@ -479,6 +489,6 @@
   .relationship-row { display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 12px; }
   .pages { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .link { overflow-wrap: anywhere; text-align: left; min-height: 32px; }
-  @media (max-width: 1180px) { .entity { grid-template-columns: 1fr; } .confidence-panel { grid-column: 1; grid-row: auto; } }
+  @media (max-width: 1180px) { .resize-slot{display:none;} .entity { grid-template-columns: 1fr; } .confidence-panel { grid-column: 1; grid-row: auto; } }
   @media (max-width: 1020px) { .lower-grid { grid-template-columns: 1fr; grid-template-areas: "ident" "relationships" "activity" "evidence" "decisions"; } }
 </style>

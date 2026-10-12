@@ -43,7 +43,7 @@ pub use views::{
 
 use std::path::PathBuf;
 
-use tauri::State;
+use tauri::{Manager, State};
 
 /// Reports whether the storage layer is genuinely linked against SQLCipher.
 ///
@@ -65,12 +65,20 @@ fn storage_encryption_status() -> Result<String, CommandError> {
 
 #[tauri::command]
 fn create_case(
+    app: tauri::AppHandle,
     session: State<'_, Session>,
     path: PathBuf,
     case_id: String,
     passphrase: String,
 ) -> Result<NewCaseView, CommandError> {
-    session.create(&path, &case_id, &passphrase)
+    if path.as_os_str().is_empty() {
+        let directory = app.path().app_data_dir().map_err(|_| {
+            CommandError::new(ErrorCode::Storage, "application data folder unavailable")
+        })?;
+        session.create_auto(&directory.join("cases"), &case_id, &passphrase)
+    } else {
+        session.create(&path, &case_id, &passphrase)
+    }
 }
 
 #[tauri::command]

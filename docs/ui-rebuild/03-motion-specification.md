@@ -2,6 +2,8 @@
 
 ## Foundation implementation status
 
+Continuation 2026-10-12: sidebar layout transition, initial detail/case-information/operation-panel/settings entry, control border/press feedback and OS/user reduced-motion handling are implemented. Theme backgrounds change immediately to maintain contrast. Closing cases and hiding inspectors remain immediate. See ../increments/ui-night-ledger-settings-layout.md for measured frame/response timing and remaining motion work.
+
 Shared motion tokens, short control hover feedback and reduced-motion CSS are implemented. Sidebar, case and confidence disclosures currently switch immediately. Inspector transitions/resizing, route transitions and graph focus animation below remain proposed; no complete motion-engine or measured frame-rate claim is made.
 
 ## Source classification

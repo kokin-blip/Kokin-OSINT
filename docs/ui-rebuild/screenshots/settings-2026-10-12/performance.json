@@ -1,0 +1,83 @@
+{
+  "method": "12 sidebar toggles; event to two animation frames; frame intervals during 240ms transitions; RSS before warm-up and after three batches of 20 paginated navigation changes. Single offline native Mac run, not a startup/leak benchmark.",
+  "viewport": [
+    1487,
+    856
+  ],
+  "frontendNavigation": {
+    "domContentLoadedMs": 74,
+    "domInteractiveMs": 7,
+    "loadMs": 75
+  },
+  "contrast": {
+    "lightBody": 16.432953161401073,
+    "lightButton": 14.504868340920359,
+    "lightSecondary": 7.67356160085103,
+    "primary": 4.862366942178332
+  },
+  "frameP95Ms": 18,
+  "frames": 157,
+  "jsHeapBytes": null,
+  "sidebarInputToTwoFramesMs": [
+    28,
+    33,
+    34,
+    32,
+    33,
+    33,
+    34,
+    32,
+    34,
+    34,
+    34,
+    33
+  ],
+  "sidebarP95Ms": 34,
+  "rssBefore": [
+    {
+      "pid": 14455,
+      "kib": 197840
+    }
+  ],
+  "rssWarm": [
+    {
+      "pid": 14455,
+      "kib": 119024
+    }
+  ],
+  "rssCheckpoints": [
+    [
+      {
+        "pid": 14455,
+        "kib": 119184
+      }
+    ],
+    [
+      {
+        "pid": 14455,
+        "kib": 119280
+      }
+    ],
+    [
+      {
+        "pid": 14455,
+        "kib": 119344
+      }
+    ]
+  ],
+  "rssAfter": [
+    {
+      "pid": 14455,
+      "kib": 119344
+    }
+  ],
+  "externalResources": [],
+  "preferenceKeys": [
+    "theme",
+    "reduceMotion",
+    "strongFocus",
+    "showArtwork",
+    "sidebarCollapsed",
+    "inspectorWidth"
+  ]
+}

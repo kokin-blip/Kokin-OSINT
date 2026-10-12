@@ -1,4 +1,10 @@
 <script lang="ts">
+  import SettingsDialog from './features/settings/SettingsDialog.svelte';
+  import ResizeHandle from './design/components/ResizeHandle.svelte';
+  import {preferences} from './stores/preferences.svelte';
+  import LibraryView from './features/workbench/LibraryView.svelte';
+  import SubjectDetail from './features/workbench/SubjectDetail.svelte';
+  import ArtifactDetail from './features/workbench/ArtifactDetail.svelte';
   import { onMount } from "svelte";
   import * as api from "./bindings";
   import EntityDossier from "./features/entities/EntityDossier.svelte";
@@ -13,7 +19,14 @@
   import ErrorNotice from "./ErrorNotice.svelte";
   let {generation, caseView, onclose, caseBusy=false}:{generation:number;caseView?:api.CaseView;onclose?:()=>void;caseBusy?:boolean}=$props();
   let online=$state(false);
-  let collapsed=$state(false);
+  let collapsed=$state(preferences.value.sidebarCollapsed);
+  let showSettings=$state(false);
+  let showInspector=$state(true);
+  let inspectorWidth=$state(preferences.value.inspectorWidth);
+  $effect(()=>{collapsed=preferences.value.sidebarCollapsed;inspectorWidth=preferences.value.inspectorWidth;});
+  function hideInspector(){showInspector=false;queueMicrotask(()=>document.getElementById('toggle-inspector')?.focus());}
+  function commitWidth(width:number){preferences.update({inspectorWidth:width});}
+  async function setNetwork(allowed:boolean){online=await api.setNetworkMode(allowed);}
   let showActions=$state(true);
   let showLibrary=$state(true);
   let evidenceTotal=$state<number|null>(null);
@@ -130,15 +143,17 @@
 </script>
 
 <svelte:window onkeydown={(event)=>{
+  if(showSettings)return;
   if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();document.getElementById('case-global-query')?.focus();}
   if(event.altKey && event.key==='ArrowLeft' && history.length){event.preventDefault();back();}
   if(event.key==='Escape'){const disclosure=document.querySelector<HTMLDetailsElement>('.case');if(disclosure?.open){event.preventDefault();disclosure.open=false;disclosure.querySelector('summary')?.focus();}}
 }}/>
 
-<div class="ledger" class:collapsed>
+<div class="ledger" class:collapsed style={`--inspector-width:${inspectorWidth}px`}>
+<a class="skip-link" href="#case-workspace">Skip to investigation workspace</a>
 <aside class="sidebar">
   <div class="sidebar-title"><img src={appIcon} alt="" width="24" height="24"/>{#if !collapsed}<strong>Kokin-OSINT</strong>{/if}</div>
-  <button class="collapse" type="button" aria-label={collapsed?'Expand navigation':'Collapse navigation'} aria-expanded={!collapsed} onclick={()=>collapsed=!collapsed}><Icon name="bars-3"/>{#if !collapsed}<span>Collapse navigation</span>{/if}</button>
+  <button class="collapse" type="button" aria-label={collapsed?'Expand navigation':'Collapse navigation'} aria-expanded={!collapsed} onclick={()=>preferences.update({sidebarCollapsed:!collapsed})}><Icon name="bars-3"/>{#if !collapsed}<span>Collapse navigation</span>{/if}</button>
 <nav aria-label="Case sections">
   {#each ["Evidence","Entities","Search","Activity"] as item}
     <button type="button" aria-label={item} title={collapsed?item:undefined} aria-current={tab===item?"page":undefined} onclick={()=>navigate(item as Tab)}><Icon name={icons[item]} size={22}/><span class:hidden={collapsed}>{item}</span></button>
@@ -146,70 +161,29 @@
 </nav>
   <p class="sidebar-note" class:hidden={collapsed}>Local-first investigation<br/>Every conclusion has a source.</p>
 </aside>
-<div class="workspace">
+<div class="workspace" id="case-workspace" tabindex="-1">
 <h2 class="sr-only">{tab}</h2>
 <header class="global-toolbar">
   <form class="global-search" onsubmit={(event)=>{tab='Search';showLibrary=true;submitSearch(event);}}><Icon name="magnifying-glass"/><label for="case-global-query" class="sr-only">Global case search</label><input id="case-global-query" type="search" bind:value={query} placeholder="Search evidence, entities, or keywords…"/><button disabled={busy}>Search case</button><kbd title="Command or Control K">⌘ / Ctrl K</kbd></form>
   {#if caseView}<details class="case"><summary title={caseView.case_id}><Icon name="document-text"/><span class="name">{caseView.case_id}</span></summary><div class="case-information"><strong>Case open</strong><p class="path">{caseView.root}</p><p>Schema version {caseView.schema_version}</p><p>{caseView.has_recovery_key?'Recovery key available.':'No recovery key. If the passphrase is forgotten, this case cannot be opened again.'}</p></div></details>{/if}
   <button type="button" class="case-actions" aria-expanded={showActions} onclick={()=>showActions=!showActions}><Icon name="adjustments-horizontal"/>Case actions</button>
+  <button type="button" id="toggle-inspector" aria-controls={entity?"entity-inspector":"case-inspector"} aria-expanded={showInspector} onclick={()=>showInspector=!showInspector}>{showInspector?"Hide inspector":"Show inspector"}</button>
+  <button type="button" onclick={()=>showSettings=true}>Settings</button>
   {#if onclose}<button type="button" disabled={caseBusy} onclick={onclose}>Close case</button>{/if}
 </header>
 <div hidden={!showActions}><Actions bind:this={actions} {route} {entity} {generation} bind:online bind:evidenceId onchange={changed}/></div>
 {#if error}<ErrorNotice {error}/>{/if}
-<div class="content-grid" class:entity-layout={entity!==null}>
+<div class="content-grid" class:entity-layout={entity!==null} class:inspector-hidden={!showInspector}>
 <div class:hasdetail={route!==null} class="workbench" class:entity-view={entity!==null} class:library-hidden={route!==null && !showLibrary}>
   <section class="list" aria-label={tab} hidden={route!==null && !showLibrary}>
-    <h3>{tab=== 'Search' ? 'Search and filters' : `${tab} library`}</h3>
-    {#if tab==="Search"}
-      <form onsubmit={submitSearch}>
-        <label>Search this case<input bind:value={query} type="search" placeholder="Name, identifier, or document text" /></label>
-        <label>Kind<select bind:value={kindFilter}><option value="">All kinds</option>{#each ["observation","entity","identifier","relationship"] as k}<option value={k}>{k}</option>{/each}</select></label>
-        <label>Facet<input bind:value={facetFilter} placeholder="Exact facet, or leave empty"/></label>
-        <label class="check"><input type="checkbox" bind:checked={includeSuperseded}/>Include withdrawn observations</label>
-        <label class="check"><input type="checkbox" bind:checked={resolveMerged}/>Group merged entities</label>
-        <button disabled={busy}>Search</button>
-      </form>
-      {#if search}
-        <aside class="coverage" aria-label="Search coverage">
-          <strong>{search.coverage.complete} of {search.coverage.artifacts} documents fully read</strong>
-          <p>{search.coverage.never_attempted} unread; {search.coverage.in_progress} in progress; {search.coverage.partial} partial; {search.coverage.failed} failed.</p>
-          <p>No match does not establish absence from unread or partly read evidence.</p>
-        </aside>
-      {/if}
-    {/if}
-    {#if busy}<p role="status">Reading the case…</p>{/if}
-    {#if tab==="Evidence"}
-      {#each artifacts as row (row.artifact_id)}
-        <button class="row" type="button" onclick={()=>open({kind:"artifact",id:row.artifact_id})}>
-          <strong>{row.canonical_locator??row.artifact_id}</strong><span>{row.media_type} · {row.observations} observations · {row.extraction.replaceAll("_"," ")}</span>
-        </button>
-      {/each}
-    {:else if tab==="Entities"}
-      {#each entities as row (row.entity_id)}
-        <button class="row" type="button" onclick={()=>open({kind:"entity",id:row.entity_id})}><strong>{row.display_name}</strong><span>{row.type_key} · {row.identifier_count} identifiers · {row.evidence_count} evidence links · {row.merged_count} merged records</span></button>
-      {/each}
-    {:else if tab==="Search" && search}
-      {#each search.hits as hit (hit.subject_kind+hit.subject_id)}
-        <button class="row" type="button" onclick={()=>open({kind:hit.subject_kind,id:hit.canonical_id??hit.subject_id})}><strong>{hit.title}</strong><span>{hit.subject_kind} · {hit.facet}{hit.superseded?" · withdrawn":""}{hit.canonical_id?" · merged alias":""}</span><span>{hit.snippet}</span></button>
-      {/each}
-    {:else if tab==="Activity" && activity}
-      <aside class="coverage"><strong>Audit chain: {activity.chain_status}</strong><p>{activity.chain_detail}</p><p>Tamper-evident, not chain of custody. Anyone holding the case key can rewrite this history.</p></aside>
-      {#each activity.page.rows as event (event.id)}
-        <article><strong>{event.action}</strong><p>{event.occurred_utc} · {event.actor}</p>
-          {#if event.subject_id && ["entity","identifier","relationship","observation","artifact"].includes(event.subject_kind??"")}<button type="button" onclick={()=>open({kind:event.subject_kind!,id:event.subject_id!})}>Open subject</button>{/if}
-          <details><summary>Recorded detail</summary><pre>{event.payload_json}</pre></details>
-        </article>
-      {/each}
-    {/if}
-    {#if !busy && total===0}<p class="empty">{tab==="Evidence"?"No documents yet. Import a file or collect a public page to begin.":tab==="Entities"?"No entities yet. Read evidence, then create an evidence-grounded entity.":tab==="Search"?"No matching results. Check the coverage above before drawing conclusions.":"No activity recorded."}</p>{/if}
-    <div class="pagination"><button type="button" disabled={busy||offset===0} onclick={()=>page(-50)}>Previous</button><span>{total===0?0:offset+1}–{Math.min(offset+50,total)} of {total}</span><button type="button" disabled={busy||offset+50>=total} onclick={()=>page(50)}>Next</button></div>
+    <LibraryView {tab} {busy} {total} {offset} {artifacts} {entities} {search} {activity} bind:query bind:kindFilter bind:facetFilter bind:includeSuperseded bind:resolveMerged onsubmit={submitSearch} onopen={(next)=>void open(next)} onpage={page}/>
   </section>
   {#if route}
     <section class="detail" aria-label="Evidence and analysis detail">
       <div class="toolbar"><button type="button" disabled={history.length===0} onclick={back}>Back</button><button type="button" onclick={closeDetail}>Close detail</button><button type="button" aria-expanded={showLibrary} onclick={()=>showLibrary=!showLibrary}>{showLibrary?'Hide library':'Show library'}</button></div>
       {#if detailBusy}<p role="status">Loading detail…</p>{/if}
       {#if entity}
-        <EntityDossier {entity} {source} {sourceError} relationships={related} onevidence={evidence} onopen={(kind,id)=>void open({kind,id})} onpage={relationshipPage}>
+        <EntityDossier oncollapse={hideInspector} {showInspector} bind:inspectorWidth onwidth={commitWidth} {entity} {source} {sourceError} relationships={related} onevidence={evidence} onopen={(kind,id)=>void open({kind,id})} onpage={relationshipPage}>
           {#snippet context()}<CaseContext {caseView} {online} {evidenceTotal} onimport={importEvidence}/>{/snippet}
           {#snippet activity()}<ActivityExcerpt onopen={(kind,id)=>void open({kind,id})} onhistory={()=>navigate('Activity')}/>{/snippet}
         </EntityDossier>
@@ -218,28 +192,23 @@
       {:else if observation}<button type="button" onclick={()=>evidenceId=observation!.observation_id}>Use as evidence</button><Observation {observation}/><button type="button" onclick={()=>open({kind:"document",id:observation!.lineage.artifact.artifact_id})}>Open source document</button>
       {:else if doc}<DocumentPanel {doc}/>
       {:else if subject}
-        <h3>{subject.title}</h3><p>{subject.subject_kind} · {subject.subject_id}</p>
-        <dl>{#each subject.fields as [key,value]}<dt>{key.replaceAll("_"," ")}</dt><dd>{#if ["entity","from_entity","to_entity"].includes(key)}<button type="button" onclick={()=>open({kind:"entity",id:value})}>{value}</button>{:else}{value}{/if}</dd>{/each}</dl>
-        <h4>Supporting and opposing evidence</h4>{#each subject.evidence as e}<button type="button" onclick={()=>evidence(e.evidence_kind,e.evidence_id)}>{e.role}: {e.evidence_kind} {e.evidence_id}</button>{/each}
-        <h4>Confidence dimensions</h4>{#each subject.confidence as dimension}<p><strong>{dimension.title}</strong>: {dimension.agreement}</p>{#each dimension.values as value}<p>{value.label} · {value.actor} · {value.assessed_utc}<br/>{value.contributing_factors_json}</p>{/each}{/each}
+        <SubjectDetail {subject} onopen={(kind,id)=>void open({kind,id})} onevidence={evidence}/>
       {:else if table && observations}
-        <h3>Document observations</h3><p>{table.artifact.media_type} · {table.artifact.extraction.replaceAll("_"," ")}</p>
-        {#if table.gaps.length}<aside class="coverage"><strong>Incomplete reading</strong>{#each table.gaps as gap}<p>{gap.detail} {gap.magnitude??""} {gap.unit??""}</p>{/each}</aside>{/if}
-        <label class="check"><input type="checkbox" bind:checked={showWithdrawn} onchange={()=>{observationOffset=0;void observationPage(0);}}/>Show withdrawn ({table.superseded})</label>
-        {#each observations.rows as row (row.observation_id)}<button class="row" type="button" onclick={()=>open({kind:"observation",id:row.observation_id})}><strong>{row.kind}{row.superseded?" · withdrawn":""}</strong><span>{row.value}</span></button>{/each}
-        <div class="pagination"><button type="button" disabled={detailBusy||observationOffset===0} onclick={()=>observationPage(-50)}>Previous</button><span>{observations.total===0?0:observationOffset+1}–{Math.min(observationOffset+50,observations.total)} of {observations.total}</span><button type="button" disabled={detailBusy||observationOffset+50>=observations.total} onclick={()=>observationPage(50)}>Next</button></div>
-        <button type="button" onclick={()=>open({kind:"document",id:table!.artifact.artifact_id})}>Open source document</button>
+        <ArtifactDetail {table} {observations} {detailBusy} bind:observationOffset bind:showWithdrawn onpage={observationPage} onopen={(kind,id)=>void open({kind,id})}/>
       {/if}
     </section>
   {/if}
 </div>
-{#if !entity}<aside class="case-context" aria-label="Case context"><CaseContext {caseView} {online} {evidenceTotal} onimport={importEvidence}/></aside>{/if}
+{#if !entity && showInspector}<div class="resize-slot"><ResizeHandle controls="case-inspector" bind:value={inspectorWidth} oncollapse={hideInspector} oncommit={commitWidth}/></div>{/if}
+{#if !entity}<aside id="case-inspector" hidden={!showInspector} class="case-context" aria-label="Case context"><CaseContext {caseView} {online} {evidenceTotal} onimport={importEvidence}/></aside>{/if}
 </div>
 </div>
 </div>
 
+{#if showSettings}<SettingsDialog casePath={caseView?.root} {online} onnetwork={setNetwork} onclose={()=>showSettings=false}/>{/if}
+
 <style>
-  .ledger { display: grid; grid-template-columns: 178px minmax(0, 1fr); min-height: calc(100vh - 150px); }
+  .ledger { display: grid; grid-template-columns: 178px minmax(0, 1fr); min-height: calc(100vh - 150px); transition:grid-template-columns var(--motion-layout) var(--motion-ease); }
   .ledger.collapsed { grid-template-columns: 68px minmax(0, 1fr); }
   .sidebar { border-right: 1px solid var(--border); padding: 20px 12px; }
   .sidebar-title { display: flex; align-items: center; gap: 10px; margin: 4px 0 28px; white-space: nowrap; }
@@ -259,9 +228,15 @@
   .case { position: relative; min-width: 0; }
   .case summary { cursor: pointer; border: 1px solid var(--border); border-radius: var(--radius-control); padding: 10px 12px; }
   .case .name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .case[open] .case-information{animation:ledger-enter var(--motion-disclosure) var(--motion-ease);}
   .case-information { position: absolute; right: 0; top: calc(100% + 8px); width: min(360px, 75vw); border: 1px solid var(--border-strong); border-radius: var(--radius-panel); background: var(--surface-raised); padding: 20px; z-index: var(--layer-overlay); overflow-wrap: anywhere; box-shadow: 0 16px 32px #0008; }
   .path { color: var(--foreground-secondary); font-size: 12px; }
-  .content-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+  .content-grid { display: grid; grid-template-columns: minmax(0, 1fr) 12px var(--inspector-width); gap: 12px; align-items: start; }
+  .resize-slot{display:flex;align-self:stretch;}
+  .case-context[hidden]{display:none;}
+  .content-grid.inspector-hidden{grid-template-columns:1fr;}
+  .skip-link{position:absolute;left:12px;top:12px;transform:translateY(-150%);z-index:30;padding:12px;background:var(--surface-raised);color:var(--foreground);border:1px solid var(--border-strong);}
+  .skip-link:focus{transform:none;}
   .content-grid.entity-layout { grid-template-columns: 1fr; }
   .workbench { display: grid; gap: 24px; min-width: 0; }
   .hasdetail { grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr); }
@@ -269,21 +244,10 @@
   .hasdetail.library-hidden { grid-template-columns: 1fr; }
   .list[hidden] { display: none; }
   .list { border: 1px solid var(--border); border-radius: var(--radius-panel); padding: 20px; min-width: 0; background: var(--surface-panel); }
-  .list h3 { font-size: 16px; margin: 0 0 20px; }
-  .detail { min-width: 0; }
-  .toolbar, .pagination { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .detail { min-width: 0; animation:ledger-enter var(--motion-disclosure) var(--motion-ease); }
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .toolbar { margin-bottom: 20px; }
-  .row { display: block; width: 100%; text-align: left; background: transparent; border: 1px solid var(--border); padding: 12px; overflow-wrap: anywhere; margin-bottom: 8px; }
-  .row span { display: block; color: var(--foreground-secondary); margin-top: 4px; font-size: 12px; }
   form { display: grid; gap: 12px; margin-bottom: 16px; }
-  label { display: grid; gap: 6px; }
-  .check { display: flex; align-items: center; gap: 8px; }
-  .coverage { border: 1px solid #645233; background: var(--warning-surface); border-radius: var(--radius-control); padding: 16px; margin: 16px 0; }
-  .coverage p { margin: 8px 0 0; }
-  .pagination { margin: 20px 0 0; color: var(--foreground-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
-  pre, dd { overflow-wrap: anywhere; white-space: pre-wrap; }
-  article { padding: 16px 0; border-bottom: 1px solid var(--border); }
-  .empty { color: var(--foreground-secondary); }
-  @media (max-width: 1240px) { .content-grid { grid-template-columns: 1fr; } .case-context { display: none; } .hasdetail.entity-view { grid-template-columns: 170px minmax(0, 1fr); } }
+  @media (max-width: 1240px) { .content-grid { grid-template-columns: 1fr; } .case-context,.resize-slot { display: none; } .hasdetail.entity-view { grid-template-columns: 170px minmax(0, 1fr); } }
   @media (max-width: 1020px) { .ledger { grid-template-columns: 150px minmax(0, 1fr); } .workspace { padding: 16px; } .hasdetail, .hasdetail.entity-view { grid-template-columns: 1fr; } .list { max-height: 320px; overflow: auto; } }
 </style>

@@ -1,0 +1,37 @@
+{
+  "images": [
+    {
+      "complete": true,
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEtUlEQVR42r1XS2wbVRQ98/Fv/Il/cfOpY7cklMQsmkLSVgWpiAqlEkVCCkhl1xUL1EUrsWXFChawQF0igVgiZYFERQuFSAgVaD4oDZFCk/qTTxPHsZ3Yjj0ez3DfM0GR4rh2qnikp8S+nnfPPffcM2/kUChkzRXKXwoC3kULLwPGmGho12SWXJLEq7qutzI/JFEa1SuCLPgDXRr7zEEBQktJoHzyni8EtPZi+Qz50HeTaCD+h1mnjhrGobY5FACBEldUDeV8iX82KRZIFhmG3jwI+TDJWWLHcR9CI4OcididaWzHkjDZLU2D2CvChpJrBRXeSBBvfHUdjqCff59fTePutS+QnFrkbDQDQmxWN3pFx+CNN+Ho8aOwlqGVhb3TgzM3r1R1fZQtMMgrZJuZ6PejnCtBNFVvL+eKsHf5qi0ggBCEo2FAkERqQQlrU49gdts4ILbMbgXrfy1A3S6SrKWmGBCbtQ6D9k98M4nU/ShkqtjksGDzQRzxrydgiHrTbWhYhIIgoqwW4e8MwuM9huj8DPynw9wLkpOPEe59EVtbG1hbisFssZIv6M8OgI3Y7lJLRbg8fnSHn8c/sxOoaBr0osZpkawmao+EvshLeJJYRHpjDRarlZvT7mpahCxpuVyGqpb4Bl5/AMdPnMLC3DQlL0OSZEgO6f/WVCoVLFKsN3IGmqZiY/0JzYxAbJhhMpkPBFGTAV6xqqKjsxNDZy8glUoilcljJb6A/HYGsmzatyG7RyNgit2FrnAffC4F/kAAE3/cx8pyAmazpSYIuVbljN42txvvX7+JYx2dvILvxr7Fw8nf4HC6yAsq+/VJm5soSXoziVcvvoa337nKAQ2fu4DPPvkYmXSagMv7QIi1ALDqQ+GTCAQ6kEomsb2Vxan+AViYuOqcG1iMgX1hIIJ8LoeN5Dp8/nacONnLWynU8AexdiVmJOJRTr2/PQC73Y652RlopAmhjslw9oiduYczsCk2fm86vYlYdJFaUFsHdTRQQncwhKHhcxS1YPzeD8ik1usLiumAQDrdXly8NAI6cmHiz98Rjz4mMVoaB7B3CnYKebR52xHu68fC7BQkk6nqgDVEKIjklNS+5yKDSCzO83G0KUpd0Ac6IW8FJXN7fCgXC7yyNl8AWaJUI5HubUV1AjQecxFYBrC0k+P31kvesBOyDSQavYHTQ5AMlSiNYn1tlTseu9RSCe00cky4OrXr7+kHBLjI3fOZn4a7883GcXR0lGzYi2wmg1uff8rFxcymO9iDD258SDEftrJZ3FqJIR6LkvCkpx7VxEaeASWq8OWz5+HxePloOZ1OXLr8Fnp6Iwj2DuD1kStoa3NXYy4Xhs+/Qs8NtSEGxEYegXSGx+ryEtmvBJfLzfu6MD+H5GocG7Qe0f/MHVmM/WXOJ4oiGnk0Sord+dHTxCiTGJeXEsjnc3yex3/+EeM/3SGxadwVE0R3gaalGruLX3+5x72kkZNyU2fCYnGHV8beoqxWW/XkY1RZ2hc7iiOZoth5VUyY/FVuT4X7Yg0eceRm3oh2N65Fbb3YQdux1ov087GqYNDKt1OdXJNyG7clh2L93jDECPHQ36IXVJZDJKZuayXze/8CDdJCT5KsKxAAAAAASUVORK5CYII=",
+      "width": 32
+    },
+    {
+      "complete": true,
+      "src": "tauri://localhost/assets/night-ledger-banner-B0N8T1Ky.png",
+      "width": 2172
+    }
+  ],
+  "mask": "url(\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20fill='none'%20viewBox='0%200%2024%2024'%20stroke-width='1.5'%20stroke='currentColor'%20aria-hidden='true'%20data-slot='icon'%3e%3cpath%20stroke-linecap='round'%20stroke-linejoin='round'%20d='M19.5%2014.25v-2.625a3.375%203.375%200%200%200-3.375-3.375h-1.5A1.125%201.125%200%200%201%2013.5%207.125v-1.5a3.375%203.375%200%200%200-3.375-3.375H8.25m0%2012.75h7.5m-7.5%203H12M10.5%202.25H5.625c-.621%200-1.125.504-1.125%201.125v17.25c0%20.621.504%201.125%201.125%201.125h12.75c.621%200%201.125-.504%201.125-1.125V11.25a9%209%200%200%200-9-9Z'/%3e%3c/svg%3e\")",
+  "navigation": [
+    {
+      "current": null,
+      "label": "Evidence"
+    },
+    {
+      "current": "page",
+      "label": "Entities"
+    },
+    {
+      "current": null,
+      "label": "Search"
+    },
+    {
+      "current": null,
+      "label": "Activity"
+    }
+  ],
+  "viewport": [
+    1487,
+    856
+  ]
+}

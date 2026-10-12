@@ -154,7 +154,6 @@
 <style>
   .notice {
     border: 1px solid;
-    border-left-width: 3px;
     border-radius: 4px;
     padding: 0.75rem 1rem;
     margin: 1rem 0;
@@ -165,13 +164,13 @@
      and to a screen reader. */
   .refusal,
   .wrong-input {
-    border-color: #4a5568;
-    background: #1b1f26;
+    border-color: var(--border-strong);
+    background: var(--surface-raised);
   }
 
   .fault {
-    border-color: #8a4a4a;
-    background: #241b1b;
+    border-color: var(--danger);
+    background: var(--danger-surface);
   }
 
   .label {
@@ -181,15 +180,15 @@
     letter-spacing: 0.08em;
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
-    background: #2b323c;
-    color: #cbd3dd;
+    background: var(--surface-raised);
+    color: var(--foreground-secondary);
     margin-right: 0.5rem;
     vertical-align: 0.1em;
   }
 
   .fault .label {
-    background: #4a2b2b;
-    color: #ffc9c9;
+    background: var(--danger-surface);
+    color: var(--danger);
   }
 
   .title {
@@ -199,12 +198,12 @@
 
   .remedy {
     margin: 0.4rem 0 0;
-    color: #c3ccd6;
+    color: var(--foreground-secondary);
   }
 
   .detail {
     margin: 0.4rem 0 0;
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-size: 0.875rem;
     font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
     overflow-wrap: anywhere;

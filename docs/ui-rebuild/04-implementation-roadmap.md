@@ -4,7 +4,11 @@
 
 Audit, semantic foundation, development gallery, initial shell and entity-to-evidence slice are implemented. See ../increments/ui-night-ledger-foundation.md and ../../design-qa.md for verification. This does not complete the full rebuild.
 
-Next file-level changes: extract evidence/search/activity views from Workbench into features/evidence, features/search and features/activity; migrate Actions forms into feature modules while keeping operations mounted; migrate case gates and Restore presentation without changing bindings; add settings/preferences and inspector sizing under layout/design; then extend graph interaction and measured motion. Add focused tests alongside each migrated feature and preserve offline desktop acceptance before expanding scope.
+Core library/artifact/subject views, search controls and activity are now extracted into features/workbench, features/search and features/activity. Collection/package forms and the mounted analytical operation controller live in features/operations. Case gate, restore and source-read palettes use the shared tokens. See ../increments/ui-night-ledger-core-views.md for verification.
+
+Settings/display preferences, shared keyboard/mouse inspector sizing, dark/light/system appearance, reduced-motion handling and the first measured motion layer are now implemented. Focus, contrast, narrow/scaled layout and bounded responsiveness/memory probes pass on Mac; see ../increments/ui-night-ledger-settings-layout.md for scope and measurement limits.
+
+Next: command palette and graph pan/zoom/focus; broader visual regression coverage; manual screen-reader/Windows checks; production cold-start, total-memory and large-case performance gates. Keep focused tests and offline desktop acceptance between changes.
 
 ## Goal and visual truth
 

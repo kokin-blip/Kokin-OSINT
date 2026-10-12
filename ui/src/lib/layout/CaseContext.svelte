@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {preferences} from '../stores/preferences.svelte';
   import type { CaseView } from '../bindings';
   import Panel from '../design/components/Panel.svelte';
   import Badge from '../design/components/Badge.svelte';
@@ -7,7 +8,7 @@
   let { caseView, online, evidenceTotal, onimport }: { caseView?: CaseView; online: boolean; evidenceTotal: number | null; onimport?:()=>void } = $props();
 </script>
 <Panel label="Active investigation">
-  <img src={banner} alt="" width="600" height="200" loading="eager" decoding="sync"/>
+  {#if preferences.value.showArtwork}<img src={banner} alt="" width="600" height="200" loading="eager" decoding="sync"/>{/if}
   <h4 title={caseView?.case_id}>{caseView?.case_id ?? 'Current case'}</h4>
   <p class="path" title={caseView?.root}>{caseView?.root ?? 'Local investigation workspace'}</p>
   <div class="state"><Icon name="document-text"/><span>{evidenceTotal === null ? 'Evidence count not loaded' : `${evidenceTotal} evidence ${evidenceTotal===1?'file':'files'}`}</span></div>

@@ -24,7 +24,10 @@ evidence that supports it.
 
 HTML remains the only extraction format. Collected markup is displayed as text.
 Recording exists as an explicit developer transport; arbitrary recordings still
-need secret review before publication. Case-folder entry remains typed.
+need secret review before publication. Case-folder entry remains typed; when creating
+a case, leaving it blank creates a unique folder under the OS application-data
+directory's `cases` folder. The actual path is shown with the recovery key and in
+case details. Opening an existing case still requires its folder path.
 
 ## Roadmap and verification
 

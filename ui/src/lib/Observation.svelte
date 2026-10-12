@@ -246,7 +246,7 @@
 
 <style>
   .observation {
-    border: 1px solid #262b32;
+    border: 1px solid var(--border);
     border-radius: 6px;
     padding: 1rem 1.25rem;
     margin-top: 1rem;
@@ -261,7 +261,7 @@
   h4 {
     margin: 1.25rem 0 0.5rem;
     font-size: 0.85rem;
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -273,7 +273,7 @@
     font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
-    background: #232a33;
+    background: var(--surface-raised);
     color: #9fb3cc;
     margin-right: 0.5rem;
     vertical-align: 0.15em;
@@ -283,7 +283,6 @@
 
   .quote {
     border: 1px solid;
-    border-left-width: 3px;
     border-radius: 4px;
     padding: 0.6rem 0.9rem;
   }
@@ -296,18 +295,18 @@
      thing in this panel that must survive being read in monochrome. */
   .supported {
     border-color: #3f6b4a;
-    background: #171f1a;
+    background: var(--success-surface);
   }
 
   .qualified,
   .unknown {
-    border-color: #4a5568;
-    background: #1b1f26;
+    border-color: var(--border-strong);
+    background: var(--surface-raised);
   }
 
   .unsupported {
-    border-color: #8a4a4a;
-    background: #241b1b;
+    border-color: var(--danger);
+    background: var(--danger-surface);
   }
 
   .label {
@@ -317,31 +316,31 @@
     letter-spacing: 0.08em;
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
-    background: #2b323c;
-    color: #cbd3dd;
+    background: var(--surface-raised);
+    color: var(--foreground-secondary);
     vertical-align: 0.1em;
   }
 
   .unsupported .label {
-    background: #4a2b2b;
-    color: #ffc9c9;
+    background: var(--danger-surface);
+    color: var(--danger);
   }
 
   .supported .label {
-    background: #24402c;
+    background: var(--success-surface);
     color: #b8dcc0;
   }
 
   .explanation {
     margin: 0.5rem 0 0;
     font-size: 0.875rem;
-    color: #c3ccd6;
+    color: var(--foreground-secondary);
   }
 
   .excerpt {
     margin: 0.6rem 0 0;
     padding: 0.6rem;
-    background: #0f1216;
+    background: var(--surface-panel);
     border-radius: 4px;
     font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
     font-size: 0.8rem;
@@ -356,16 +355,15 @@
   }
 
   mark {
-    background: #3d4f2b;
+    background: var(--warning-surface);
     color: #e8f0da;
     padding: 0.05rem 0;
   }
 
   .withdrawn {
     border: 1px solid #6b5a3a;
-    border-left-width: 3px;
     border-radius: 4px;
-    background: #221d14;
+    background: var(--warning-surface);
     padding: 0.6rem 0.9rem;
     margin-bottom: 0.75rem;
   }
@@ -403,7 +401,7 @@
   }
 
   .step {
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -416,18 +414,18 @@
   }
 
   .missing {
-    color: #e0a0a0;
+    color: var(--danger);
   }
 
   .detail {
     margin: 0.15rem 0 0;
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-size: 0.8rem;
     overflow-wrap: anywhere;
   }
 
   .flag {
-    color: #d5c48f;
+    color: var(--warning);
   }
 
   .hash,
@@ -438,7 +436,7 @@
 
   .also {
     margin-top: 1rem;
-    border-top: 1px solid #262b32;
+    border-top: 1px solid var(--border);
     padding-top: 0.75rem;
   }
 

@@ -26,7 +26,7 @@
  <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard access is required to scroll this bounded viewport.) -->
  <div class="drawing" tabindex="0" role="region" aria-label="Relationship graph">
  <svg {width} {height} aria-label="Entity records and relationships">
- <defs><marker id="graph-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8b95a1"/></marker></defs>
+ <defs><marker id="graph-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--foreground-secondary)"/></marker></defs>
  {#each view.edges as edge}
  {@const from=positioned.find(n=>n.id===edge.from)}{@const to=positioned.find(n=>n.id===edge.to)}
  {#if from&&to}<a href="#relationship-detail" onclick={e=>{e.preventDefault();onopen('relationship',edge.id);}} aria-label={`Open ${edge.kind} relationship`}><title>{edge.kind}</title>{#if from.id===to.id}<path class="edge" d={`M ${from.x} ${from.y-20} C ${from.x-60} ${from.y-65}, ${from.x+60} ${from.y-65}, ${from.x+30} ${from.y-20}`} marker-end="url(#graph-arrow)"/>{:else}<line x1={from.x+(to.x>from.x?110:to.x<from.x?-80:15)} y1={from.y+(to.x===from.x?(to.y>from.y?20:-20):0)} x2={to.x+(to.x>from.x?-80:to.x<from.x?110:15)} y2={to.y+(to.x===from.x?(to.y>from.y?-20:20):0)} marker-end="url(#graph-arrow)"/>{/if}<text x={(from.x+to.x)/2} y={(from.y+to.y)/2-30} text-anchor="middle">{edge.kind}</text></a>{/if}
@@ -37,5 +37,5 @@
  {/if}
 </details>
 <style>
- .graph{margin:1rem 0;padding:1rem;border:1px solid #39424f;border-radius:4px}summary{cursor:pointer}p{max-width:70ch}form{display:flex;flex-wrap:wrap;gap:.75rem;align-items:end}label{display:grid;gap:.25rem;font-size:.875rem}input{width:6rem}.drawing{overflow:auto;max-height:32rem;margin:1rem 0;background:#0f1216;border:1px solid #39424f}svg{display:block}line,.edge{fill:none;stroke:#8b95a1;stroke-width:3}rect{fill:#232a33;stroke:#8fb8e8;stroke-width:1}text{fill:#e6e8eb;font-size:12px}a:hover line,a:focus line,.edge{fill:none;stroke:#e6e8eb;stroke-width:5}a:hover rect,a:focus rect{fill:#2f4a6d}a:focus{outline:2px solid #8fb8e8}details button{margin:.3rem;overflow-wrap:anywhere}strong{color:#e6c68b}
+ .graph{margin:1rem 0;padding:1rem;border:1px solid var(--border-strong);border-radius:4px}summary{cursor:pointer}p{max-width:70ch}form{display:flex;flex-wrap:wrap;gap:.75rem;align-items:end}label{display:grid;gap:.25rem;font-size:.875rem}input{width:6rem}.drawing{overflow:auto;max-height:32rem;margin:1rem 0;background:var(--surface-panel);border:1px solid var(--border-strong)}svg{display:block}line,.edge{fill:none;stroke:var(--foreground-secondary);stroke-width:3}rect{fill:var(--surface-raised);stroke:var(--accent);stroke-width:1}text{fill:var(--foreground);font-size:12px}a:hover line,a:focus line,.edge{fill:none;stroke:var(--foreground);stroke-width:5}a:hover rect,a:focus rect{fill:var(--accent-surface)}a:focus{outline:2px solid var(--accent)}details button{margin:.3rem;overflow-wrap:anywhere}strong{color:var(--warning)}
 </style>

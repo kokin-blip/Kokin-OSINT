@@ -8,11 +8,12 @@
   --foreground-secondary: #b5bfd0;
   --foreground-muted: #8e9aaf;
   --border: #252b34;
-  --border-strong: #465268;
+  --border-strong: #607089;
   --accent: #3395ff;
-  --accent-action: #007aff;
+  --accent-action: #006de5;
   --accent-surface: #071d35;
   --success: #63d59c;
+  --success-surface:#11251b;
   --warning: #e4bb79;
   --danger: #f0a0a5;
   --warning-surface: #211b12;
@@ -43,8 +44,9 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--surface-canvas); color: var(--foreground); font: 14px/1.5 var(--font-body); }
 button, input, select, textarea { font: inherit; }
-button { color: var(--foreground); background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-control); padding: 8px 14px; min-height: 36px; cursor: pointer; transition: background var(--motion-feedback), border-color var(--motion-feedback); }
+button { appearance:none;-webkit-appearance:none; overflow-wrap:anywhere; color: var(--foreground); background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-control); padding: 8px 14px; min-height: 36px; cursor: pointer; transition: border-color var(--motion-feedback), transform var(--motion-feedback); }
 button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--border-strong); }
+button:active:not(:disabled){transform:translateY(1px);}
 button:disabled { opacity: .5; cursor: not-allowed; }
 button.primary { background: var(--accent-action); border-color: var(--accent-action); color: white; }
 button.primary:hover:not(:disabled) { background: #006de5; }
@@ -54,3 +56,18 @@ code, pre { font-family: var(--font-mono); overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+:root[data-theme='light'] {
+  color-scheme:light;
+  --surface-canvas:#f4f6f8;--surface-panel:#ffffff;--surface-raised:#eef1f5;--surface-hover:#e4e9f0;
+  --foreground:#17202b;--foreground-secondary:#46546a;--foreground-muted:#526077;
+  --border:#c9d2df;--border-strong:#64748b;--accent:#0066cc;--accent-surface:#e5f1ff;
+  --success:#176b45;--success-surface:#e7f6ed;--warning:#80530c;--danger:#a32738;--warning-surface:#fff4df;--danger-surface:#fff0f2;--focus:#005cb8;
+}
+:root[data-strong-focus='true'] :focus-visible {outline-width:3px;outline-offset:4px;}
+@keyframes ledger-enter {from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+:root[data-reduced-motion='true'] *, :root[data-reduced-motion='true'] *::before, :root[data-reduced-motion='true'] *::after {
+ animation:none!important;transition:none!important;scroll-behavior:auto!important;
+}
+:root[data-reduced-motion='true'] button:active:not(:disabled){transform:none;}
+@media(prefers-reduced-motion:reduce){button:active:not(:disabled){transform:none;}}

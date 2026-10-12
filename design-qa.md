@@ -1,4 +1,12 @@
 # Design QA — Night Ledger foundation
+
+## Settings/layout continuation — 2026-10-12
+
+Scoped verification passed: light settings, dark workspace and 125% scaled narrow desktop captures were inspected; readable theme changes, divider geometry, modal focus and reduced motion were verified. Screenshots and measurements are under docs/ui-rebuild/screenshots/settings-2026-10-12/. Focused contrast checks pass; this is not comprehensive screen-reader/WCAG certification. See docs/increments/ui-night-ledger-settings-layout.md for proof, performance limits and remaining platform/release gates.
+
+## Core views continuation — 2026-10-12
+
+Evidence/library, search/coverage, artifact/subject detail, activity and collection/analysis/package form groups now follow the same outlined visual system. Focused native captures are in docs/ui-rebuild/screenshots/views-2026-10-12/. Two bounded inspection rounds found a narrow search-filter layout issue; the final CSS stacks filters and prevents checkbox shrinking. Captures precede that final adjustment. The 35-test frontend suite and repeated offline desktop workflow pass. Full redesign, comprehensive accessibility, Windows and runtime performance gates remain open; see docs/increments/ui-night-ledger-core-views.md.
 **Result: passed for the initial foundation/entity slice, with the documented intentional differences below. The full frontend rebuild is not complete.**
 
 Reference: outer workspace `Design concepts/08-night-ledger.png` (1487 × 1058).

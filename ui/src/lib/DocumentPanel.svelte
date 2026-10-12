@@ -126,7 +126,7 @@
   }
 
   dt {
-    color: #8b95a1;
+    color: var(--foreground-secondary);
   }
 
   dd {
@@ -142,8 +142,8 @@
   .bytes {
     margin: 0;
     padding: 0.75rem;
-    background: #0f1216;
-    border: 1px solid #262b32;
+    background: var(--surface-panel);
+    border: 1px solid var(--border);
     border-radius: 4px;
     max-height: 24rem;
     overflow: auto;
@@ -155,13 +155,12 @@
 
   .caveat {
     margin: 0 0 0.5rem;
-    color: #d5c48f;
+    color: var(--warning);
     font-size: 0.875rem;
   }
 
   .state {
     border: 1px solid;
-    border-left-width: 3px;
     border-radius: 4px;
     padding: 0.75rem 1rem;
   }
@@ -177,13 +176,13 @@
   /* Destroyed on purpose is not a fault, and must not be coloured like one.
      The word carries it; the colour only agrees. */
   .destroyed {
-    border-color: #4a5568;
-    background: #1b1f26;
+    border-color: var(--border-strong);
+    background: var(--surface-raised);
   }
 
   .fault {
-    border-color: #8a4a4a;
-    background: #241b1b;
+    border-color: var(--danger);
+    background: var(--danger-surface);
   }
 
   .title {
@@ -198,7 +197,7 @@
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
     background: #2b323c;
-    color: #cbd3dd;
+    color: var(--foreground-secondary);
     margin-right: 0.5rem;
     vertical-align: 0.1em;
   }
@@ -210,7 +209,7 @@
 
   .note,
   .detail {
-    color: #8b95a1;
+    color: var(--foreground-secondary);
     font-size: 0.875rem;
   }
 

@@ -26,6 +26,17 @@ it('routes the case-card import through the generation-bound native picker',asyn
  const picker=vi.spyOn(api,'selectPath').mockResolvedValue(null);await setup();button('Import evidence').click();await settle();expect(picker).toHaveBeenCalledWith('import',1);
 });
 
+it('retains an analytical draft when case actions are hidden and reopened',async()=>{
+ await setup();
+ const name=[...document.querySelectorAll<HTMLInputElement>('section.actions input')].find(input=>input.closest('label')?.textContent?.trim()==='Name')!;
+ name.value='Unsubmitted analyst draft';name.dispatchEvent(new Event('input',{bubbles:true}));await settle();
+ button('Case actions').click();await settle();
+ expect(document.querySelector('section.actions')).not.toBeNull();
+ button('Case actions').click();await settle();
+ expect(name.value).toBe('Unsubmitted analyst draft');
+ expect(api.entityTypes).toHaveBeenCalledTimes(1);
+});
+
 it('discards a citation preview that arrives after the dossier is closed',async()=>{
  const record:api.EntityView={requested_id:'person',entity_id:'person',redirected:false,type_key:'person',display_name:'Stored person',notes:'',merged_from:[],identifiers:[],history:[],confidence:[],evidence:[{link_id:'link',entity_id:'person',evidence_kind:'observation',evidence_id:'delayed',role:'supports'}]};
  vi.mocked(api.entityPage).mockResolvedValue({rows:[{entity_id:'person',type_key:'person',display_name:'Stored person',identifier_count:0,evidence_count:1,merged_count:0,assessed_dimensions:0,total_dimensions:7}],total:1,offset:0,limit:50});

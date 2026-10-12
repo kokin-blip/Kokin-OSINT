@@ -61,6 +61,24 @@ impl Session {
         })
     }
 
+    /// Create in the OS application-data cases directory when no path was supplied.
+    /// The case name is metadata, never a filesystem component.
+    pub fn create_auto(
+        &self,
+        directory: &Path,
+        case_id: &str,
+        passphrase: &str,
+    ) -> Result<NewCaseView, CommandError> {
+        let mut bytes = [0_u8; 16];
+        getrandom::fill(&mut bytes).map_err(|_| {
+            CommandError::new(ErrorCode::Storage, "could not generate a case folder name")
+        })?;
+        let unique = u128::from_be_bytes(bytes);
+        let root = directory.join(format!("Case-{unique:032x}.kokincase"));
+        // create retains its existing refusal to use any existing path.
+        self.create(&root, case_id, passphrase)
+    }
+
     /// Create a case and make it the open one.
     pub fn create(
         &self,
