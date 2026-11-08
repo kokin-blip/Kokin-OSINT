@@ -1,0 +1,16 @@
+    Blocking waiting for file lock on build directory
+   Compiling ort-sys v2.0.0-rc.10
+   Compiling ort v2.0.0-rc.10
+   Compiling kokin-faces v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-faces)
+   Compiling kokin-media v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-media)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 43.53s
+     Running tests/worker.rs (target/debug/deps/worker-66abe964dcabc3ae)
+
+running 4 tests
+test prepared_image_recipe_runs_inside_the_contained_worker ... ok
+test isolated_worker_processes_a_synthetic_image_and_rejects_cancellation ... ok
+test real_pdf_text_ocr_and_malformed_inputs_are_bounded ... ok
+test scanned_pdf_has_no_native_text_and_optional_ocr_recovers_located_words ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.58s
+

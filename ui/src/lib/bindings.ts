@@ -17,6 +17,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -204,6 +205,8 @@ export interface ExcerptView {
  * handed, which is how a citation comes to agree with itself.
  */
 export type QuoteView =
+  | { agreement: "structured_exact"; excerpt: ExcerptView; basis: string }
+  | { agreement: "derived_exact"; excerpt: ExcerptView; basis: string }
   | { agreement: "exact"; excerpt: ExcerptView }
   | { agreement: "contains"; excerpt: ExcerptView }
   | { agreement: "differs"; excerpt: ExcerptView }
@@ -666,7 +669,7 @@ export interface OperationView {
   error: CommandError | null;
 }
 
-export const selectPath = (purpose: "import"|"export"|"package"|"restore", expectedGeneration:number) => invoke<string|null>("select_path",{purpose,expectedGeneration});
+export const selectPath = (purpose: "research_csv"|"research_json"|"research_import"|"import"|"export"|"package"|"restore"|"report_markdown"|"report_html", expectedGeneration:number) => invoke<string|null>("select_path",{purpose,expectedGeneration});
 export const startOperation = (kind:string,args:unknown,expectedGeneration:number) => invoke<string>("start_operation",{kind,args,expectedGeneration});
 export const operationStatus = (operationId:string) => invoke<OperationView>("operation_status",{operationId});
 export const cancelOperation = (operationId:string) => invoke<void>("cancel_operation",{operationId});
@@ -692,8 +695,211 @@ export interface GraphEdgeView {
 }
 
 export interface GraphView {
+  truncation_reasons?:string[];
   nodes: Array<GraphNodeView>;
   edges: Array<GraphEdgeView>;
   truncated: boolean;
   completed_hops: number;
 }
+
+export type WorkspaceKind='board'|'report'|'guide';
+export interface WorkspaceView {id:string;kind:WorkspaceKind;name:string;revision:number;payload:Record<string,unknown>;archived:boolean;updated_utc:string;}
+export interface SaveWorkspace {id:string;kind:WorkspaceKind;name:string;expected_revision:number;payload:Record<string,unknown>;archived?:boolean;}
+export const workspacePage=(generation:number,kind:WorkspaceKind,offset=0)=>invoke<PageView<WorkspaceSummaryView>>('workspace_page',{generation,kind,offset});
+export const workspaceRead=(generation:number,id:string)=>invoke<WorkspaceView>('workspace_read',{generation,id});
+export const workspaceSave=(generation:number,request:SaveWorkspace)=>invoke<WorkspaceView>('workspace_save',{generation,request});
+
+export interface GuideStatus {artifacts:number;complete:number;entities:number;relationships:number;human_assessments:number;boards:number;reports:number;}
+export const guideStatus=(generation:number)=>invoke<GuideStatus>('guide_status',{generation});
+
+export interface AddEvidenceRequest {subject_kind:string;subject_id:string;evidence:GroundingInput[];}
+export type WorkspacePage=PageView<WorkspaceSummaryView>;
+export type WorkspaceSaveRequest=SaveWorkspace;
+export interface Citation {kind:string;id:string;role:string;}
+export interface Finding {heading:string;text:string;citations:Citation[];}
+export interface ReportPayload {version:number;summary:string;findings:Finding[];limitations:string;boards:string[];}
+
+export type WorkspaceSummaryView=Omit<WorkspaceView,'payload'>;
+
+export interface MediaView {
+  artifact_id: string;
+  page: number;
+  pages: number;
+  preview_png: string;
+  engine: string;
+  limitations: string[];
+  duplicate_candidates: string[];
+  candidate_scan_truncated: boolean;
+}
+export function mediaRead(generation:number,artifact_id:string,page=0):Promise<MediaView|null>{return invoke("media_read",{generation,artifactId:artifact_id,page});}
+
+export interface OcrResourceView {
+  size_bytes: number;
+  destination: string;
+  installed: boolean;
+  license: string;
+  sha256: string;
+}
+export function ocrResourceInfo():Promise<OcrResourceView>{return invoke("ocr_resource_info");}
+export function installOcrResource():Promise<boolean>{return invoke("install_ocr_resource");}
+
+export interface MediaProcessRequest {
+  version: number;
+  artifact_id: string;
+  page: number;
+  ocr: boolean;
+}
+
+export interface SourceRequest {version:number;connector:string;input:string;record_type:string;page:number;timestamp:string;consent:boolean;}
+export interface SourceDisclosureView {connector:string;destinations:string[];transmitted_fields:string[];request_urls:string[];normalized_input:string;limitation:string;max_response_bytes:number;health:string;fixtures_version:number;}
+export const sourceDisclosure=(request:SourceRequest)=>invoke<SourceDisclosureView>('source_disclosure',{request});
+
+export interface SourceResultView {artifact_id:string;run_id:string|null;observations:number;size_bytes:number;deduplicated:boolean;from_fixture:boolean;http_status:number;capture_completeness:string;limitation:string;complete:boolean;processing_error:string|null;}
+
+export interface ResourceView {id:string;file:string;bytes:number;sha256:string;url:string;license:string;destination:string;present:boolean;}
+export interface ResourceJobView {operation_id:string;resource_id:string;status:string;stage:string;transferred:number;bytes:number;error:string|null;}
+export interface ResourceInstallRequest {version:number;resource_id:string;mode:string;consent:boolean;}
+export interface AiRequest {version:number;endpoint:string;model:string;task:string;observation_ids:string[];consent:boolean;}
+export interface AiSuggestionView {id:string;model:string;model_digest:string;kind:string;text:string;cited_observation_ids:string[];proposed_name:string|null;proposed_type:string|null;relationship_kind:string|null;created_utc:string;review:string|null;review_rationale:string|null;review_actor:string|null;review_utc:string|null;}
+export interface AiPageView {rows:AiSuggestionView[];total:number;offset:number;limit:number;}
+export interface AiReviewRequest {id:string;decision:string;rationale:string;}
+export interface AiModelView {name:string;digest:string;bytes:number;reviewed_artifact:boolean;}
+export interface AiStatusView {architecture:string;cpu_threads:number;total_memory_bytes:number|null;available_memory_bytes:number|null;free_storage_bytes:number|null;memory_kind:string;accelerator_status:string;ollama_status:string;models:AiModelView[];loaded_models:unknown;recommendation:string|null;faster:string|null;higher_quality:string|null;}
+export interface SemanticRequest {version:number;mode:string;search:SearchRequest;}
+export interface SemanticStatusView {indexed:number;observations:number;model_identity:string|null;resources_present:boolean;quality_gate:boolean;limitation:string;}
+export interface SemanticView {results:SearchView;indexed:number;candidate_limit:number;truncated:boolean;notice:string;}
+export const resourceList=()=>invoke<ResourceView[]>('resource_list');
+export const resourceInstall=(request:ResourceInstallRequest)=>invoke<string>('resource_install',{request});
+export const resourceStatus=(operationId:string)=>invoke<ResourceJobView>('resource_status',{operationId});
+export const resourceCancel=(operationId:string)=>invoke<void>('resource_cancel',{operationId});
+export const aiStatus=(endpoint:string)=>invoke<AiStatusView>('ai_status',{endpoint});
+export const aiPage=(generation:number,offset=0)=>invoke<AiPageView>('ai_page',{generation,offset});
+export const aiReview=(generation:number,request:AiReviewRequest)=>invoke<void>('ai_review',{generation,request});
+export const semanticStatus=(generation:number)=>invoke<SemanticStatusView>('semantic_status',{generation});
+export const semanticSearch=(generation:number,request:SemanticRequest)=>invoke<SemanticView>('semantic_search',{generation,request});
+
+export interface MapArchiveView {id:string;bytes:number;min_zoom:number;max_zoom:number;tile_type:number;bounds:number[];attribution:string;layers:string[];}
+export interface MapSelectionView {selection:string;filename:string;bytes:number;min_zoom:number;max_zoom:number;destination:string;}
+export interface MapImportRequest {selection:string;attribution:string;consent:boolean;}
+export interface LocationView {id:string;observation_id:string;entity_id:string|null;label:string;longitude:number;latitude:number;uncertainty:string;rationale:string;created_utc:string;}
+export interface LocationPageView {rows:LocationView[];total:number;offset:number;limit:number;}
+export interface LocationRequest {observation_id:string;entity_id:string|null;label:string;longitude:number;latitude:number;uncertainty:string;rationale:string;}
+export interface MapStateView {revision:number;archive_id:string|null;longitude:number;latitude:number;zoom:number;bearing:number;pitch:number;show_locations:boolean;}
+export const mapArchives=()=>invoke<MapArchiveView[]>('map_archives');
+export const mapSelect=()=>invoke<MapSelectionView|null>('map_select');
+export const mapImport=(request:MapImportRequest)=>invoke<string>('map_import',{request});
+export const mapRange=(id:string,offset:number,length:number)=>invoke<string>('map_range',{id,offset,length});
+export const locationPage=(generation:number,offset=0)=>invoke<LocationPageView>('location_page',{generation,offset});
+export const locationCreate=(generation:number,request:LocationRequest)=>invoke<string>('location_create',{generation,request});
+export const mapStateRead=(generation:number)=>invoke<MapStateView>('map_state_read',{generation});
+export const mapStateSave=(generation:number,request:MapStateView)=>invoke<MapStateView>('map_state_save',{generation,request});
+
+export interface MapIllustrationRequest {image:string;archive_id:string;attribution:string;location_ids:string[];}
+export interface MapIllustrationView {id:string;created_utc:string;archive_id:string;attribution:string;}
+export const mapIllustrations=(generation:number)=>invoke<MapIllustrationView[]>('map_illustrations',{generation});
+
+export const resourceJobs=()=>invoke<ResourceJobView[]>('resource_jobs');
+
+export interface WorldSelectionView {selection:string;url:string;etag:string;download_bytes:number;maximum_output_bytes:number;destination:string;}
+export const mapWorldReview=(consent:boolean)=>invoke<WorldSelectionView>('map_world_review',{consent});
+export const mapWorldInstall=(selection:string,consent:boolean)=>invoke<string>('map_world_install',{selection,consent});
+
+export interface AiModelInstallRequest {version:number;model:string;endpoint:string;consent:boolean;}
+export const aiModelInstall=(request:AiModelInstallRequest)=>invoke<string>('ai_model_install',{request});
+
+export interface FaceAnalysisRequest {version:number;artifact_ids:string[];page:number;start_ms:number;end_ms:number|null;}
+export interface FaceStatusView {eligible_artifacts:number;analyzed_artifacts:number;faces:number;auto_analyze:boolean;resources_present:boolean;native_available:boolean;model_identity:string;limitation:string;}
+export interface FaceView {id:string;artifact_id:string;run_id:string;model_identity:string;bbox:number[];image_size:number[];page:number;timestamp_ms:number|null;detection_score:number;crop_png:string|null;stale:boolean;entity_id:string|null;entity_name:string|null;}
+export interface FacePageView {faces:FaceView[];total:number;offset:number;limitations:string[];}
+export interface FaceSearchRequest {version:number;face_id:string;query:string;text_mode:string;both:boolean;threshold:number;offset:number;limit:number;}
+export interface FaceMatchView {face:FaceView;similarity:number;occurrences:FaceView[];occurrence_count:number;}
+export interface FaceSearchView {matches:FaceMatchView[];total:number;offset:number;related:SearchView;coverage:FaceStatusView;truncated:boolean;}
+export interface FaceReviewRequest {face_id:string;entity_id:string|null;group_id:string|null;decision:string;rationale:string;}
+export interface FaceGroupView {id:string;faces:FaceView[];member_total:number;member_offset:number;}
+export interface DiscoveryRequest {query:string;page:number;consent:boolean;}
+export interface DiscoveryHitView {title:string;url:string;snippet:string;}
+export interface DiscoveryView {hits:DiscoveryHitView[];artifact_id:string;query:string;limitation:string;}
+export const faceStatus=(generation:number)=>invoke<FaceStatusView>('face_status',{generation});
+export const faceAutoAnalyze=(generation:number,enabled:boolean)=>invoke<void>('face_auto_analyze',{generation,enabled});
+export const facePage=(generation:number,artifactId='',offset=0,includeStale=false,pageFilter:number|null=null)=>invoke<FacePageView>('face_page',{generation,artifactId,offset,includeStale,pageFilter});
+export const faceSearch=(generation:number,request:FaceSearchRequest)=>invoke<FaceSearchView>('face_search',{generation,request});
+export const faceReview=(generation:number,request:FaceReviewRequest)=>invoke<void>('face_review',{generation,request});
+export const faceGroups=(generation:number,offset=0)=>invoke<FaceGroupView[]>('face_groups',{generation,offset});
+export const discoveryHealth=()=>invoke<string>('discovery_health');
+export const researchBrowser=(provider:string,query='')=>invoke<void>('research_browser',{provider,query});
+export interface FacePreviewView {preview_png:string;face:FaceView;}
+export const facePreview=(generation:number,faceId:string)=>invoke<FacePreviewView>('face_preview',{generation,faceId});
+
+export interface FacePersonRequest {face_id:string;name:string;rationale:string;}
+export const facePersonCreate=(generation:number,request:FacePersonRequest)=>invoke<string>('face_person_create',{generation,request});
+export const personFaces=(generation:number,entityId:string,offset=0)=>invoke<FacePageView>('person_faces',{generation,entityId,offset});
+
+export interface FaceGroupMembersView {group_id:string;page:FacePageView;}
+export const faceGroupMembers=(generation:number,groupId:string,offset=0)=>invoke<FaceGroupMembersView>('face_group_members',{generation,groupId,offset});
+export const faceRead=(generation:number,faceId:string)=>invoke<FaceView>('face_read',{generation,faceId});
+
+export type SelectorKind='username'|'email'|'phone'|'name'|'domain'|'ip'|'wallet'|'image';
+export type Delivery='native'|'provider_backed'|'manual_workflow'|'blocked';
+export interface Selector {kind:SelectorKind;original:string;normalized:string;}
+export interface ResearchSource {version:number;id:string;title:string;category:string;selectors:SelectorKind[];destinations:string[];methods:string[];transmitted_fields:string[];delivery:Delivery;credential_ref:string|null;max_response_bytes:number;rate_per_second:number;concurrency:number;max_calls:number;health:string;limitation:string;adult:boolean;cache_max_age_seconds:number;profile_rule:ProfileRule|null;}
+export interface ProfileRule {source:string;revision:number;request_template:string;public_template:string;syntax:string;methodology:string;max_response_bytes:number;cache_max_age_seconds:number;}
+export interface ResearchInputOrigin {selector:Selector;observation_ids:string[];}
+export interface ResearchRequest {version:1;selectors:Selector[];sources:string[];rescan:boolean;safe_mode:boolean;options?:ProviderOptions;}
+export interface ProviderOptions {paid_authorized:boolean;face_eligible:boolean;premium:boolean;exact_match:boolean;image_category:string;page:number;domain_filter:string;sort_type:string;}
+export interface ResearchPlan {parent_import?:ImportParent|null;version:number;generation:number;selectors:Selector[];sources:string[];destinations:string[];request_urls:string[];max_calls:number;rescan:boolean;safe_mode:boolean;limitation:string;provider_options:ProviderOptions;request_digests:string[];input_origins?:ResearchInputOrigin[];image_disclosures:Array<{artifact_id:string;content_hash:string;media_type:string;byte_length:number}>;provider_call_limits:Record<string,number>;provider_credit_upper_bounds:Record<string,number>;}
+export interface PreparedResearch {token:string;digest:string;plan:ResearchPlan;}
+export interface ResearchResult {id:string;run_id:string;selector:Selector;source:string;outcome:string;url:string;fields:Record<string,unknown>;observed_utc:string;source_reported_utc:string|null;indexed_utc:string|null;artifact_id:string|null;from_cache:boolean;limitation:string;}
+export interface ResearchPage<T> {rows:T[];total:number;offset:number;limit:number;}
+export interface ResearchRun {id:string;plan:ResearchPlan;status:string;created_utc:string;finished_utc:string|null;expected:number;completed:number;}
+export interface ResearchDocument {id:string;revision:number;kind:string;name:string;payload:Record<string,unknown>;archived:boolean;updated_utc:string;}
+export interface DirectoryTool {id:string;name:string;category:string;url:string;description:string;status:string;pricing:string;input:string;output:string;best_for:string;opsec:string;opsec_note:string;api:boolean;registration:boolean;local_install:boolean;google_dork:boolean;edit_url:boolean;invitation_only:boolean;deprecated:boolean;}
+export interface BulkRow {value:string;kind:SelectorKind;selector:Selector|null;error:string|null;repeats:number;origin_ids?:string[];}
+export const researchRegistry=()=>invoke<ResearchSource[]>('research_registry');
+export const researchDirectory=()=>invoke<DirectoryTool[]>('research_directory');
+export const researchSelector=(kind:SelectorKind,value:string)=>invoke<Selector>('research_selector',{kind,value});
+export const researchBulk=(text:string,kind:SelectorKind)=>invoke<BulkRow[]>('research_bulk',{text,kind});
+export const researchPrepare=(generation:number,request:ResearchRequest,inputOrigins:ResearchInputOrigin[]=[],parentImport:ImportParent|null=null)=>invoke<PreparedResearch>('research_prepare',{generation,request,inputOrigins,parentImport});
+export const researchRuns=(generation:number,offset=0)=>invoke<ResearchPage<ResearchRun>>('research_runs',{generation,offset});
+export interface ResearchResultFilter {outcome:string;sources:string[];field?:string;pattern?:string;module?:string;verified?:string;private?:string;min_age?:number|null;max_age?:number|null;date_from?:string;date_to?:string;date_field?:string;}
+export interface ResearchResultPage extends ResearchPage<ResearchResult> {run_total:number;source_counts:Record<string,number>;outcome_counts:Record<string,number>;}
+export const researchResults=(generation:number,runId:string,offset=0,filter:ResearchResultFilter={outcome:'',sources:[]})=>invoke<ResearchResultPage>('research_results',{generation,runId,offset,filter});
+export const researchDocuments=(generation:number,kind:string)=>invoke<ResearchDocument[]>('research_documents',{generation,kind});
+export const researchDocumentSave=(generation:number,document:ResearchDocument)=>invoke<ResearchDocument>('research_document_save',{generation,document});
+
+export const researchProviderStatus=(provider:string)=>invoke<{provider:string;credential_account:string;configured:boolean;supported:boolean;usage_state:string;eligibility_state:string;capability_state:string;service:string;storage:string}>('research_provider_status',{provider});
+export const researchOpenUrl=(url:string)=>invoke<void>('research_open_url',{url});
+
+export interface ResearchTable {columns:string[];rows:string[][];warnings:string[];}
+export const researchTable=(text:string,format:string,header:boolean)=>invoke<ResearchTable>('research_table',{text,format,header});
+export const researchTableMap=(table:ResearchTable,column:number,kind:SelectorKind,columns?:number[])=>invoke<BulkRow[]>('research_table_map',{table,column,kind,columns});
+export interface ColumnSuggestion {column:number;kind:SelectorKind;valid:number;sampled:number;basis:string;}
+export interface CandidatePreview {rows:BulkRow[];warnings:string[];segment_count:number;}
+export const researchTableSuggestions=(table:ResearchTable)=>invoke<ColumnSuggestion[]>('research_table_suggestions',{table});
+export const researchCandidates=(text:string)=>invoke<CandidatePreview>('research_candidates',{text});
+export const researchEvidencePreview=(generation:number,artifactId:string)=>invoke<CandidatePreview>('research_evidence_preview',{generation,artifactId});
+export const researchImportPreview=(generation:number,selection:string,format:string,header:boolean)=>invoke<ResearchTable>('research_import_preview',{generation,selection,format,header});
+
+export interface ResearchCandidate {result_id:string;proposed_name:string;proposed_type:string;namespace:string;value:string;source:string;url:string;cited_observation_ids:string[];limitation:string;}
+export const researchReviewCandidate=(generation:number,resultId:string,cardIndex?:number)=>invoke<ResearchCandidate>('research_review_candidate',{generation,resultId,cardIndex});
+
+export const researchTableCandidates=(table:ResearchTable,column:number)=>invoke<CandidatePreview>('research_table_candidates',{table,column});
+
+export interface ImportParent {id:string;revision:number;}
+export interface ImportSessionState {document:ResearchDocument;submitted_keys:string[];runs:ResearchPage<{id:string;status:string;expected:number;completed:number;created_utc:string}>;}
+export const researchImportSession=(generation:number,id:string,offset=0)=>invoke<ImportSessionState>('research_import_session',{generation,id,offset});
+export interface LocalResearchHit {subject_kind:string;subject_id:string;title:string;snippet:string;artifact_id:string|null;}
+export interface LocalResearch {version:number;scope:string;external_requests:number;offset:number;limit:number;queries:Array<{selector:Selector;status:string;hits:LocalResearchHit[];total:number;coverage?:CoverageView;limitation:string}>;}
+export const researchLocalSearch=(generation:number,selectors:Selector[],offset=0)=>invoke<LocalResearch>('research_local_search',{generation,selectors,offset});
+export interface ResearchDrop {generation:number;selection:string;name:string;}
+export const researchDropListen=(handler:(event:ResearchDrop)=>void)=>listen<ResearchDrop>('research-file-drop',event=>handler(event.payload));
+
+export interface ImageRect {x:number;y:number;width:number;height:number;}
+export interface ImageRecipe {version:number;crop:ImageRect|null;quarter_turns:number;mirror_horizontal:boolean;mirror_vertical:boolean;brightness:number;contrast:number;red:number;green:number;blue:number;obscure:ImageRect[];}
+export interface ImagePrepareRequest {version:number;artifact_id:string;page:number;recipe:ImageRecipe;selected_face_id:string|null;obscure_other_faces:boolean;}
+export interface ImageSearchRequest {version:number;artifact_id:string;page:number;mode:string;max_distance:number;scan_limit:number;offset:number;sort:string;domain:string;date_from:string;date_to:string;title:string;min_bytes:number|null;max_bytes:number|null;}
+export interface ImageSearchRow {artifact_id:string;page:number;source_url:string|null;title:string|null;domain:string|null;group:string;media_type:string;byte_length:number;artifact_created_utc:string;indexed_utc:string;publication_utc:null;language:null;exact_bytes:boolean;distance:number|null;signal:string;}
+export interface ImageSearchPage {version:number;scope:string;delivery:string;external_requests:number;rows:ImageSearchRow[];total:number;offset:number;limit:number;scanned:number;scan_limit:number;scan_truncated:boolean;eligible_artifacts:number;groups:Record<string,number>;coverage:string;}
+export const imageQuerySearch=(generation:number,request:ImageSearchRequest)=>invoke<ImageSearchPage>('image_query_search',{generation,request});
+export const imageQueryInfo=(generation:number,artifactId:string)=>invoke<Record<string,unknown>|null>('image_query_info',{generation,artifactId});
+
+export interface ClipboardImageRequest {version:number;media_type:string;base64:string;}

@@ -1,0 +1,19 @@
+import assert from 'node:assert/strict';
+import {mkdtemp,rm,copyFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+const button=text=>$(`//button[normalize-space(.)="${text}"]`);
+const field=text=>$(`//label[contains(.,"${text}")]/input`);
+const control=(action,args={})=>browser.tauri.execute((tauri,a,p)=>tauri.core.invoke('test_control',{action:a,args:p}),action,args);
+async function finish(){await browser.waitUntil(async()=>/Operation finished/.test(await $('section.actions').getText()),{timeout:60000});const details=await $('//section[contains(@class,"actions")]//details[summary[normalize-space(.)="Operation details"]]');if(await details.getAttribute('open')===null)await details.$('summary').click();return JSON.parse(await $('section.actions pre').getText());}
+describe('Real isolated media through ordinary Evidence controls',()=>{let root;
+ after(async()=>{try{if(await button('Close case').isExisting())await button('Close case').click();}finally{if(root)await rm(root,{recursive:true,force:true});}});
+ it('imports PDF, creates located observations, renders a verified encrypted preview and preserves it on reopening',async()=>{
+ root=await mkdtemp(join(tmpdir(),'kokin-desktop-media-'));const source=join(root,'native-text.pdf');await copyFile(resolve('../crates/kokin-media/tests/fixtures/native-text.pdf'),source);
+ const skip=await button('Skip introduction');if(await skip.isExisting())await skip.click();await button('Create new').click();const path=join(root,'media.kokincase');await field('Case folder').setValue(path);await field('Case name').setValue('Synthetic media acceptance');await field('Passphrase').setValue('synthetic media credential');await button('Create case').click();await $('.key').waitForDisplayed();const segments=await $$('.key .segment');await $('[role="dialog"] input[type="checkbox"]').click();await $('[role="dialog"] input[type="text"]').setValue(await segments[segments.length-2].getText());await button('Continue to the case').click();await $('nav').waitForDisplayed();
+ await control('selection',{purpose:'import',path:source});await button('Import file').click();await finish();await $('section.list button.row').click();await button('Extract selected document').click();const extraction=await finish();assert.equal(extraction.complete,false);assert.equal(extraction.pages,1);assert.ok(extraction.observations>0);await $('button*=pdf.text').click();assert.match(await $('section.detail').getText(),/Verified transformation/);assert.match(await $('section.detail').getText(),/KOKIN TEST EVIDENCE/);await button('Open source document').click();await $('.media-preview img').waitForDisplayed();await browser.waitUntil(async()=>await browser.tauri.execute(()=>document.querySelector('.media-preview img')?.naturalWidth>0));assert.match(await $('.media-preview').getText(),/does not cover drawings/);const image=await $('.media-preview img').getAttribute('src');assert.match(image,/^data:image\/png;base64,/);
+ const before=await control('snapshot');await button('Render page preview').click();const rendered=await finish();assert.equal(rendered.observations,0);const after=await control('snapshot');assert.deepEqual(after.observation,before.observation);assert.deepEqual(after.observation_supersession,before.observation_supersession);
+
+ await button('Close case').click();await button('Open existing').click();await field('Case folder').setValue(path);await field('Passphrase').setValue('synthetic media credential');await button('Open case').click();await $('section.list button.row').waitForDisplayed();await $('section.list button.row').click();await $('button*=pdf.text').click();await button('Open source document').click();await $('.media-preview img').waitForDisplayed();assert.equal(await $('.media-preview img').getAttribute('src'),image);
+ });
+});

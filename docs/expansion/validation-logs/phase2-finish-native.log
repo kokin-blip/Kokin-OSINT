@@ -1,0 +1,9 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.39s
+     Running tests/worker.rs (target/debug/deps/worker-b4d698f6c48ea2b8)
+
+running 2 tests
+test isolated_worker_processes_a_synthetic_image_and_rejects_cancellation ... ok
+test real_pdf_text_ocr_and_malformed_inputs_are_bounded ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.48s
+

@@ -18,6 +18,8 @@ pub mod audit;
 pub mod evidence;
 pub mod header;
 pub mod migrations;
+pub mod research;
+pub mod workspace;
 
 use std::path::Path;
 
@@ -301,6 +303,7 @@ pub fn change_passphrase(
 
 /// Open the SQLCipher database with a raw key.
 fn open_database(paths: &CasePaths, cmk: &CaseMasterKey) -> Result<Connection> {
+    let _ = kokin_vector_adapter::initialize();
     let conn = Connection::open(paths.database())?;
 
     // `x'...'` supplies the key directly, bypassing SQLCipher's own KDF. The

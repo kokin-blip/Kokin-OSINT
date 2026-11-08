@@ -5,6 +5,7 @@
   import type { DimensionView, EntityView, ObservationView, PageView, SubjectView } from "../../bindings";
 
   interface Props {
+    compact?: boolean;
     context?: Snippet;
     inspectorWidth?: number;
     showInspector?: boolean;
@@ -21,7 +22,7 @@
     onevidence?: (kind: string, id: string) => void;
   }
 
-  let { inspectorWidth=$bindable(330), showInspector=true, onwidth, oncollapse, context, activity, entity, onevidence, source = null, sourceError = "", relationships = null, onopen, onpage }: Props = $props();
+  let { compact=false, inspectorWidth=$bindable(330), showInspector=true, onwidth, oncollapse, context, activity, entity, onevidence, source = null, sourceError = "", relationships = null, onopen, onpage }: Props = $props();
 
   /**
    * **There is no total, and there is nowhere to put one.**
@@ -84,7 +85,7 @@
   }
 </script>
 
-<article class="entity" class:inspector-hidden={!showInspector} style={`--inspector-width:${inspectorWidth}px`} aria-labelledby="entity-title">
+<article class="entity" class:compact class:inspector-hidden={!showInspector} style={`--inspector-width:${inspectorWidth}px`} aria-labelledby="entity-title">
 <div class="dossier-main">
   <header class="dossier-heading"><h3 id="entity-title">
     <span class="type">{entity.type_key}</span>
@@ -210,7 +211,7 @@
   {/if}
 </div>
 </div>
-{#if showInspector}<div class="resize-slot"><ResizeHandle controls="entity-inspector" {oncollapse} bind:value={inspectorWidth} oncommit={(width)=>onwidth?.(width)}/></div>{/if}
+{#if showInspector&&!compact}<div class="resize-slot"><ResizeHandle controls="entity-inspector" {oncollapse} bind:value={inspectorWidth} oncommit={(width)=>onwidth?.(width)}/></div>{/if}
 <aside id="entity-inspector" hidden={!showInspector} class="dossier-inspector" aria-label="Entity assessment">{#if context}{@render context()}{/if}
   <section class="confidence-panel" aria-labelledby="confidence-title">
     <h4 id="confidence-title">Confidence</h4>
@@ -489,6 +490,9 @@
   .relationship-row { display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 12px; }
   .pages { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .link { overflow-wrap: anywhere; text-align: left; min-height: 32px; }
+  .entity.compact{grid-template-columns:1fr;}
+  .compact .lower-grid{grid-template-columns:1fr;grid-template-areas:"ident" "relationships" "activity" "evidence" "decisions";}
+  .compact .dossier-heading{flex-wrap:wrap;}
   @media (max-width: 1180px) { .resize-slot{display:none;} .entity { grid-template-columns: 1fr; } .confidence-panel { grid-column: 1; grid-row: auto; } }
   @media (max-width: 1020px) { .lower-grid { grid-template-columns: 1fr; grid-template-areas: "ident" "relationships" "activity" "evidence" "decisions"; } }
 </style>

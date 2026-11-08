@@ -11,11 +11,16 @@ members = [
     "crates/kokin-search",
     "crates/kokin-export",
     "crates/kokin-ai",
+    "crates/kokin-maps",
+    "crates/kokin-vector-adapter",
+    "crates/kokin-media",
+    "crates/kokin-connectors",
+    "crates/kokin-faces",
     "src-tauri",
 ]
 # poc/ is deliberately NOT a workspace member. Proof-of-concept code must never
 # be reachable from a release build (review gate 4).
-exclude = ["poc"]
+exclude = ["poc", "vendor/lol_html", "vendor/time", "vendor/plist", "vendor/tokenizers"]
 
 [workspace.package]
 version = "0.0.1"
@@ -36,3 +41,11 @@ expect_used = "warn"
 strip = true
 lto = "thin"
 codegen-units = 1
+
+# Preserve parser security fixes and API while honoring its declared MSRV.
+[patch.crates-io]
+lol_html = { path = "vendor/lol_html" }
+
+time = {path="vendor/time"}
+plist = {path="vendor/plist"}
+tokenizers = {path="vendor/tokenizers"}

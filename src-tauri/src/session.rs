@@ -103,6 +103,7 @@ impl Session {
 
         let (open, recovery) = kokin_store::create_case(root, case_id, passphrase)?;
         kokin_graph::initialise(&open.conn)?;
+        kokin_store::research::recover(&open.conn)?;
         let mut view = describe(&open, case_id)?;
         // The rendered key lives exactly as long as this function. Zeroizing
         // wraps it up to the point it becomes the response, which is as far as
@@ -125,6 +126,7 @@ impl Session {
         }
         let open = kokin_store::open_case(root, passphrase)?;
         kokin_graph::initialise(&open.conn)?;
+        kokin_store::research::recover(&open.conn)?;
         let mut view = describe_from_header(&open)?;
         *guard = Some(open);
         view.session_generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
@@ -148,6 +150,7 @@ impl Session {
         }
         let open = kokin_store::open_case_with_recovery_key(root, &recovery)?;
         kokin_graph::initialise(&open.conn)?;
+        kokin_store::research::recover(&open.conn)?;
         let mut view = describe_from_header(&open)?;
         *guard = Some(open);
         view.session_generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;

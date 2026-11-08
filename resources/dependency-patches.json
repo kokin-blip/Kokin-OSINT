@@ -1,0 +1,28 @@
+{
+  "patches": [
+    {
+      "crate": "time",
+      "version": "0.3.45",
+      "crate_checksum": "f9e442fc33d7fdb45aa9bfeb312c095964abdf596f7567261062b2a7107aaabd",
+      "path": "vendor/time",
+      "guarded_file": "src/parsing/combinator/rfc/rfc2822.rs",
+      "patched_sha256": "2634614b383159981653229d49016ac073bf596b0df4690f84f292ffe5287b92"
+    },
+    {
+      "crate": "plist",
+      "version": "1.8.0",
+      "crate_checksum": "740ebea15c5d1428f910cd1a5f52cebf8d25006245ed8ade92702f4943d91e07",
+      "path": "vendor/plist",
+      "guarded_file": "Cargo.toml",
+      "patched_sha256": "7270c8cee4d3674a801405f85b6b7a1007af80086e0671cf0698ca7a2bb50680"
+    },
+    {
+      "crate": "tokenizers",
+      "version": "0.21.4",
+      "crate_checksum": "a620b996116a59e184c2fa2dfd8251ea34a36d0a514758c6f966386bd2e03476",
+      "path": "vendor/tokenizers",
+      "guarded_file": "Cargo.toml",
+      "patched_sha256": "b665cc61cb3ac268c9d456abf321122d2485bb71404385b8725e99b0e3cb9c7c"
+    }
+  ]
+}

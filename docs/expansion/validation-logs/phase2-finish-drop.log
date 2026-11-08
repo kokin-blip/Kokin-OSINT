@@ -1,0 +1,39 @@
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> vendor/tokenizers/src/models/unigram/model.rs:359:17
+    |
+359 |     pub fn iter(&self) -> UnigramIterator {
+    |                 ^^^^^     ^^^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                 |
+    |                 the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+    = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+    |
+359 |     pub fn iter(&self) -> UnigramIterator<'_> {
+    |                                          ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/tokenizers/src/models/unigram/trie.rs:33:36
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<Label, T>
+   |                                    ^^^^^                  ^^^^^^^^^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                    |
+   |                                    the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<'_, Label, T>
+   |                                                                        +++
+
+warning: `tokenizers` (lib) generated 2 warnings (run `cargo fix --lib -p tokenizers` to apply 2 suggestions)
+   Compiling kokin-osint v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.97s
+     Running unittests src/lib.rs (target/debug/deps/kokin_osint_lib-4252539de25c7e7c)
+
+running 1 test
+test operations::tests::native_drop_is_bounded_single_use_and_case_bound ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+

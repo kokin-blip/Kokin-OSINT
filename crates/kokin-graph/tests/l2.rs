@@ -709,3 +709,111 @@ fn the_audit_chain_records_l2_and_still_verifies() {
         kokin_store::ChainStatus::Intact { .. }
     ));
 }
+
+#[test]
+fn multi_seed_expansion_filters_direction_and_new_evidence_preserves_prior_links() {
+    let mut case = Case::new("multi-root");
+    let a = case.entity("person", "A");
+    let b = case.entity("person", "B");
+    let citation = Grounding {
+        kind: EvidenceKind::Observation,
+        id: &case.observations[0],
+        role: EvidenceRole::Supports,
+    };
+    let edge = relate(&mut case.conn, &a, &b, "knows", (None, None), &[citation]).unwrap();
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let expanded = kokin_graph::explore::expand_multi(
+        &case.conn,
+        &[a.clone(), b.clone()],
+        kokin_graph::explore::ExpansionOptions {
+            hops: 2,
+            node_limit: 40,
+            per_node: 16,
+            direction: "both",
+            kinds: &["knows".into()],
+        },
+        &cancel,
+    )
+    .unwrap();
+    assert_eq!(expanded.nodes.len(), 2);
+    assert_eq!(expanded.edges.len(), 1);
+    let incoming = kokin_graph::explore::expand_multi(
+        &case.conn,
+        std::slice::from_ref(&a),
+        kokin_graph::explore::ExpansionOptions {
+            hops: 1,
+            node_limit: 40,
+            per_node: 16,
+            direction: "incoming",
+            kinds: &[],
+        },
+        &cancel,
+    )
+    .unwrap();
+    assert!(incoming.edges.is_empty());
+    kokin_graph::add_evidence(
+        &mut case.conn,
+        Subject {
+            kind: SubjectKind::Relationship,
+            id: &edge,
+        },
+        &[Grounding {
+            kind: EvidenceKind::Observation,
+            id: &case.observations[1],
+            role: EvidenceRole::Contradicts,
+        }],
+    )
+    .unwrap();
+    assert_eq!(
+        evidence_for(
+            &case.conn,
+            Subject {
+                kind: SubjectKind::Relationship,
+                id: &edge
+            }
+        )
+        .unwrap()
+        .len(),
+        2
+    );
+}
+
+#[test]
+fn canonical_root_keeps_relationships_attached_to_absorbed_records() {
+    let mut case = Case::new("alias-graph");
+    let canonical = case.entity("person", "Canonical");
+    let alias = case.entity("person", "Alias");
+    let other = case.entity("person", "Neighbor");
+    relate(
+        &mut case.conn,
+        &alias,
+        &other,
+        "knows",
+        (None, None),
+        &[Grounding::supporting_observation(&case.observations[0])],
+    )
+    .unwrap();
+    kokin_graph::resolution::merge(
+        &mut case.conn,
+        &canonical,
+        &alias,
+        "user:local",
+        "same record",
+        None,
+    )
+    .unwrap();
+    let result = kokin_graph::explore::expand(
+        &case.conn,
+        &canonical,
+        1,
+        40,
+        16,
+        &std::sync::atomic::AtomicBool::new(false),
+    )
+    .unwrap();
+    assert_eq!(result.edges.len(), 1);
+    assert!(result
+        .nodes
+        .iter()
+        .any(|n| n.id == alias && n.canonical_id == canonical));
+}

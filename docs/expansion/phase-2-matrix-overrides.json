@@ -1,0 +1,98 @@
+{
+  "F081": {
+    "status": "implemented (input scope)",
+    "required_change": "Eight typed input entry points plus a native local-case fallback by default and optional disclosed official APIs. Image text lookup is explicitly unsupported and points to existing media/face tools.",
+    "remaining": "Web-wide coverage is source dependent. New local image-search expansion remains Phase 3; proprietary provider corpora are not reconstructed from client bundles."
+  },
+  "F083": {
+    "status": "implemented (validation scope)",
+    "required_change": "International phone formatting requires a country prefix; supported email dot-atom syntax, preserved local-part case, exact-name request options, EIP-55 and BTC/TRON checksums including Bitcoin SegWit.",
+    "remaining": "Unsupported email local-part forms, wallet networks and ownership/balance claims remain explicitly outside this validator. Provider-side name-match quality is not established."
+  },
+  "F089": {
+    "status": "implemented (validation scope)",
+    "required_change": "Strict four-octet IPv4, IPv6 normalization, public-domain extraction from pasted URLs, international phone normalization, bounded name/username input and specific errors.",
+    "remaining": "Validation does not discover accounts. ASCII username coverage and unsupported input forms are disclosed."
+  },
+  "F093": {
+    "status": "implemented (batch scope)",
+    "required_change": "Mixed row review, local add/remove, normalized duplicate counts, per-row types, 15-query limits, successive selections and encrypted parent import/run organization; resumed/extracted rows start unselected.",
+    "remaining": "Submission and completed-source counts remain separate. Saved parent revisions bind authorization; repeating partial/interrupted queries requires explicit review."
+  },
+  "F095": {
+    "status": "implemented (bounded desktop import scope)",
+    "required_change": "UTF-8 CSV/TSV/JSON/text/Markdown/log previews, selected-column extraction, native file selection/drop-token workflow and authenticated PDF/OCR evidence-to-candidate preview.",
+    "remaining": "Native/text limits are disclosed rather than copying the vendor25MiB quota. OS drag gestures remain manual release QA; token handling, frontend event review and actual macOS file-preview paths are tested."
+  },
+  "F096": {
+    "status": "implemented (mapping scope)",
+    "required_change": "Header/syntax-based suggestions over bounded samples, explicit first/last-name joining, repeat counts, per-row validation and manual selection. Evidence candidates retain observation origins with an explicit 100-origin display bound.",
+    "remaining": "Suggestions require review and do not send queries. Fragmented OCR/text identifiers may require manual joining; unknown names and bare usernames are not guessed."
+  },
+  "F097": {
+    "status": "implemented (native pipeline reuse scope)",
+    "required_change": "Reuse contained PDF/OCR parsing, documented native bounds, authenticated snapshots, malformed-source errors/coverage and key/supersession/generation rechecks.",
+    "remaining": "No vendor250-page quota is copied. OCR is a recorded transformation, not independent verification; fragmented words/chunks need review. Dedicated native gate receipts remain separate from offline fixtures."
+  },
+  "F098": {
+    "status": "partial (graph-board staging deferred)",
+    "required_change": "Named encrypted parent import workspaces with resume/rename/archive, revision-bound child batches, actual run states, package/restore and evidence-linked review forms. Hosted account/subscription gates are excluded.",
+    "remaining": "Direct graph-board staging and richer investigation presentation remain Phase 5; no automatic graph or identity write occurs."
+  },
+  "F084": {
+    "status": "implemented (native and offline provider contract scope)",
+    "required_change": "Evidence-backed native/OI spec-format cards with separate profiles, supported scalar fields, dates, locations, source pointers and normalization recipes; authenticated account/identifier/relationship review staging.",
+    "remaining": "Provider live health/entitlement/coverage remains Phase 4. Source metadata may be absent; no ownership, identity or remote-avatar retrieval is inferred.",
+    "delivery_components": {
+      "native_profile_cards": "native",
+      "oi_spec_format": "provider-backed (offline contract tested; live unverified)",
+      "identity_review": "native; analyst decision required"
+    }
+  },
+  "F085": {
+    "status": "partial (automated breach source blocked)",
+    "required_change": "Typed registration assertions remain separate from explicitly unavailable breach coverage. OI documentation says it supplies no breach data; separate imported reports retain provider attribution and manual evidence review.",
+    "remaining": "HIBP has no implemented connector; automated attributed breach discovery is blocked on a separately reviewed source/contract. No breach membership or live HIBP coverage is claimed.",
+    "delivery": "native",
+    "delivery_components": {
+      "account_breach_distinction": "native",
+      "imported_attributed_report": "manual workflow",
+      "hibp_connector": "blocked"
+    }
+  },
+  "F088": {
+    "status": "partial (later provider stream gate)",
+    "required_change": "Independent progressive source commits, local case fallback, SearXNG/Wayback discovery and typed OI module assertions, with raw evidence and unknown/partial coverage.",
+    "remaining": "Phase 2 progressive HTTP/native behavior is implemented. Complete provider streams, live source-health/coverage and remaining provider gates remain Phase 4; publisher totals/accuracy claims are excluded."
+  },
+  "F090": {
+    "status": "partial (investigation preferences deferred)",
+    "required_change": "Local-first result navigation, explicit browser opening, source/cost/premium selection, current captured usage states, private history and request review.",
+    "remaining": "Map/timeline display preferences, title masking and save reminders are Phase 5 investigation-view work; complete provider eligibility/balance gates remain Phase 4."
+  },
+  "F091": {
+    "status": "partial (investigation aggregation deferred)",
+    "required_change": "Separate native/provider account cards, current source fields/dates, account-versus-unavailable-breach states, metadata filters and raw evidence. Unknown metadata is explicit.",
+    "remaining": "Cross-source earliest/latest aggregation, geographic routes and timeline presentation remain Phase 5. A card, source claim or text match never creates an identity/geographic conclusion."
+  },
+  "F092": {
+    "status": "implemented (filter scope)",
+    "required_change": "Whole-run source/category/outcome, exact-module, scalar field/GLOB, verified/private true/false/unknown, reported-age and source-calendar date filters; correlated profiles, raw evidence and exact-name options.",
+    "remaining": "Only supplied metadata can match. Unknown is distinct from false, card constraints do not mix profiles, and shredded data cannot satisfy filters. No provider metadata completeness is claimed."
+  },
+  "F094": {
+    "status": "implemented (native input and offline usage-contract scope)",
+    "required_change": "Single/per-row encrypted image pickers, international phone normalization, premium/call/credit previews and explicit captured OI credit lookup; native credential presence and unknown eligibility states are distinct.",
+    "remaining": "Picking does not upload. OI balance is an observation, not a spending reservation. Live provider/region eligibility and remaining provider usage gates remain Phase 4; no paid call was made.",
+    "delivery_components": {
+      "image_picker_and_validation": "native",
+      "oi_credit_lookup": "provider-backed (offline contract tested; live unverified)",
+      "regional_account_eligibility": "blocked / explicit unverified state"
+    }
+  },
+  "F082": {
+    "status": "implemented (desktop batch scope)",
+    "required_change": "Local bulk preview/review and encrypted case organization. Hosted login, pricing, subscriptions and commercial terms gates are excluded.",
+    "remaining": "No Phase 2 desktop batch gate remains; no hosted account flow is copied."
+  }
+}

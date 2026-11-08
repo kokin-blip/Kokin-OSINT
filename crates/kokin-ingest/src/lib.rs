@@ -36,6 +36,8 @@ pub const TRANSFORM_VERSION: &str = "1";
 
 #[derive(Debug, thiserror::Error)]
 pub enum IngestError {
+    #[error("import cancelled before recording evidence")]
+    Cancelled,
     #[error("store error: {0}")]
     Store(#[from] kokin_store::StoreError),
 
@@ -143,6 +145,93 @@ pub fn ingest_url(
     })
 }
 
+/// Record a broker-returned structured response before interpreting it. Service
+/// error responses are preserved too; the caller must label its outcome honestly.
+pub fn ingest_response(
+    conn: &mut Connection,
+    blobs: &BlobStore,
+    cmk: &CaseMasterKey,
+    request: &HttpRequest,
+    response: &kokin_net::HttpResponse,
+    ctx: &IngestContext<'_>,
+    completeness: &'static str,
+) -> Result<Ingested> {
+    ingest_response_metadata(conn, blobs, cmk, request, response, ctx, completeness, None)
+}
+
+/// Preserve exact transmitted-body hash without retaining an uploaded image in
+/// immutable request JSON. The referenced encrypted image remains independently shreddable.
+pub fn ingest_image_response(
+    conn: &mut Connection,
+    blobs: &BlobStore,
+    cmk: &CaseMasterKey,
+    request: &HttpRequest,
+    response: &kokin_net::HttpResponse,
+    ctx: &IngestContext<'_>,
+    image_artifact_id: &str,
+) -> Result<Ingested> {
+    let mut metadata = serde_json::to_value(request).unwrap_or_default();
+    metadata["body"] = serde_json::Value::Null;
+    metadata["body_capture"] = serde_json::json!({"format":"uploaded-image-body-digest-v1","body_blake3":kokin_store::blake3_hex(request.body.as_deref().unwrap_or("").as_bytes()),"body_bytes":request.body.as_ref().map_or(0,String::len),"image_artifact_id":image_artifact_id,"omission":"Uploaded image omitted from immutable request JSON to preserve source crypto-shredding. This digest describes the exact transmitted body; the body is not reproduced here."});
+    ingest_response_metadata(
+        conn,
+        blobs,
+        cmk,
+        request,
+        response,
+        ctx,
+        "structured_response_only",
+        Some(metadata.to_string()),
+    )
+}
+#[allow(clippy::too_many_arguments)]
+fn ingest_response_metadata(
+    conn: &mut Connection,
+    blobs: &BlobStore,
+    cmk: &CaseMasterKey,
+    request: &HttpRequest,
+    response: &kokin_net::HttpResponse,
+    ctx: &IngestContext<'_>,
+    completeness: &'static str,
+    metadata: Option<String>,
+) -> Result<Ingested> {
+    if !matches!(
+        completeness,
+        "structured_response_only" | "archived_static_html_only" | "unverified_archive_response"
+    ) {
+        return Err(IngestError::FileUnreadable {
+            path: request.url.clone(),
+            reason: "invalid response completeness".into(),
+        });
+    }
+    let normalised = url_norm::normalise(&request.url)?;
+    let params = params_hash(&normalised.canonical_locator);
+    with_run(conn, "collect.public_source", &params, |conn, run_id| {
+        let bytes = response
+            .body_bytes
+            .as_deref()
+            .unwrap_or(response.body.as_bytes());
+        let stored = store_stream(conn, blobs, cmk, || Ok(bytes))?;
+        let retrieved = Retrieved {
+            source_kind: "url",
+            raw_locator: request.url.clone(),
+            canonical_locator: normalised.canonical_locator.clone(),
+            http_status: Some(response.status.into()),
+            request_json: metadata
+                .clone()
+                .unwrap_or_else(|| serde_json::to_string(request).unwrap_or_else(|_| "{}".into())),
+            response_headers_json: serde_json::to_string(&response.headers)
+                .unwrap_or_else(|_| "{}".into()),
+            redirect_chain_json: serde_json::to_string(&response.redirect_chain)
+                .unwrap_or_else(|_| "[]".into()),
+            completeness,
+            from_fixture: response.from_fixture,
+            media_type: media_type_of(&response.headers),
+        };
+        record(conn, &retrieved, &stored, ctx, run_id)
+    })
+}
+
 /// Import a local file and record it as provenance.
 ///
 /// Takes no [`HttpCapability`], so a file import structurally cannot reach the
@@ -153,6 +242,26 @@ pub fn ingest_file(
     cmk: &CaseMasterKey,
     path: &Path,
     ctx: &IngestContext<'_>,
+) -> Result<Ingested> {
+    ingest_file_controlled(
+        conn,
+        blobs,
+        cmk,
+        path,
+        ctx,
+        &std::sync::atomic::AtomicBool::new(false),
+        || true,
+    )
+}
+/// Cooperative file import with an atomic caller-owned commit boundary.
+pub fn ingest_file_controlled(
+    conn: &mut Connection,
+    blobs: &BlobStore,
+    cmk: &CaseMasterKey,
+    path: &Path,
+    ctx: &IngestContext<'_>,
+    cancel: &std::sync::atomic::AtomicBool,
+    before_commit: impl Fn() -> bool,
 ) -> Result<Ingested> {
     // Verbatim, as given. The canonical form below is what identity rests on;
     // this is what was actually asked for, and editing it would falsify the
@@ -166,11 +275,26 @@ pub fn ingest_file(
         // enforced *as* the file is read (A-011). A file larger than the cap
         // must not become an allocation that size before anything checks it.
         let stored = store_stream(conn, blobs, cmk, || {
-            std::fs::File::open(path).map_err(|e| IngestError::FileUnreadable {
-                path: raw_locator.clone(),
-                reason: e.to_string(),
-            })
+            std::fs::File::open(path)
+                .map(|inner| CancelReader { inner, cancel })
+                .map_err(|e| IngestError::FileUnreadable {
+                    path: raw_locator.clone(),
+                    reason: e.to_string(),
+                })
+        })
+        .map_err(|e| {
+            if cancel.load(std::sync::atomic::Ordering::SeqCst) {
+                IngestError::Cancelled
+            } else {
+                e
+            }
         })?;
+        if cancel.load(std::sync::atomic::Ordering::SeqCst) || !before_commit() {
+            if stored.wrapped.is_some() {
+                blobs.remove(&stored.content_hash, cmk)?;
+            }
+            return Err(IngestError::Cancelled);
+        }
 
         let retrieved = Retrieved {
             source_kind: "file",
@@ -190,6 +314,19 @@ pub fn ingest_file(
 
         record(conn, &retrieved, &stored, ctx, run_id)
     })
+}
+
+struct CancelReader<'a, R> {
+    inner: R,
+    cancel: &'a std::sync::atomic::AtomicBool,
+}
+impl<R: std::io::Read> std::io::Read for CancelReader<'_, R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        if self.cancel.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(std::io::Error::other("import cancelled"));
+        }
+        self.inner.read(buf)
+    }
 }
 
 /// Open a `transform_run`, do the work, and close the run either way.
@@ -513,6 +650,7 @@ fn complete_run(
 /// queried and counted. A message is for a human; a code is for a query.
 fn classify(e: &IngestError) -> (&'static str, String) {
     let code = match e {
+        IngestError::Cancelled => "operation.cancelled",
         IngestError::Http(kokin_net::http::HttpError::FixtureMissing { .. }) => "net.no_fixture",
         IngestError::Http(_) => "net.failed",
         IngestError::Url(_) => "url.invalid",
@@ -593,10 +731,16 @@ fn media_type_of_path(path: &Path) -> String {
         "json" => "application/json",
         "csv" => "text/csv",
         "pdf" => "application/pdf",
+        "tif" | "tiff" => "image/tiff",
         "png" => "image/png",
         "jpg" | "jpeg" => "image/jpeg",
         "gif" => "image/gif",
         "webp" => "image/webp",
+        "mp4" | "m4v" => "video/mp4",
+        "mov" => "video/quicktime",
+        "webm" => "video/webm",
+        "mkv" => "video/x-matroska",
+        "avi" => "video/x-msvideo",
         _ => "application/octet-stream",
     }
     .to_string()
@@ -626,6 +770,45 @@ fn new_id() -> Result<String> {
 
 fn now_utc() -> String {
     kokin_store::now_utc_rfc3339()
+}
+
+/// Explicit clipboard image bytes. No filesystem or network capability is used;
+/// provenance records the clipboard capture, never an inferred original URL.
+pub fn ingest_clipboard_image(
+    conn: &mut Connection,
+    blobs: &BlobStore,
+    cmk: &CaseMasterKey,
+    bytes: &[u8],
+    media: &str,
+    ctx: &IngestContext<'_>,
+) -> Result<Ingested> {
+    if bytes.is_empty()
+        || bytes.len() > 10 * 1024 * 1024
+        || !matches!(media, "image/png" | "image/jpeg" | "image/webp")
+    {
+        return Err(IngestError::FileUnreadable {
+            path: "clipboard".into(),
+            reason: "clipboard image exceeds reviewed bounds".into(),
+        });
+    }
+    let locator = format!("clipboard:image:{}", new_id()?);
+    let params = params_hash(&locator);
+    with_run(conn, "ingest.clipboard_image", &params, |conn, run_id| {
+        let stored = store_stream(conn, blobs, cmk, || Ok(bytes))?;
+        let retrieved = Retrieved {
+            source_kind: "clipboard",
+            raw_locator: locator.clone(),
+            canonical_locator: locator.clone(),
+            http_status: None,
+            request_json: "{}".into(),
+            response_headers_json: "{}".into(),
+            redirect_chain_json: "[]".into(),
+            completeness: "clipboard_image_bytes_only",
+            from_fixture: false,
+            media_type: media.into(),
+        };
+        record(conn, &retrieved, &stored, ctx, run_id)
+    })
 }
 
 #[cfg(test)]
@@ -750,6 +933,72 @@ mod tests {
             drop(self.conn);
             let _ = std::fs::remove_dir_all(&dir);
         }
+    }
+
+    #[test]
+    fn controlled_import_cancels_before_work_and_at_commit_without_evidence() {
+        let mut h = Harness::new("cancel-import");
+        let file = h.write_file("source.html", BODY);
+        let ctx = IngestContext {
+            connector: "file_import",
+            job_id: "cancel-test",
+        };
+        let cancel = std::sync::atomic::AtomicBool::new(true);
+        assert!(matches!(
+            ingest_file_controlled(&mut h.conn, &h.blobs, &h.cmk, &file, &ctx, &cancel, || true),
+            Err(IngestError::Cancelled)
+        ));
+        cancel.store(false, Ordering::SeqCst);
+        assert!(matches!(
+            ingest_file_controlled(&mut h.conn, &h.blobs, &h.cmk, &file, &ctx, &cancel, || {
+                false
+            }),
+            Err(IngestError::Cancelled)
+        ));
+        assert_eq!(h.count("SELECT count(*) FROM artifact"), 0);
+        assert_eq!(h.count("SELECT count(*) FROM blob"), 0);
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), BODY);
+        assert_eq!(
+            h.count("SELECT count(*) FROM transform_run WHERE error_code='operation.cancelled'"),
+            2
+        );
+        let imported = h.import(&file).unwrap();
+        assert!(!imported.deduplicated);
+        h.cleanup();
+    }
+    #[test]
+    fn cancellation_between_chunks_removes_partial_encrypted_staging() {
+        struct Signals<'a> {
+            inner: std::io::Cursor<Vec<u8>>,
+            cancel: &'a std::sync::atomic::AtomicBool,
+        }
+        impl std::io::Read for Signals<'_> {
+            fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+                let n = self.inner.read(buf)?;
+                if self.inner.position() >= kokin_blob::CHUNK_SIZE as u64 {
+                    self.cancel.store(true, Ordering::SeqCst);
+                }
+                Ok(n)
+            }
+        }
+        let h = Harness::new("cancel-chunks");
+        let cancel = std::sync::atomic::AtomicBool::new(false);
+        let reader = CancelReader {
+            inner: Signals {
+                inner: std::io::Cursor::new(vec![4; 2 * kokin_blob::CHUNK_SIZE]),
+                cancel: &cancel,
+            },
+            cancel: &cancel,
+        };
+        assert!(h.blobs.put(reader, &h.cmk).is_err());
+        assert!(cancel.load(Ordering::SeqCst));
+        assert_eq!(
+            std::fs::read_dir(h.dir.join("case.kokincase/blobs"))
+                .unwrap()
+                .count(),
+            0
+        );
+        h.cleanup();
     }
 
     /// The whole point of the increment: one fetch leaves a complete, connected

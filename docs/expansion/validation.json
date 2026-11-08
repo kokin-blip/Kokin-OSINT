@@ -1,0 +1,134 @@
+{
+  "date": "2026-10-20",
+  "baseline": {
+    "schema": 13,
+    "rust_workspace_tests": "passed before research infrastructure edits; recorded in session tool transcript",
+    "frontend_tests": 70,
+    "frontend_files": 16,
+    "types": "0 errors, 0 warnings",
+    "original_head": "bfaaf781fd1137df36b2c1b3757e417f811631ab",
+    "files": "baseline.json, baseline-status.bin and baseline-tracked.patch"
+  },
+  "checks": [
+    {
+      "name": "workspace",
+      "command": "cargo test --workspace --all-targets",
+      "exit_code": 0,
+      "log": "validation-logs/workspace.log",
+      "sha256": "ecd393ea99a4f1dca2cb13e823f094b60e8e00ea35b7e11d4f8b53ca8f2b4f8d"
+    },
+    {
+      "name": "connector-contracts",
+      "command": "cargo test -p kokin-connectors --lib",
+      "exit_code": 0,
+      "log": "validation-logs/connector-contracts.log",
+      "sha256": "bc80fd1130f8917fe0fb6f8c18761ee655cf4b5743101b522965630f27d9ab24"
+    },
+    {
+      "name": "clippy",
+      "command": "cargo clippy --workspace --all-targets -- -D warnings",
+      "exit_code": 0,
+      "log": "validation-logs/clippy.log",
+      "sha256": "d131c346c9f1c1977772a218f1b1bc125d0b245040af8b899e03dd670de63f6d"
+    },
+    {
+      "name": "connector-clippy",
+      "command": "cargo clippy -p kokin-connectors --all-targets -- -D warnings",
+      "exit_code": 0,
+      "log": "validation-logs/connector-clippy.log",
+      "sha256": "78f3b3622fe657045dc124dbd14b50526fcf263cdd692a0a267d660ab6afb554"
+    },
+    {
+      "name": "frontend",
+      "command": "npm --prefix ui test",
+      "exit_code": 0,
+      "log": "validation-logs/frontend.log",
+      "sha256": "cbe4efa88e37ad643c7366707e411b3ade7824a388e4c2d066663850c04d0bd4"
+    },
+    {
+      "name": "types",
+      "command": "npm --prefix ui run check",
+      "exit_code": 0,
+      "log": "validation-logs/types.log",
+      "sha256": "3fc74609855d685bc4597f059da11d27432dfd0b6c10b7f06ecd885b06a7091d"
+    },
+    {
+      "name": "network-contracts",
+      "command": "cargo test -p kokin-net --lib",
+      "exit_code": 0,
+      "log": "validation-logs/network-contracts.log",
+      "sha256": "7687e7d014ea4ebf7a7e60ff35c220b9942466db9f2bc569189614df69f31886"
+    },
+    {
+      "name": "loopback-inference",
+      "command": "KOKIN_NETWORK=allow cargo test -p kokin-net --test local_inference -- --ignored",
+      "exit_code": 0,
+      "log": "validation-logs/loopback-inference.log",
+      "sha256": "f87b7b3c486ff53aae6e72fbac7417fa217b66957e4289d5079501e912dd6f40"
+    },
+    {
+      "name": "loopback-discovery",
+      "command": "cargo test -p kokin-net --test discovery -- --ignored",
+      "exit_code": 0,
+      "log": "validation-logs/loopback-discovery.log",
+      "sha256": "a7712468afe0d5ab0df426f80f3336179a6b530233247cc44da3d2dba2dc57d6"
+    },
+    {
+      "name": "format",
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0,
+      "log": "validation-logs/format.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "diff",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "log": "validation-logs/diff.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "10k",
+      "command": "cargo test -p kokin-store ten_thousand_case_results -- --nocapture",
+      "exit_code": 0,
+      "log": "validation-logs/10k.log",
+      "sha256": "04ef1c0657b37461c7410e1cb4fac2c85f2ce8cca2788592e11280282ff459b7"
+    },
+    {
+      "name": "desktop-mac",
+      "command": "npx wdio run ./wdio.research.conf.mjs (VITE_DESKTOP_TEST=1 debug Tauri build)",
+      "exit_code": 0,
+      "log": "validation-logs/desktop-mac.log",
+      "scope": "Owned synthetic case and broker fixtures on Apple Silicon macOS; no provider requests"
+    },
+    {
+      "name": "production-ui",
+      "command": "npm --prefix ui run build",
+      "exit_code": 0,
+      "log": "validation-logs/production-ui.log",
+      "sha256": "41109c5e1d2844bd8bc2a2c59c4c20f7f84338244593a07ca19804e88fcce8da"
+    },
+    {
+      "name": "app-clippy",
+      "command": "cargo clippy -p kokin-osint --lib -- -D warnings",
+      "exit_code": 0,
+      "log": "validation-logs/app-clippy.log",
+      "sha256": "af774210b4e9dc041fb4ec6f1b78c22260ffcb1ed7084ada9fcbb2f5bfe32c9b"
+    }
+  ],
+  "manual_boundary_checks": {
+    "network_outside_kokin_net": 0,
+    "fixture_secret_patterns": 0,
+    "production_dependency_driver_matches": 0,
+    "production_asset_driver_matches": 0,
+    "catalog_git_blob_verified": true
+  },
+  "not_run": [
+    "live paid provider smoke tests",
+    "Windows execution",
+    "manual VoiceOver and complete keyboard/light-theme/narrow-window acceptance",
+    "full packaged production release",
+    "cargo-deny license/advisory command (not installed)"
+  ],
+  "feature_completion": "Partial research slice; not all 142 inventory features implemented."
+}

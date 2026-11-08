@@ -148,6 +148,40 @@ pub fn normalise(input: &str) -> Result<NormalisedUrl, UrlError> {
 // form_urlencoded ships with the url crate.
 use url::form_urlencoded;
 
+/// Browser handoffs are navigation only; never let catalog data launch executable schemes.
+pub fn browser_handoff(input: &str) -> Result<String, UrlError> {
+    let parsed = Url::parse(input).map_err(|e| UrlError::Invalid(e.to_string()))?;
+    if input.len() > 8192
+        || input.chars().any(char::is_control)
+        || !matches!(parsed.scheme(), "http" | "https")
+        || parsed.host_str().is_none()
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+    {
+        return Err(UrlError::Invalid(
+            "only HTTP(S) browser destinations without credentials are supported".into(),
+        ));
+    }
+    Ok(parsed.into())
+}
+
+#[cfg(test)]
+mod handoff_tests {
+    use super::*;
+    #[test]
+    fn catalog_cannot_invoke_a_shell_file_or_credential_url() {
+        for s in [
+            "file:///tmp/test",
+            "javascript:alert(1)",
+            "https://user:secret@example.org",
+            "ftp://example.org",
+        ] {
+            assert!(browser_handoff(s).is_err());
+        }
+        assert!(browser_handoff("https://example.org/path?q=a%20b").is_ok());
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {

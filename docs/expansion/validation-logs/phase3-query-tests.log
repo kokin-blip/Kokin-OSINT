@@ -1,0 +1,81 @@
+   Compiling objc2-exception-helper v0.1.1
+   Compiling openssl-sys v0.9.117
+   Compiling ring v0.17.14
+   Compiling sqlite-vec v0.1.9
+   Compiling onig_sys v69.9.3
+   Compiling kokin-osint v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/src-tauri)
+   Compiling objc2 v0.6.4
+   Compiling rustls v0.23.45
+   Compiling objc2-core-foundation v0.3.2
+   Compiling block2 v0.6.2
+   Compiling rustls-webpki v0.103.15
+   Compiling dispatch2 v0.3.1
+   Compiling onig v6.5.3
+   Compiling objc2-foundation v0.3.2
+   Compiling tokenizers v0.21.4 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/tokenizers)
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> vendor/tokenizers/src/models/unigram/model.rs:359:17
+    |
+359 |     pub fn iter(&self) -> UnigramIterator {
+    |                 ^^^^^     ^^^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                 |
+    |                 the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+    = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+    |
+359 |     pub fn iter(&self) -> UnigramIterator<'_> {
+    |                                          ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/tokenizers/src/models/unigram/trie.rs:33:36
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<Label, T>
+   |                                    ^^^^^                  ^^^^^^^^^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                    |
+   |                                    the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<'_, Label, T>
+   |                                                                        +++
+
+   Compiling tokio-rustls v0.26.6
+   Compiling hyper-rustls v0.27.10
+warning: `tokenizers` (lib) generated 2 warnings (run `cargo fix --lib -p tokenizers` to apply 2 suggestions)
+   Compiling objc2-app-kit v0.3.2
+   Compiling reqwest v0.12.28
+   Compiling kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+   Compiling kokin-connectors v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-connectors)
+   Compiling objc2-web-kit v0.3.2
+   Compiling tao v0.35.3
+   Compiling muda v0.19.3
+   Compiling window-vibrancy v0.6.0
+   Compiling rfd v0.15.4
+   Compiling tauri-runtime v2.11.3
+   Compiling wry v0.55.1
+   Compiling tauri-runtime-wry v2.11.4
+   Compiling tauri v2.11.5
+   Compiling libsqlite3-sys v0.38.2
+   Compiling kokin-vector-adapter v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-vector-adapter)
+   Compiling rusqlite v0.40.2
+   Compiling kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store)
+   Compiling kokin-search v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-search)
+   Compiling kokin-extract v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-extract)
+   Compiling kokin-ingest v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-ingest)
+   Compiling kokin-graph v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-graph)
+   Compiling kokin-export v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-export)
+   Compiling kokin-ai v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-ai)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 36.56s
+     Running tests/image_query.rs (target/debug/deps/image_query-2634206d06344f29)
+
+running 3 tests
+test clipboard_input_records_origin_and_rejects_encoding_or_type_confusion ... ok
+IMAGE_QUERY_BENCHMARK {"architecture":"aarch64","eligible_artifacts":10002,"fixture":"10001 captured artifact references to one synthetic PNG; exact hash mode; no decoder/model benchmark","measurements":[{"budget":500,"milliseconds":17,"scanned":500},{"budget":5000,"milliseconds":140,"scanned":5000},{"budget":20000,"milliseconds":282,"scanned":10001}],"platform":"macos","storage":"encrypted disk case","synthetic":true,"total_milliseconds":1027}
+test encrypted_ten_thousand_image_candidates_are_bounded_filtered_and_paged ... ok
+test prepared_queries_duplicates_package_and_descendant_shredding ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.41s
+

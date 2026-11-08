@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "reviewed_utc": "2026-10-13",
+  "system_reserve_bytes": 6442450944,
+  "balanced_p95_ms": 30000,
+  "candidates": [
+    {
+      "benchmark": null,
+      "bytes": 2497280256,
+      "file": "Qwen3-4B-Q4_K_M.gguf",
+      "id": "qwen3-4b-q4km",
+      "license": "apache-2.0",
+      "repository": "Qwen/Qwen3-4B-GGUF",
+      "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+      "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+      "tasks": [
+        "cited_summary",
+        "entity_candidate",
+        "relationship_candidate"
+      ],
+      "download_url": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/bc640142c66e1fdd12af0bd68f40445458f3869b/Qwen3-4B-Q4_K_M.gguf",
+      "benchmark_status": "not_measured"
+    },
+    {
+      "benchmark": null,
+      "bytes": 5027783488,
+      "file": "Qwen3-8B-Q4_K_M.gguf",
+      "id": "qwen3-8b-q4km",
+      "license": "apache-2.0",
+      "repository": "Qwen/Qwen3-8B-GGUF",
+      "revision": "7c41481f57cb95916b40956ab2f0b139b296d974",
+      "sha256": "d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+      "tasks": [
+        "cited_summary",
+        "entity_candidate",
+        "relationship_candidate"
+      ],
+      "download_url": "https://huggingface.co/Qwen/Qwen3-8B-GGUF/resolve/7c41481f57cb95916b40956ab2f0b139b296d974/Qwen3-8B-Q4_K_M.gguf",
+      "benchmark_status": "not_measured"
+    },
+    {
+      "benchmark": null,
+      "bytes": 9001752960,
+      "file": "Qwen3-14B-Q4_K_M.gguf",
+      "id": "qwen3-14b-q4km",
+      "license": "apache-2.0",
+      "repository": "Qwen/Qwen3-14B-GGUF",
+      "revision": "530227a7d994db8eca5ab5ced2fb692b614357fd",
+      "sha256": "500a8806e85ee9c83f3ae08420295592451379b4f8cf2d0f41c15dffeb6b81f0",
+      "tasks": [
+        "cited_summary",
+        "entity_candidate",
+        "relationship_candidate"
+      ],
+      "download_url": "https://huggingface.co/Qwen/Qwen3-14B-GGUF/resolve/530227a7d994db8eca5ab5ced2fb692b614357fd/Qwen3-14B-Q4_K_M.gguf",
+      "benchmark_status": "not_measured"
+    }
+  ]
+}

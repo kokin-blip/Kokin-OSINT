@@ -1,0 +1,12 @@
+[package]
+name="kokin-vector-adapter"
+version.workspace=true
+edition.workspace=true
+rust-version.workspace=true
+license.workspace=true
+publish=false
+[dependencies]
+libsqlite3-sys={version="0.38.2",features=["bundled-sqlcipher-vendored-openssl"]}
+sqlite-vec="=0.1.9"
+[lints.rust]
+unsafe_code="deny"

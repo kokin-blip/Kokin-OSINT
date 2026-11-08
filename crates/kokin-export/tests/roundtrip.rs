@@ -694,3 +694,49 @@ fn wrong_restore_credentials_leave_no_destination_or_staging() {
     assert!(!dest.exists());
     assert_eq!(std::fs::read_dir(&f.dir).unwrap().count(), before);
 }
+
+#[test]
+fn workspace_revisions_survive_the_same_package_roundtrip() {
+    let f = fixture("workspace-revisions");
+    let request = kokin_store::workspace::SaveWorkspace {
+        id: "board-one".into(),
+        kind: "board".into(),
+        name: "Connections".into(),
+        expected_revision: 0,
+        payload: serde_json::json!({"version":1,"roots":[f.entity]}),
+        archived: false,
+    };
+    kokin_store::workspace::save(&f.open.conn, &request).unwrap();
+    let report = kokin_store::workspace::SaveWorkspace {
+        id: "report-one".into(),
+        kind: "report".into(),
+        name: "Cited report".into(),
+        expected_revision: 0,
+        payload: serde_json::json!({"version":1,"findings":[]}),
+        archived: false,
+    };
+    kokin_store::workspace::save(&f.open.conn, &report).unwrap();
+    let path = f.dir.join("workspaces.kokinpkg");
+    package(
+        &f.open,
+        &path,
+        EXPORT_PASSPHRASE,
+        &PackageOptions::default(),
+    )
+    .unwrap();
+    let destination = f.dir.join("restored.kokincase");
+    import(&path, &destination, EXPORT_PASSPHRASE).unwrap();
+    let restored = kokin_store::open_case(&destination, EXPORT_PASSPHRASE).unwrap();
+    let board = kokin_store::workspace::get(&restored.conn, "board-one")
+        .unwrap()
+        .unwrap();
+    assert_eq!(board.name, "Connections");
+    assert_eq!(board.payload, request.payload);
+    assert_eq!(
+        kokin_store::workspace::get(&restored.conn, "report-one")
+            .unwrap()
+            .unwrap()
+            .revision,
+        1
+    );
+}

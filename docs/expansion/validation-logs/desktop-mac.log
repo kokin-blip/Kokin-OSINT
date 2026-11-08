@@ -1,0 +1,19 @@
+ "spec" Reporter:
+------------------------------------------------------------------
+[webkit 605.1.15 macos #0-0] Running: webkit (v605.1.15) on macos
+[webkit 605.1.15 macos #0-0] Session ID: b26f26f5-cdfa-4022-b08c-b13d1732179f
+[webkit 605.1.15 macos #0-0]
+[webkit 605.1.15 macos #0-0] » tests/desktop/research.spec.mjs
+[webkit 605.1.15 macos #0-0] Research desktop vertical slice, synthetic broker fixtures
+[webkit 605.1.15 macos #0-0]    ✓ preserves evidence through a blocked source, cache reuse, collection and plaintext export
+[webkit 605.1.15 macos #0-0]
+[webkit 605.1.15 macos #0-0] 1 passing (4.3s)
+
+
+Spec Files:	 1 passed, 1 total (100% completed) in 00:00:05  
+
+2026-10-20T09:07:39.671Z INFO @wdio/local-runner: Shutting down spawned worker
+2026-10-20T09:07:39.922Z INFO @wdio/local-runner: Waiting for 0 to shut down gracefully
+2026-10-20T09:07:39.922Z INFO @wdio/local-runner: shutting down
+2026-10-20T09:07:39.922Z INFO @wdio/cli:launcher: Run onComplete hook
+2026-10-20T09:07:39.923Z INFO tauri-service:launcher: Stopping 1 embedded driver process(es)...

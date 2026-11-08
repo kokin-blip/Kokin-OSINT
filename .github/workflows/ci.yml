@@ -192,6 +192,9 @@ jobs:
       # has been written three times in three crates (A-023, D-021, D-022),
       # each time found by a test that failed intermittently rather than by
       # review, which is why it is a build failure now.
+      - name: Reviewed dependency source patches remain guarded
+        run: python3 scripts/lint_dependency_patches.py
+
       - name: SQL orderings are stable
         run: python3 scripts/lint_sql_ordering.py
 

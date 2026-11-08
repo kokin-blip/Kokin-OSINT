@@ -29,3 +29,6 @@ blake3 = "1.5"
 kokin-ingest = { path = "../kokin-ingest" }
 kokin-extract = { path = "../kokin-extract" }
 kokin-graph = { path = "../kokin-graph" }
+
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+rustix = { version = "=1.1.5", features = ["fs"] }

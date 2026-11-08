@@ -717,6 +717,67 @@ fn quote(
     locator: &LocatorView,
     value: &str,
 ) -> QuoteView {
+    if locator.scheme == "json_pointer" {
+        let result = (|| -> Result<Option<String>, CommandError> {
+            let raw: serde_json::Value = serde_json::from_str(&locator.raw_json).map_err(|_| {
+                CommandError::new(
+                    crate::error::ErrorCode::InvalidValue,
+                    "invalid JSON location",
+                )
+            })?;
+            let Some(pointer) = raw["pointer"].as_str() else {
+                return Ok(None);
+            };
+            let kokin_store::BlobAccess::Readable(reference) =
+                kokin_store::blob_access(&open.conn, &artifact.content_hash)?
+            else {
+                return Err(CommandError::new(
+                    crate::error::ErrorCode::FileUnreadable,
+                    "source unavailable",
+                ));
+            };
+            if reference.size > 8 * 1024 * 1024 {
+                return Ok(None);
+            }
+            let bytes =
+                kokin_blob::BlobStore::new(open.paths.blobs()).get(&reference, &open.cmk)?;
+            kokin_extract::json::citation(&bytes, pointer, value).map_err(|_| {
+                CommandError::new(
+                    crate::error::ErrorCode::FileUnreadable,
+                    "JSON source invalid",
+                )
+            })
+        })();
+        return match result {
+            Ok(Some(quoted)) => QuoteView::StructuredExact {excerpt:crate::views::ExcerptView{before:String::new(),quoted,after:String::new(),lossy:false},basis:"RFC 6901 pointer resolves the same decoded scalar in authenticated original JSON bytes; not a literal byte-range quotation.".into()},
+            Ok(None) => QuoteView::UnknownScheme {scheme:"json_pointer_unresolved_or_different".into()},
+            Err(_) => QuoteView::Unavailable {document_state:"json_source_unavailable_or_damaged".into()},
+        };
+    }
+    if matches!(
+        locator.scheme.as_str(),
+        "pdf_char_range" | "ocr_region" | "exif_field" | "image_dimensions" | "query_recipe"
+    ) {
+        if let Ok(raw) = serde_json::from_str(&locator.raw_json) {
+            return match crate::media::citation(open, &artifact.artifact_id, &raw, value) {
+                Ok(Some((quoted, basis))) => QuoteView::DerivedExact {
+                    excerpt: crate::views::ExcerptView {
+                        before: String::new(),
+                        quoted,
+                        after: String::new(),
+                        lossy: false,
+                    },
+                    basis,
+                },
+                Ok(None) => QuoteView::UnknownScheme {
+                    scheme: locator.scheme.clone(),
+                },
+                Err(_) => QuoteView::Unavailable {
+                    document_state: "source_or_transform_unavailable_or_damaged".into(),
+                },
+            };
+        }
+    }
     if locator.scheme != "html_byte_range" {
         return QuoteView::UnknownScheme {
             scheme: locator.scheme.clone(),
@@ -1300,6 +1361,76 @@ pub fn activity(open: &OpenCase, request: &PageRequest) -> Result<ActivityView, 
 }
 
 pub fn subject(open: &OpenCase, subject_kind: &str, id: &str) -> Result<SubjectView, CommandError> {
+    if matches!(
+        subject_kind,
+        "ai_suggestion" | "location" | "map_illustration"
+    ) {
+        let (title, fields, observations): (String, Vec<(String, String)>, Vec<String>) =
+            match subject_kind {
+                "ai_suggestion" => {
+                    let r = kokin_ai::persistence::get(&open.conn, id)
+                        .map_err(|e| CommandError::new(ErrorCode::NotFound, e.to_string()))?;
+                    (
+                        r.text,
+                        vec![
+                            ("kind".into(), r.kind),
+                            (
+                                "status".into(),
+                                "AI suggestion; human review history remains in Local AI".into(),
+                            ),
+                        ],
+                        r.cited_observation_ids,
+                    )
+                }
+                "location" => {
+                    let (label,lon,lat,uncertainty,rationale,oid,entity):(String,f64,f64,String,String,String,Option<String>)=open.conn.query_row("SELECT label,longitude,latitude,uncertainty,rationale,observation_id,entity_id FROM grounded_location WHERE id=?1",[id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?))).map_err(missing_subject)?;
+                    let mut fields = vec![
+                        ("coordinates".into(), format!("{lat}, {lon}")),
+                        ("uncertainty".into(), uncertainty),
+                        ("rationale".into(), rationale),
+                    ];
+                    if let Some(entity) = entity {
+                        fields.push(("entity".into(), entity));
+                    }
+                    (label, fields, vec![oid])
+                }
+                _ => {
+                    let (attribution,ids):(String,String)=open.conn.query_row("SELECT attribution,location_ids_json FROM map_illustration WHERE id=?1",[id],|r|Ok((r.get(0)?,r.get(1)?))).map_err(missing_subject)?;
+                    let mut observations = Vec::new();
+                    for lid in serde_json::from_str::<Vec<String>>(&ids).map_err(|_| {
+                        CommandError::new(ErrorCode::Storage, "illustration references")
+                    })? {
+                        observations.push(open.conn.query_row(
+                            "SELECT observation_id FROM grounded_location WHERE id=?1",
+                            [lid],
+                            |r| r.get(0),
+                        )?);
+                    }
+                    (
+                        "Analyst-rendered map context".into(),
+                        vec![("attribution".into(), attribution)],
+                        observations,
+                    )
+                }
+            };
+        return Ok(SubjectView {
+            subject_kind: subject_kind.into(),
+            subject_id: id.into(),
+            title,
+            fields,
+            confidence: Vec::new(),
+            evidence: observations
+                .into_iter()
+                .map(|oid| EvidenceView {
+                    link_id: String::new(),
+                    entity_id: id.into(),
+                    evidence_kind: "observation".into(),
+                    evidence_id: oid,
+                    role: "context".into(),
+                })
+                .collect(),
+        });
+    }
     let (kind, title, fields) = match subject_kind {
         "identifier" => {
             let (entity_id, namespace, value): (String, String, String) = open

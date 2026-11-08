@@ -1,0 +1,13 @@
+
+> kokin-osint-ui@0.0.1 test
+> vitest run
+
+
+ RUN  v4.1.11 /Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/ui
+
+
+ Test Files  17 passed (17)
+      Tests  81 passed (81)
+   Start at  03:49:15
+   Duration  2.87s (transform 6.58s, setup 0ms, import 8.21s, tests 3.10s, environment 5.47s)
+

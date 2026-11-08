@@ -22,6 +22,7 @@ tauri-build = { version = "2", features = [] }
 desktop-test = ["dep:tauri-plugin-wdio", "dep:tauri-plugin-wdio-webdriver"]
 
 [dependencies]
+kokin-faces = {path="../crates/kokin-faces"}
 tauri-plugin-wdio = {version="1",optional=true}
 tauri-plugin-wdio-webdriver = {version="1",optional=true}
 kokin-store = { path = "../crates/kokin-store" }
@@ -30,6 +31,13 @@ kokin-blob = { path = "../crates/kokin-blob" }
 kokin-search = { path = "../crates/kokin-search" }
 kokin-graph = { path = "../crates/kokin-graph" }
 kokin-ingest = { path = "../crates/kokin-ingest" }
+kokin-connectors = { path = "../crates/kokin-connectors" }
+kokin-maps = {path="../crates/kokin-maps"}
+kokin-ai = {path="../crates/kokin-ai"}
+kokin-media = { path = "../crates/kokin-media" }
+image = {version="=0.25.6",default-features=false,features= ["png"] }
+base64 = "0.22"
+sha2 = "0.10"
 kokin-extract = { path = "../crates/kokin-extract" }
 kokin-net = { path = "../crates/kokin-net" }
 kokin-export = { path = "../crates/kokin-export" }
@@ -41,6 +49,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 [dev-dependencies]
+time= {version="=0.3.45",features= ["parsing"] }
 # Backend acceptance remains window-free; desktop acceptance exercises the
 # collection and package controls separately with debug-only fixtures.
 blake3 = "1.5"

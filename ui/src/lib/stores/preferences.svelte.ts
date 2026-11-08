@@ -1,12 +1,13 @@
 import {onMount} from 'svelte';
 export type Theme = 'dark' | 'light' | 'system';
-export interface Preferences {theme:Theme;reduceMotion:boolean;strongFocus:boolean;showArtwork:boolean;sidebarCollapsed:boolean;inspectorWidth:number;}
+export interface Preferences {introDismissed:boolean;theme:Theme;reduceMotion:boolean;strongFocus:boolean;showArtwork:boolean;sidebarCollapsed:boolean;inspectorWidth:number;}
 const KEY='kokin.display.v1';
-export const defaults:Preferences={theme:'dark',reduceMotion:false,strongFocus:false,showArtwork:true,sidebarCollapsed:false,inspectorWidth:330};
+export const defaults:Preferences={introDismissed:false,theme:'dark',reduceMotion:false,strongFocus:false,showArtwork:true,sidebarCollapsed:false,inspectorWidth:330};
 export function decodePreferences(raw:string|null):Preferences {
  let value:Record<string,unknown>={};
  try {const parsed:unknown=JSON.parse(raw??'{}');if(parsed && typeof parsed==='object' && !Array.isArray(parsed))value=parsed as Record<string,unknown>;} catch { /* Invalid display preferences fall back to safe defaults. */ }
  return {
+  introDismissed:typeof value.introDismissed==='boolean'?value.introDismissed:false,
   theme:['dark','light','system'].includes(String(value.theme))?value.theme as Theme:defaults.theme,
   reduceMotion:typeof value.reduceMotion==='boolean'?value.reduceMotion:defaults.reduceMotion,
   strongFocus:typeof value.strongFocus==='boolean'?value.strongFocus:defaults.strongFocus,

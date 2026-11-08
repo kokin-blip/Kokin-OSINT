@@ -99,6 +99,41 @@ pub fn ingest_file(
     })
 }
 
+/// Controlled native import; the caller owns cancellation and the commit boundary.
+pub fn ingest_file_controlled(
+    open: &mut OpenCase,
+    request: &IngestFileRequest,
+    job: &str,
+    cancel: &std::sync::atomic::AtomicBool,
+    before_commit: impl Fn() -> bool,
+) -> Result<IngestView, CommandError> {
+    let path = std::path::Path::new(&request.path);
+    refuse_the_case_itself(open, path)?;
+    let blobs = kokin_blob::BlobStore::new(open.paths.blobs());
+    let ingested = kokin_ingest::ingest_file_controlled(
+        &mut open.conn,
+        &blobs,
+        &open.cmk,
+        path,
+        &kokin_ingest::IngestContext {
+            connector: "file_import",
+            job_id: job,
+        },
+        cancel,
+        before_commit,
+    )?;
+    Ok(IngestView {
+        run_id: ingested.run_id,
+        source_id: ingested.source_id,
+        capture_id: ingested.capture_id,
+        artifact_id: ingested.artifact_id,
+        content_hash: ingested.content_hash,
+        size_bytes: ingested.size_bytes,
+        deduplicated: ingested.deduplicated,
+        from_fixture: ingested.from_fixture,
+    })
+}
+
 /// A case may not ingest its own storage.
 ///
 /// Narrow on purpose, and **not** the mitigation for A-034. Ingest is the one
@@ -381,4 +416,20 @@ fn rationale<'a>(rationale: &'a str, what: &str) -> Result<&'a str, CommandError
         ));
     }
     Ok(trimmed)
+}
+
+pub fn add_evidence(
+    open: &mut OpenCase,
+    request: &crate::views::AddEvidenceRequest,
+) -> Result<WriteView, CommandError> {
+    let evidence = grounding(&request.evidence)?;
+    kokin_graph::add_evidence(
+        &mut open.conn,
+        Subject {
+            kind: subject_kind(&request.subject_kind)?,
+            id: &request.subject_id,
+        },
+        &evidence,
+    )?;
+    Ok(wrote(request.subject_id.clone()))
 }

@@ -1,0 +1,9 @@
+   Compiling kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.37s
+     Running tests/local_inference.rs (target/debug/deps/local_inference-e5ab1773dd869238)
+
+running 1 test
+test loopback_json_redirect_denial_and_prompt_cancellation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.18s
+

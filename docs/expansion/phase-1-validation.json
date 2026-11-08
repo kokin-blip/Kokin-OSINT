@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-20",
+  "phase": 1,
+  "exit_criteria_passed": true,
+  "scope": "phase-1-contract.md",
+  "checks": [
+    {
+      "name": "workspace",
+      "command": "KOKIN_NETWORK=deny cargo test --workspace --all-targets",
+      "exit_code": 0,
+      "log": "validation-logs/phase1-workspace.log",
+      "sha256": "ed5683d25d251d7ecb758498b46c9f4aa24cc2fa9cb1c0b7337cc83c568649a6"
+    },
+    {
+      "name": "clippy",
+      "command": "KOKIN_NETWORK=deny cargo clippy --workspace --all-targets -- -D warnings",
+      "exit_code": 0,
+      "log": "validation-logs/phase1-clippy.log",
+      "sha256": "9ba8ac87d0dc181d65660141ad9dbb3d310c17508f9a8dcb2e0886903dc4252b"
+    },
+    {
+      "name": "macos",
+      "command": "npx wdio run ./wdio.research.conf.mjs",
+      "exit_code": 0,
+      "log": "validation-logs/phase1-macos.log",
+      "sha256": "a32ed0544deaa1983570816dae19c0e3335a2f3c8d05ad73ba6f462e89d0bd54"
+    },
+    {
+      "name": "design-detector",
+      "command": "impeccable detect --json <changed targets>",
+      "exit_code": 0,
+      "log": "validation-logs/phase1-design-detector.log",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "name": "types",
+      "command": "npm run check",
+      "exit_code": 0,
+      "log": "validation-logs/phase1-types.log",
+      "sha256": "3fc74609855d685bc4597f059da11d27432dfd0b6c10b7f06ecd885b06a7091d"
+    },
+    {
+      "name": "frontend",
+      "command": "npm run test",
+      "exit_code": 0,
+      "log": "validation-logs/phase1-frontend.log",
+      "sha256": "321071fedbd5d66317f3a77e5acae91cae235f41cda09c34755d3c631335ea77"
+    }
+  ],
+  "rust_passed": 423,
+  "rust_ignored": 13,
+  "macos": "Real Tauri app, synthetic broker only; 900 logical-point viewport, light/dark, focus return, private notes, full-run filters, blocked source, cache, evidence and export",
+  "remaining_release_gates": [
+    "Windows runtime",
+    "manual VoiceOver",
+    "production packaging",
+    "cargo deny not installed"
+  ],
+  "new_dependencies": [],
+  "continuation_preservation": "continuation-2026-10-20/",
+  "frontend_passed": 76
+}

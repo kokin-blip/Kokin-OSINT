@@ -1,5 +1,9 @@
 # Design QA — Night Ledger foundation
 
+## Commands/graph continuation — 2026-10-12
+
+Scoped verification passed for native graph controls and command palette: inspected bounded captures under docs/ui-rebuild/screenshots/commands-graph-2026-10-12/. The initial modal capture paused on its entry animation while the Mac was locked; screenshot-only instrumentation now finishes finite animations and the confirmation capture shows the dialog. No product styling change was needed. Keyboard/native evidence/export/restore checks pass; no mechanical detector findings. Pan/zoom/focus preserve evidence links and truncation. VoiceOver and Windows checks are deferred at the user's request. After unlocking, a computer-assisted production smoke check confirmed the case gate, Settings and keyboard Escape; no screen-reader certification is claimed. See docs/increments/ui-night-ledger-commands-graph.md for production measurement limits.
+
 ## Settings/layout continuation — 2026-10-12
 
 Scoped verification passed: light settings, dark workspace and 125% scaled narrow desktop captures were inspected; readable theme changes, divider geometry, modal focus and reduced motion were verified. Screenshots and measurements are under docs/ui-rebuild/screenshots/settings-2026-10-12/. Focused contrast checks pass; this is not comprehensive screen-reader/WCAG certification. See docs/increments/ui-night-ledger-settings-layout.md for proof, performance limits and remaining platform/release gates.

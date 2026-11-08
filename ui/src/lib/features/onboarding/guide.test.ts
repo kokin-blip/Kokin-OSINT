@@ -1,0 +1,10 @@
+import {mount,unmount,flushSync} from 'svelte';
+import {afterEach,expect,it,vi} from 'vitest';
+import Harness from '../../../../tests/unit/GuideHarness.svelte';
+import * as api from '../../bindings';
+vi.mock('../../bindings',async()=>({...await vi.importActual('../../bindings'),workspaceRead:vi.fn(),workspaceSave:vi.fn().mockResolvedValue({revision:2}),guideStatus:vi.fn().mockResolvedValue({artifacts:1,complete:0,entities:2,relationships:1,human_assessments:0,boards:0,reports:0})}));
+afterEach(()=>{vi.clearAllMocks();document.body.replaceChildren();});
+const saved=(payload:Record<string,unknown>):api.WorkspaceView=>({id:'investigation-guide',kind:'guide',name:'Investigation guide',revision:1,archived:false,updated_utc:'2026-10-12T00:00:00Z',payload});
+const settle=async()=>{await new Promise(r=>setTimeout(r,0));flushSync();};
+it('does not count an unextracted import or unassessed graph as a completed step',async()=>{vi.mocked(api.workspaceRead).mockResolvedValueOnce(saved({version:1,events:{},dismissed:false}));const component=mount(Harness,{target:document.body});await settle();const items=[...document.querySelectorAll('li')].map(n=>n.textContent);expect(items[1]).toContain('Next:');expect(items[3]).toContain('Complete:');expect(items[4]).toContain('Next:');await unmount(component);});
+it('honors skipping while encrypted guidance is still loading, and saves resume in the case',async()=>{let finish!:(row:api.WorkspaceView)=>void;vi.mocked(api.workspaceRead).mockImplementationOnce(()=>new Promise(r=>finish=r));const component=mount(Harness,{target:document.body});flushSync();component.guide.hide();finish(saved({version:1,events:{source_read:true},dismissed:false}));await settle();expect(component.guide.dismissed).toBe(true);expect(api.workspaceSave).toHaveBeenCalledWith(1,expect.objectContaining({expected_revision:1,kind:'guide',payload:expect.objectContaining({dismissed:true})}));component.guide.show();await settle();expect(component.guide.dismissed).toBe(false);expect(api.workspaceSave).toHaveBeenLastCalledWith(1,expect.objectContaining({payload:expect.objectContaining({dismissed:false})}));await unmount(component);});

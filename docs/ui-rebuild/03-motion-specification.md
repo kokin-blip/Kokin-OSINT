@@ -22,3 +22,5 @@ Sidebar collapse uses bounded width/layout with content protected from clipping;
 `prefers-reduced-motion` removes translation and duration. A later persisted preference may further reduce motion; it must not override an OS reduced-motion request. Preserve visible loading text and progress information when motion is disabled. CSS/Svelte transitions only initially; no animation dependency.
 
 Measure resize/selection/input and repeated navigation in the real webview. A 60 FPS goal is not a verified claim until frame measurements exist on documented hardware.
+
+Continuation 2026-10-12: command palette entry reuses the 160 ms disclosure token (C, proposed Kokin motion). Graph pan/zoom/focus update immediately; no interpolation or confidence animation. Finite animations are finished only in native screenshot tests while the locked screen pauses normal animation completion. See ../increments/ui-night-ledger-commands-graph.md.

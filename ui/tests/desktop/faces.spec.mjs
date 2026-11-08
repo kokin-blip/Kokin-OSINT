@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {mkdtemp,rm,mkdir,copyFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+const captureDirectory=process.env.KOKIN_FACE_CAPTURE_DIR??process.env.KOKIN_UI_CAPTURE_DIR;
+const button=text=>$(`//button[normalize-space(.)="${text}"]`);
+const field=text=>$(`//label[starts-with(normalize-space(.),"${text}")]/input`);
+const invoke=(command,args={})=>browser.tauri.execute((tauri,c,p)=>tauri.core.invoke(c,p),command,args);
+const control=(action,args={})=>invoke('test_control',{action,args});
+async function finish(){await browser.waitUntil(async()=>{const text=await $('section.actions').getText();if(await $('section.actions [role="alert"]').isExisting())throw Error(text);return text.includes('Operation finished');},{timeout:90000});}
+describe('Offline faces through ordinary Search controls',()=>{let root;
+ after(async()=>{if(await button('Close case').isExisting())await button('Close case').click();if(root)await rm(root,{recursive:true,force:true});});
+ it('installs reviewed models explicitly, analyzes a portrait, reviews identity, groups and reopens',async()=>{
+  if(!process.env.KOKIN_FACE_TEST_MODELS)return;
+  root=await mkdtemp(join(tmpdir(),'kokin-desktop-faces-'));const casePath=join(root,'case');
+  if(await button('Skip introduction').isExisting())await button('Skip introduction').click();await button('Create new').click();await field('Case folder').setValue(casePath);await field('Case name').setValue('Public-domain face acceptance');await field('Passphrase').setValue('synthetic face credential');await button('Create case').click();await $('.key').waitForDisplayed();const segments=await $$('.key .segment');await $('[role="dialog"] input[type="checkbox"]').click();await $('[role="dialog"] input[type="text"]').setValue(await segments[segments.length-2].getText());await button('Continue to the case').click();
+  const generation=(await invoke('session_status')).session_generation;
+  for(const id of ['face-yunet','face-sface']){const resource=(await invoke('resource_list')).find(r=>r.id===id);assert.ok(resource);if(resource.present)continue;await control('selection',{purpose:'resource_import',path:join(process.env.KOKIN_FACE_TEST_MODELS,resource.file)});const job=await invoke('resource_install',{request:{version:1,resource_id:id,mode:'import',consent:true}});await browser.waitUntil(async()=>{const row=await invoke('resource_status',{operationId:job});if(row.status==='running')return false;assert.equal(row.status,'completed',row.error);return true;},{timeout:30000});}
+  for(const file of ['astronaut.png','grace_hopper.jpg']){const source=join(root,file);await copyFile(resolve('../crates/kokin-faces/tests/fixtures',file),source);await control('selection',{purpose:'import',path:source});await button('Import file').click();await finish();}
+  await $('//nav/button[normalize-space(.)="Search"]').click();await button('Faces and related evidence').click();await $('.faces-workspace').waitForDisplayed();
+  const scope='//section[@aria-label="Faces and related evidence"]';const choose=async(file)=>{const select=$(`${scope}//label[starts-with(normalize-space(.),"Photo or attachment")]/select`);const options=await select.$$('option');const text=[];for(const o of options)text.push([await o.getAttribute('value'),await o.getText()]);const [id]=text.find(([,label])=>label.includes(file));await browser.tauri.execute((_,value)=>{const select=document.querySelector('.faces-workspace .input-grid select');select.value=value;select.dispatchEvent(new Event('change',{bubbles:true}));},id);return id;};
+  const astronaut=await choose('astronaut.png');await button('Analyze faces').scrollIntoView({block:'center'});await button('Analyze faces').click();await finish();await $('.faces-workspace .portrait').waitForDisplayed();let faces=await invoke('face_page',{generation,artifactId:astronaut,offset:0,includeStale:false});assert.equal(faces.total,1);
+  await $('.faces-workspace .portrait').click();await button('Find matches').scrollIntoView({block:'center'});await button('Find matches').click();await $('//section[@aria-label="Face matches"]').waitForDisplayed();assert.match(await $('//section[@aria-label="Face matches"]').getText(),/not the probability/);
+  await button('Review person link').scrollIntoView({block:'center'});await button('Review person link').click();await field('Or create person').setValue('Reviewed portrait label');await $('//label[starts-with(normalize-space(.),"Review rationale")]/textarea').setValue('Human review of the public-domain fixture and its supplied attribution.');await button('Accept person link').click();await browser.waitUntil(async()=>!await $('//section[@aria-label="Review person link"]').isExisting());faces=await invoke('face_page',{generation,artifactId:astronaut,offset:0,includeStale:false});assert.equal(faces.faces[0].entity_name,'Reviewed portrait label');
+  await choose('grace_hopper.jpg');await button('Analyze faces').scrollIntoView({block:'center'});await button('Analyze faces').click();await finish();
+  const result=await invoke('face_search',{generation,request:{version:1,face_id:faces.faces[0].id,query:'',text_mode:'lexical',both:false,threshold:0.363,offset:0,limit:20}});assert.equal(result.total,0,'different portrait must not meet the candidate threshold');
+  if(process.env.KOKIN_TEST_LIVE_DISCOVERY){
+   await field('Names or topics').setValue('OpenCV YuNet');await button('Offline — enable collection').click();await $('.faces-workspace .web input[type="checkbox"]').click();await button('Search web and save response').scrollIntoView({block:'center'});await button('Search web and save response').click();await finish();await button('Inspect saved search response').waitForDisplayed();const captured=await control('snapshot');assert.ok(captured.capture.some(row=>row.some(value=>String(value).includes('searxng'))));await button('Online — switch offline').click();
+  }
+  const snapshot=await control('snapshot');assert.equal(snapshot.face_detection.length,2);assert.equal(snapshot.face_review.length,1);assert.equal(snapshot.entity.length,1);
+  await $(`${scope}//summary[normalize-space(.)="Suggested face groups"]`).scrollIntoView({block:'center'});await $(`${scope}//summary[normalize-space(.)="Suggested face groups"]`).click();await button('Build suggested groups').click();await finish();
+  if(captureDirectory){await mkdir(captureDirectory,{recursive:true});await $('.faces-workspace').scrollIntoView({block:'start'});await browser.saveScreenshot(join(captureDirectory,'faces-search.png'));}
+  await button('Close case').click();await button('Open existing').click();await field('Case folder').setValue(casePath);await field('Passphrase').setValue('synthetic face credential');await button('Open case').click();const reopened=await control('snapshot');assert.deepEqual(reopened.face_detection,snapshot.face_detection);assert.deepEqual(reopened.face_review,snapshot.face_review);
+ });
+});

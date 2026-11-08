@@ -15,6 +15,7 @@
 
   type Mode = "open" | "create";
   let mode = $state<Mode>("open");
+  export function begin(){mode="create";}
 
   let path = $state("");
   let passphrase = $state("");

@@ -1,0 +1,118 @@
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `npm run build`
+
+> kokin-osint-ui@0.0.1 build
+> vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 246 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                   0.40 kB │ gzip:   0.27 kB
+dist/assets/maplibre-gl-worker-bgXzYTPF.js      506.31 kB
+dist/assets/night-ledger-banner-B0N8T1Ky.png  1,481.36 kB
+dist/assets/index-1uMzO_TB.css                   55.23 kB │ gzip:  10.11 kB
+dist/assets/maplibre-gl-CEya5O3P.css             83.10 kB │ gzip:  10.53 kB
+dist/assets/maplibre-gl-worker-DrChcAf0.js        0.07 kB │ gzip:   0.09 kB
+dist/assets/event-B64iG7Cv.js                     1.41 kB │ gzip:   0.68 kB
+dist/assets/core-D9ZGnyhG.js                      2.49 kB │ gzip:   1.01 kB
+dist/assets/index-BV63v-NZ.js                    16.46 kB │ gzip:   4.62 kB
+dist/assets/index-CE0CT49g.js                    19.23 kB │ gzip:   7.56 kB
+dist/assets/index-D9oGdsuM.js                   394.56 kB │ gzip: 129.54 kB
+dist/assets/maplibre-gl-DdjC39J_.js           1,076.31 kB │ gzip: 292.14 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.33s
+   Compiling objc2-exception-helper v0.1.1
+   Compiling openssl-sys v0.9.117
+   Compiling ring v0.17.14
+   Compiling sqlite-vec v0.1.9
+   Compiling onig_sys v69.9.3
+   Compiling ort-sys v2.0.0-rc.10
+   Compiling kokin-osint v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/src-tauri)
+   Compiling ort v2.0.0-rc.10
+   Compiling objc2 v0.6.4
+   Compiling rustls v0.23.45
+   Compiling objc2-core-foundation v0.3.2
+   Compiling block2 v0.6.2
+   Compiling objc2-javascript-core v0.3.2
+   Compiling rustls-webpki v0.103.15
+   Compiling dispatch2 v0.3.1
+   Compiling objc2-foundation v0.3.2
+   Compiling objc2-core-video v0.3.2
+   Compiling objc2-core-text v0.3.2
+   Compiling objc2-core-graphics v0.3.2
+   Compiling objc2-security v0.3.2
+   Compiling onig v6.5.3
+   Compiling tokenizers v0.21.4 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/tokenizers)
+   Compiling tokio-rustls v0.26.6
+   Compiling hyper-rustls v0.27.10
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> vendor/tokenizers/src/models/unigram/model.rs:359:17
+    |
+359 |     pub fn iter(&self) -> UnigramIterator {
+    |                 ^^^^^     ^^^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                 |
+    |                 the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+    = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+    |
+359 |     pub fn iter(&self) -> UnigramIterator<'_> {
+    |                                          ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/tokenizers/src/models/unigram/trie.rs:33:36
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<Label, T>
+   |                                    ^^^^^                  ^^^^^^^^^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                    |
+   |                                    the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<'_, Label, T>
+   |                                                                        +++
+
+   Compiling reqwest v0.12.28
+warning: `tokenizers` (lib) generated 2 warnings (run `cargo fix --lib -p tokenizers` to apply 2 suggestions)
+   Compiling kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+   Compiling kokin-connectors v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-connectors)
+   Compiling objc2-core-image v0.3.2
+   Compiling objc2-core-data v0.3.2
+   Compiling objc2-quartz-core v0.3.2
+   Compiling objc2-cloud-kit v0.3.2
+   Compiling objc2-app-kit v0.3.2
+   Compiling objc2-web-kit v0.3.2
+   Compiling tao v0.35.3
+   Compiling window-vibrancy v0.6.0
+   Compiling muda v0.19.3
+   Compiling rfd v0.15.4
+   Compiling libsqlite3-sys v0.38.2
+   Compiling wry v0.55.1
+   Compiling tauri-runtime v2.11.3
+   Compiling tauri-runtime-wry v2.11.4
+   Compiling tauri v2.11.5
+   Compiling rusqlite v0.40.2
+   Compiling kokin-vector-adapter v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-vector-adapter)
+   Compiling kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store)
+   Compiling tauri-plugin-wdio-webdriver v1.3.0
+   Compiling tauri-plugin-wdio v1.3.0
+   Compiling kokin-search v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-search)
+   Compiling kokin-graph v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-graph)
+   Compiling kokin-export v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-export)
+   Compiling kokin-ingest v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-ingest)
+   Compiling kokin-extract v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-extract)
+   Compiling kokin-ai v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-ai)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 46.76s
+       Built application at: /Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/target/debug/kokin-osint
+    Bundling Kokin-OSINT.app (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/target/debug/bundle/macos/Kokin-OSINT.app)
+    Finished 1 bundle at:
+        /Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/target/debug/bundle/macos/Kokin-OSINT.app
+

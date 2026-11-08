@@ -46,6 +46,8 @@ private = { ignore = true }
 unused-allowed-license = "allow"
 
 exceptions = [
+    # Owner approved 2026-10-14: public CA trust-root data only; general policy unchanged.
+    { crate = "webpki-roots", allow = ["CDLA-Permissive-2.0"] },
     # OpenSSL is vendored and statically linked by SQLCipher. OpenSSL 3.x is
     # Apache-2.0; the legacy dual licence text still ships in the crate, which
     # trips the detector. Verified: openssl-src bundles OpenSSL 3.x.
@@ -101,7 +103,10 @@ yanked = "deny"
 # check whether Tauri has dropped urlpattern and remove whichever entries no
 # longer apply. If that review is skipped, these silently persist; that is the
 # known cost of ignoring by ID with this tool version.
+# The version-only time advisory is covered by the security-fixed local fork,
+# exact source/lock guards, and deep-comment regression (ADR-0020).
 ignore = [
+    { id = "RUSTSEC-2026-0009", reason = "RFC 2822 recursion fix backported from upstream 0.3.47 in vendor/time for Rust 1.85. Exact source and lock guards plus dependency_backports tests are mandatory; ADR-0020." },
     { id = "RUSTSEC-2025-0075", reason = "unic-char-property unmaintained; transitive via tauri -> tauri-utils -> urlpattern, no upgrade path. See R-013, review 2026-11-12." },
     { id = "RUSTSEC-2025-0080", reason = "unic-char-range unmaintained; same chain. See R-013, review 2026-11-12." },
     { id = "RUSTSEC-2025-0081", reason = "unic-common unmaintained; same chain. See R-013, review 2026-11-12." },

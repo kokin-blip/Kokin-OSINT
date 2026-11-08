@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-20",
+  "architecture": "aarch64",
+  "scope": "in-memory SQLite synthetic seed, bounded paging and selected projection; excludes encrypted-disk latency and provider/network work",
+  "results": 10000,
+  "runs": 10,
+  "results_per_run": 1000,
+  "page_size": 50,
+  "seed_and_queries_ms": 327,
+  "query_assertions": [
+    "run-9 offset 950 returns result-9950 through result-9999",
+    "selected result projection retains all 10000 IDs",
+    "foreign-case ID refused"
+  ],
+  "command": "cargo test -p kokin-store ten_thousand_case_results -- --nocapture"
+}

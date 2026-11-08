@@ -1,0 +1,9 @@
+   Compiling kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.32s
+     Running tests/discovery.rs (target/debug/deps/discovery-40f6b7e5ff478ff8)
+
+running 1 test
+test loopback_discovery_refuses_offline_redirects_and_oversized_responses ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.04s
+

@@ -1,0 +1,26 @@
+{
+  "architecture": "aarch64",
+  "eligible_artifacts": 10002,
+  "fixture": "10001 captured artifact references to one synthetic PNG; exact hash mode; no decoder/model benchmark",
+  "measurements": [
+    {
+      "budget": 500,
+      "milliseconds": 17,
+      "scanned": 500
+    },
+    {
+      "budget": 5000,
+      "milliseconds": 140,
+      "scanned": 5000
+    },
+    {
+      "budget": 20000,
+      "milliseconds": 282,
+      "scanned": 10001
+    }
+  ],
+  "platform": "macos",
+  "storage": "encrypted disk case",
+  "synthetic": true,
+  "total_milliseconds": 1027
+}

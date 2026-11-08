@@ -1,0 +1,13 @@
+{
+  "egress_outside_kokin_net": [],
+  "production_driver_dependencies": 0,
+  "production_ui_driver_markers": [],
+  "feature_matrix_entries": 142,
+  "phase_1": "implemented within documented desktop scope",
+  "phase_2": "selector/bulk slice implemented within phase-2-contract.md; mixed/provider clauses remain explicit",
+  "phase_3_advance": false,
+  "preserved_untracked_baseline_files": 690,
+  "missing_baseline_files": [],
+  "network_check": "Source scan across crates and src-tauri; all socket crates remain only kokin-net.",
+  "paid_live_checks": false
+}

@@ -1,0 +1,31 @@
+   Compiling kokin-connectors v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-connectors)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.85s
+     Running unittests src/lib.rs (target/debug/deps/kokin_connectors-2dbe8225f3b5c891)
+
+running 23 tests
+test research::tests::malformed_email_and_ambiguous_ipv4_cannot_enter_a_plan ... ok
+test research::tests::normalization_preserves_identity_and_requires_country ... ok
+test research::tests::every_native_profile_rule_has_positive_negative_and_challenge_contracts ... ok
+test research::tests::empty_dns_and_unrelated_domain_records_are_not_positive_findings ... ok
+test research::tests::provider_plans_bind_calls_pages_eligibility_and_premium ... ok
+test candidates::tests::mixed_text_candidates_preserve_origins_duplicates_and_errors_without_guessing_names ... ok
+test candidates::tests::repeated_candidates_disclose_the_origin_reference_bound ... ok
+test research::tests::challenges_soft_errors_and_mismatched_names_are_never_available ... ok
+test research::tests::plans_are_closed_and_bulk_never_sends_automatically ... ok
+test research::tests::name_discovery_and_archives_are_scoped_leads_not_account_claims ... ok
+test research::tests::unsupported_rows_cannot_silently_disappear_from_a_mixed_plan ... ok
+test tabular::tests::mapping_suggests_syntax_without_sending_and_joins_only_explicit_name_columns ... ok
+test tabular::tests::quoted_cells_do_not_split_identifiers_or_drop_unselected_rows ... ok
+test tests::certificate_and_archive_requests_are_bounded_and_separate ... ok
+test tests::dns_types_and_disclosure_are_closed ... ok
+test tests::unsafe_manifests_are_refused ... ok
+test profiles::tests::reviewed_rules_reject_soft_404_challenges_redirects_and_mismatched_identities ... ok
+test wallet::tests::segwit_checksums_witness_lengths_and_mixed_case_are_checked ... ok
+test wallet::tests::base58check_rejects_corruption_private_keys_and_wrong_payloads ... ok
+test wallet::tests::eip55_official_vectors_and_mutations ... ok
+test tests::rdap_uses_reviewed_registry_and_has_no_insecure_fallback ... ok
+test tabular::tests::json_columns_and_import_bounds_are_explicit ... ok
+test directory::tests::catalog_is_complete_and_not_executable ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+

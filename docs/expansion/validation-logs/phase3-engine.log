@@ -1,0 +1,19 @@
+    Blocking waiting for file lock on build directory
+   Compiling ort-sys v2.0.0-rc.10
+   Compiling ort v2.0.0-rc.10
+   Compiling kokin-faces v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-faces)
+   Compiling kokin-media v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-media)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 53.90s
+     Running unittests src/lib.rs (target/debug/deps/kokin_media-3912ba78ca80ea8c)
+
+running 7 tests
+test worker::tests::crashes_and_mid_processing_cancellation_never_return_a_result ... ignored, explicit sandboxed process fault fixtures on Mac
+test image_query::tests::rectangles_and_recipes_are_bounded ... ok
+test image_query::tests::rotation_mirror_and_color_channels_change_the_expected_pixels ... ok
+test image_query::tests::preparation_preserves_original_and_records_real_pixel_changes ... ok
+test engine::tests::oversized_dimensions_are_refused_before_pixel_allocation ... ok
+test engine::tests::jpeg_exif_orientation_is_located_and_applied ... ok
+test engine::tests::raster_formats_hashes_and_limits_are_explicit ... ok
+
+test result: ok. 6 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.90s
+

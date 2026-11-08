@@ -1373,7 +1373,9 @@ fn graph_expansion_is_bounded_cancellable_and_edges_keep_their_evidence() {
                 );
             }
             let full = kokin_graph::explore::expand(&open.conn, &f.canonical, 2, 30, 32, &cancel)?;
-            assert_eq!(full.nodes.len(), 9);
+            // Keep the absorbed record distinct so its stored identity and evidence remain visible.
+            assert_eq!(full.nodes.len(), 10);
+            assert!(full.nodes.iter().any(|node| node.id == f.absorbed));
             assert_eq!(full.edges.len(), 8);
             assert!(!full.truncated);
             let same = kokin_graph::explore::expand(&open.conn, &f.canonical, 2, 30, 32, &cancel)?;

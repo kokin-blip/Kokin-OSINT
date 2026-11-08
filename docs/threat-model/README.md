@@ -1,6 +1,6 @@
 # Threat model
 
-Status: implementation summary updated 2026-10-08; release security verification remains open.
+Status: implementation summary updated 2026-10-12; release security verification remains open.
 
 SQLCipher and encrypted blobs, parameterized writes, citation verification,
 text-only evidence display, machine-actor restrictions, and evidence grounding
@@ -114,3 +114,32 @@ A malicious build toolchain, a compromised OS, hardware attacks, and a coerced
 user. Also out of scope: protecting the user from themselves — someone who
 exports a case and emails it has left the system's control, and no control here
 pretends otherwise.
+
+## Encrypted investigation workspace and readable reports
+
+Board/report/guide metadata is stored in the encrypted case, with append-only
+revisions and case-generation/revision checks. Only introduction and display
+preferences live outside cases. Report assembly runs in a background operation,
+checks the selected revision, resolves real records/citations, escapes analyst
+text, limits output and publishes without overwrite. HTML has no scripts or
+remote assets. Report exports deliberately contain plaintext and are separate
+from encrypted package snapshots. Generated layouts imply no confidence.
+
+## Optional AI and offline-map boundaries
+
+AI sees only explicitly selected, verified case observations. Source text is untrusted
+data; strict bounded cited output cannot invoke tools or create analytical facts.
+Human review rationale remains distinct from accepted evidence/assessments. A pinned
+managed-model identity and literal loopback capability restrict Ollama paths, redirects
+and response sizes; no remote pull/cloud fallback is allowed. Real generative output
+quality remains unverified on this Mac because Ollama is absent. Local embedding
+resources are hash-verified; vectors/suggestions remain encrypted and derived indexes
+are rebuildable. ONNX telemetry is explicitly disabled.
+
+MapLibre/PMTiles code and workers are bundled; active styles have no remote URLs,
+fonts or sprites. Local archive ID/range reads enforce bounds and decompression caps.
+Global public archives are not encrypted case evidence. World installation requires
+two disclosures, vetted fixed-source range requests, consistent ETag/size and atomic
+publication; a local hash/ETag is not a publisher signature. Grounded points require
+source citations, uncertainty and human rationale. Map proximity implies no confidence.
+Locations/camera/illustrations survive encrypted package restore without a basemap.

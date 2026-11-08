@@ -55,6 +55,8 @@ pub fn package(
     let pending = tempfile::NamedTempFile::new_in(parent)?;
     let report = package_into(open, pending.path(), passphrase, options)?;
     pending.as_file().sync_all()?;
+    #[cfg(test)]
+    crate::faults::point(crate::faults::Fault::Publish)?;
     pending
         .persist_noclobber(dest)
         .map_err(|e| ExportError::Io(e.error))?;
@@ -125,6 +127,9 @@ fn package_into(
     };
 
     let bytes = assemble(staging, dest, &manifest)?;
+    #[cfg(test)]
+    crate::faults::point(crate::faults::Fault::Cleanup)?;
+    staged.close()?;
 
     Ok(PackageReport {
         case_id: source_header.case_id,
@@ -257,9 +262,7 @@ fn audit_head(conn: &Connection) -> Result<Option<String>> {
         return Ok(None);
     }
     let head = kokin_store::audit::tip_hash(conn)?;
-    Ok(Some(
-        head.iter().map(|b| format!("{b:02x}")).collect::<String>(),
-    ))
+    Ok(Some(hex(&head)))
 }
 
 fn write_bytes(writer: &mut Writer, name: EntryName, bytes: &[u8]) -> Result<Entry> {
@@ -342,7 +345,7 @@ pub fn import(source: &Path, dest: &Path, passphrase: &str) -> Result<ImportRepo
     if dest.exists() {
         return Err(ExportError::DestinationExists(dest.display().to_string()));
     }
-    std::fs::rename(&inner, dest)?;
+    publish_directory(&inner, dest)?;
     report.root = dest.to_path_buf();
     Ok(report)
 }
@@ -425,5 +428,53 @@ fn import_into(source: &Path, dest: &Path, passphrase: &str) -> Result<ImportRep
 }
 
 fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    bytes
+        .iter()
+        .flat_map(|b| {
+            [
+                char::from(HEX[(b >> 4) as usize]),
+                char::from(HEX[(b & 15) as usize]),
+            ]
+        })
+        .collect()
+}
+
+/// No-replace is atomic: an empty directory created during restore also wins.
+fn publish_directory(source: &Path, destination: &Path) -> std::io::Result<()> {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        rustix::fs::renameat_with(
+            rustix::fs::CWD,
+            source,
+            rustix::fs::CWD,
+            destination,
+            rustix::fs::RenameFlags::NOREPLACE,
+        )
+        .map_err(Into::into)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        if destination.exists() {
+            return Err(std::io::ErrorKind::AlreadyExists.into());
+        }
+        std::fs::rename(source, destination)
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod publication_tests {
+    #[test]
+    fn a_racing_empty_restore_destination_is_preserved() {
+        let root = tempfile::tempdir().unwrap();
+        let source = root.path().join("staging");
+        let destination = root.path().join("existing");
+        std::fs::create_dir(&source).unwrap();
+        std::fs::write(source.join("case.db"), "staged bytes").unwrap();
+        std::fs::create_dir(&destination).unwrap();
+        assert!(super::publish_directory(&source, &destination).is_err());
+        assert!(source.join("case.db").exists());
+        assert_eq!(std::fs::read_dir(destination).unwrap().count(), 0);
+    }
 }

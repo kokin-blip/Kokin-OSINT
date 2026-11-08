@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-19",
+  "platform": "Apple Silicon macOS",
+  "profile": "debug",
+  "encrypted_case_faces": 10000,
+  "fixture": "One synthetic artifact with unit-normalized 128-dimensional vectors; functional and performance fixture, not an accuracy dataset",
+  "exact_scan_rank_dedup_and_bounded_hydration_ms": 170.062958,
+  "matching_appearances": 9999,
+  "hydrated_appearances": 50,
+  "opencv_reference_version": "4.13.0",
+  "reference_portraits": [
+    {"fixture": "astronaut.png", "embedding_cosine": 0.9996866589198824, "bbox_max_error_pixels": 0.09825771728515065},
+    {"fixture": "grace_hopper.jpg", "embedding_cosine": 0.9992163597458229, "bbox_max_error_pixels": 0.1669303320312565}
+  ],
+  "scope": "Single hot-cache local run; no population-level identity accuracy or performance guarantee"
+}

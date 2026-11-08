@@ -1,0 +1,1029 @@
+kokin-osint v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/src-tauri)
+├── base64 v0.22.1
+├── getrandom v0.4.3
+│   ├── cfg-if v1.0.4
+│   ├── libc v0.2.189
+│   └── rand_core v0.10.1
+├── image v0.25.6
+│   ├── bytemuck v1.25.2
+│   ├── byteorder-lite v0.1.0
+│   ├── num-traits v0.2.19
+│   └── png v0.17.16
+│       ├── bitflags v1.3.2
+│       ├── crc32fast v1.5.0
+│       │   └── cfg-if v1.0.4
+│       ├── fdeflate v0.3.7
+│       │   └── simd-adler32 v0.3.10
+│       ├── flate2 v1.1.9
+│       │   ├── crc32fast v1.5.0 (*)
+│       │   └── miniz_oxide v0.8.9
+│       │       ├── adler2 v2.0.1
+│       │       └── simd-adler32 v0.3.10
+│       └── miniz_oxide v0.8.9 (*)
+├── kokin-ai v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-ai)
+│   ├── getrandom v0.4.3 (*)
+│   ├── kokin-search v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-search)
+│   │   ├── kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store)
+│   │   │   ├── blake3 v1.8.6
+│   │   │   │   ├── arrayref v0.3.9
+│   │   │   │   ├── arrayvec v0.7.8
+│   │   │   │   ├── cfg-if v1.0.4
+│   │   │   │   └── constant_time_eq v0.4.2
+│   │   │   ├── ciborium v0.2.2
+│   │   │   │   ├── ciborium-io v0.2.2
+│   │   │   │   ├── ciborium-ll v0.2.2
+│   │   │   │   │   ├── ciborium-io v0.2.2
+│   │   │   │   │   └── half v2.7.1
+│   │   │   │   │       ├── cfg-if v1.0.4
+│   │   │   │   │       └── zerocopy v0.8.56
+│   │   │   │   │           └── zerocopy-derive v0.8.56 (proc-macro)
+│   │   │   │   │               ├── proc-macro2 v1.0.107
+│   │   │   │   │               │   └── unicode-ident v1.0.24
+│   │   │   │   │               ├── quote v1.0.47
+│   │   │   │   │               │   └── proc-macro2 v1.0.107 (*)
+│   │   │   │   │               └── syn v2.0.119
+│   │   │   │   │                   ├── proc-macro2 v1.0.107 (*)
+│   │   │   │   │                   ├── quote v1.0.47 (*)
+│   │   │   │   │                   └── unicode-ident v1.0.24
+│   │   │   │   └── serde v1.0.229
+│   │   │   │       ├── serde_core v1.0.229
+│   │   │   │       └── serde_derive v1.0.229 (proc-macro)
+│   │   │   │           ├── proc-macro2 v1.0.107 (*)
+│   │   │   │           ├── quote v1.0.47 (*)
+│   │   │   │           └── syn v3.0.3
+│   │   │   │               ├── proc-macro2 v1.0.107 (*)
+│   │   │   │               ├── quote v1.0.47 (*)
+│   │   │   │               └── unicode-ident v1.0.24
+│   │   │   ├── kokin-blob v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-blob)
+│   │   │   │   ├── blake3 v1.8.6 (*)
+│   │   │   │   ├── chacha20poly1305 v0.11.0
+│   │   │   │   │   ├── aead v0.6.1
+│   │   │   │   │   │   ├── crypto-common v0.2.2
+│   │   │   │   │   │   │   ├── getrandom v0.4.3 (*)
+│   │   │   │   │   │   │   ├── hybrid-array v0.4.14
+│   │   │   │   │   │   │   │   └── typenum v1.20.1
+│   │   │   │   │   │   │   └── rand_core v0.10.1
+│   │   │   │   │   │   └── inout v0.2.2
+│   │   │   │   │   │       └── hybrid-array v0.4.14 (*)
+│   │   │   │   │   ├── chacha20 v0.10.2
+│   │   │   │   │   │   ├── cfg-if v1.0.4
+│   │   │   │   │   │   └── cipher v0.5.2
+│   │   │   │   │   │       ├── block-buffer v0.12.1
+│   │   │   │   │   │       │   └── hybrid-array v0.4.14 (*)
+│   │   │   │   │   │       ├── crypto-common v0.2.2 (*)
+│   │   │   │   │   │       └── inout v0.2.2 (*)
+│   │   │   │   │   ├── cipher v0.5.2 (*)
+│   │   │   │   │   └── poly1305 v0.9.1
+│   │   │   │   │       └── universal-hash v0.6.1
+│   │   │   │   │           ├── crypto-common v0.2.2 (*)
+│   │   │   │   │           └── ctutils v0.4.2
+│   │   │   │   │               └── cmov v0.5.4
+│   │   │   │   ├── getrandom v0.4.3 (*)
+│   │   │   │   ├── kokin-keys v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-keys)
+│   │   │   │   │   ├── argon2 v0.5.3
+│   │   │   │   │   │   ├── base64ct v1.8.3
+│   │   │   │   │   │   ├── blake2 v0.10.6
+│   │   │   │   │   │   │   └── digest v0.10.7
+│   │   │   │   │   │   │       ├── block-buffer v0.10.4
+│   │   │   │   │   │   │       │   └── generic-array v0.14.7
+│   │   │   │   │   │   │       │       └── typenum v1.20.1
+│   │   │   │   │   │   │       ├── crypto-common v0.1.7
+│   │   │   │   │   │   │       │   ├── generic-array v0.14.7 (*)
+│   │   │   │   │   │   │       │   └── typenum v1.20.1
+│   │   │   │   │   │   │       └── subtle v2.6.1
+│   │   │   │   │   │   └── password-hash v0.5.0
+│   │   │   │   │   │       ├── base64ct v1.8.3
+│   │   │   │   │   │       ├── rand_core v0.6.4
+│   │   │   │   │   │       └── subtle v2.6.1
+│   │   │   │   │   ├── blake3 v1.8.6 (*)
+│   │   │   │   │   ├── chacha20poly1305 v0.11.0 (*)
+│   │   │   │   │   ├── getrandom v0.4.3 (*)
+│   │   │   │   │   ├── subtle v2.6.1
+│   │   │   │   │   ├── thiserror v2.0.20
+│   │   │   │   │   │   └── thiserror-impl v2.0.20 (proc-macro)
+│   │   │   │   │   │       ├── proc-macro2 v1.0.107 (*)
+│   │   │   │   │   │       ├── quote v1.0.47 (*)
+│   │   │   │   │   │       └── syn v3.0.3 (*)
+│   │   │   │   │   └── zeroize v1.9.0
+│   │   │   │   │       └── zeroize_derive v1.5.0 (proc-macro)
+│   │   │   │   │           ├── proc-macro2 v1.0.107 (*)
+│   │   │   │   │           ├── quote v1.0.47 (*)
+│   │   │   │   │           └── syn v2.0.119 (*)
+│   │   │   │   ├── thiserror v2.0.20 (*)
+│   │   │   │   └── zeroize v1.9.0 (*)
+│   │   │   ├── kokin-keys v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-keys) (*)
+│   │   │   ├── kokin-vector-adapter v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-vector-adapter)
+│   │   │   │   ├── libsqlite3-sys v0.38.2
+│   │   │   │   │   └── openssl-sys v0.9.117
+│   │   │   │   │       └── libc v0.2.189
+│   │   │   │   └── sqlite-vec v0.1.9
+│   │   │   ├── rusqlite v0.40.2
+│   │   │   │   ├── bitflags v2.13.1
+│   │   │   │   │   └── serde_core v1.0.229
+│   │   │   │   ├── fallible-iterator v0.3.0
+│   │   │   │   ├── fallible-streaming-iterator v0.1.9
+│   │   │   │   ├── hashlink v0.12.1
+│   │   │   │   │   └── hashbrown v0.17.1
+│   │   │   │   │       ├── allocator-api2 v0.2.21
+│   │   │   │   │       ├── equivalent v1.0.2
+│   │   │   │   │       └── foldhash v0.2.0
+│   │   │   │   ├── libsqlite3-sys v0.38.2 (*)
+│   │   │   │   └── smallvec v1.15.2
+│   │   │   ├── serde v1.0.229 (*)
+│   │   │   ├── serde_json v1.0.151
+│   │   │   │   ├── itoa v1.0.18
+│   │   │   │   ├── memchr v2.8.3
+│   │   │   │   ├── serde_core v1.0.229
+│   │   │   │   └── zmij v1.0.23
+│   │   │   ├── thiserror v2.0.20 (*)
+│   │   │   └── zeroize v1.9.0 (*)
+│   │   ├── rusqlite v0.40.2 (*)
+│   │   └── thiserror v2.0.20 (*)
+│   ├── kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store) (*)
+│   ├── ort v2.0.0-rc.10
+│   │   ├── libloading v0.8.9
+│   │   │   └── cfg-if v1.0.4
+│   │   ├── ndarray v0.16.1
+│   │   │   ├── matrixmultiply v0.3.11
+│   │   │   │   └── rawpointer v0.2.1
+│   │   │   ├── num-complex v0.4.6
+│   │   │   │   └── num-traits v0.2.19
+│   │   │   ├── num-integer v0.1.47
+│   │   │   │   └── num-traits v0.2.19
+│   │   │   ├── num-traits v0.2.19
+│   │   │   └── rawpointer v0.2.1
+│   │   ├── ort-sys v2.0.0-rc.10
+│   │   └── smallvec v2.0.0-alpha.10
+│   ├── ort-sys v2.0.0-rc.10
+│   ├── rusqlite v0.40.2 (*)
+│   ├── serde v1.0.229 (*)
+│   ├── serde_json v1.0.151 (*)
+│   ├── thiserror v2.0.20 (*)
+│   └── tokenizers v0.21.4 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/tokenizers)
+│       ├── ahash v0.8.12
+│       │   ├── cfg-if v1.0.4
+│       │   ├── getrandom v0.3.4
+│       │   │   ├── cfg-if v1.0.4
+│       │   │   └── libc v0.2.189
+│       │   ├── once_cell v1.21.4
+│       │   ├── serde v1.0.229 (*)
+│       │   └── zerocopy v0.8.56 (*)
+│       ├── aho-corasick v1.1.5
+│       │   └── memchr v2.8.3
+│       ├── compact_str v0.9.1
+│       │   ├── castaway v0.2.4
+│       │   │   └── rustversion v1.0.23 (proc-macro)
+│       │   ├── cfg-if v1.0.4
+│       │   ├── itoa v1.0.18
+│       │   ├── rustversion v1.0.23 (proc-macro)
+│       │   ├── ryu v1.0.23
+│       │   ├── serde v1.0.229 (*)
+│       │   └── static_assertions v1.1.0
+│       ├── dary_heap v0.3.9
+│       │   └── serde v1.0.229 (*)
+│       ├── derive_builder v0.20.2
+│       │   └── derive_builder_macro v0.20.2 (proc-macro)
+│       │       ├── derive_builder_core v0.20.2
+│       │       │   ├── darling v0.20.11
+│       │       │   │   ├── darling_core v0.20.11
+│       │       │   │   │   ├── fnv v1.0.7
+│       │       │   │   │   ├── ident_case v1.0.1
+│       │       │   │   │   ├── proc-macro2 v1.0.107 (*)
+│       │       │   │   │   ├── quote v1.0.47 (*)
+│       │       │   │   │   ├── strsim v0.11.1
+│       │       │   │   │   └── syn v2.0.119 (*)
+│       │       │   │   └── darling_macro v0.20.11 (proc-macro)
+│       │       │   │       ├── darling_core v0.20.11 (*)
+│       │       │   │       ├── quote v1.0.47 (*)
+│       │       │   │       └── syn v2.0.119 (*)
+│       │       │   ├── proc-macro2 v1.0.107 (*)
+│       │       │   ├── quote v1.0.47 (*)
+│       │       │   └── syn v2.0.119 (*)
+│       │       └── syn v2.0.119 (*)
+│       ├── esaxx-rs v0.1.10
+│       ├── getrandom v0.3.4 (*)
+│       ├── itertools v0.14.0
+│       │   └── either v1.19.0
+│       ├── log v0.4.33
+│       ├── macro_rules_attribute v0.2.3
+│       │   ├── macro_rules_attribute-proc_macro v0.2.3 (proc-macro)
+│       │   └── pastey v0.2.3 (proc-macro)
+│       ├── monostate v0.1.18
+│       │   ├── monostate-impl v0.1.18 (proc-macro)
+│       │   │   ├── proc-macro2 v1.0.107 (*)
+│       │   │   ├── quote v1.0.47 (*)
+│       │   │   └── syn v2.0.119 (*)
+│       │   └── serde_core v1.0.229
+│       ├── onig v6.5.3
+│       │   ├── bitflags v2.13.1 (*)
+│       │   ├── once_cell v1.21.4
+│       │   └── onig_sys v69.9.3
+│       ├── pastey v0.2.3 (proc-macro)
+│       ├── rand v0.9.5
+│       │   ├── rand_chacha v0.9.0
+│       │   │   ├── ppv-lite86 v0.2.21
+│       │   │   │   └── zerocopy v0.8.56 (*)
+│       │   │   └── rand_core v0.9.5
+│       │   │       └── getrandom v0.3.4 (*)
+│       │   └── rand_core v0.9.5 (*)
+│       ├── rayon v1.12.0
+│       │   ├── either v1.19.0
+│       │   └── rayon-core v1.13.0
+│       │       ├── crossbeam-deque v0.8.8
+│       │       │   ├── crossbeam-epoch v0.9.21
+│       │       │   │   └── crossbeam-utils v0.8.22
+│       │       │   └── crossbeam-utils v0.8.22
+│       │       └── crossbeam-utils v0.8.22
+│       ├── rayon-cond v0.4.0
+│       │   ├── either v1.19.0
+│       │   ├── itertools v0.14.0 (*)
+│       │   └── rayon v1.12.0 (*)
+│       ├── regex v1.13.1
+│       │   ├── aho-corasick v1.1.5 (*)
+│       │   ├── memchr v2.8.3
+│       │   ├── regex-automata v0.4.18
+│       │   │   ├── aho-corasick v1.1.5 (*)
+│       │   │   ├── memchr v2.8.3
+│       │   │   └── regex-syntax v0.8.11
+│       │   └── regex-syntax v0.8.11
+│       ├── regex-syntax v0.8.11
+│       ├── serde v1.0.229 (*)
+│       ├── serde_json v1.0.151 (*)
+│       ├── spm_precompiled v0.1.4
+│       │   ├── base64 v0.13.1
+│       │   ├── nom v7.1.3
+│       │   │   ├── memchr v2.8.3
+│       │   │   └── minimal-lexical v0.2.1
+│       │   ├── serde v1.0.229 (*)
+│       │   └── unicode-segmentation v1.13.3
+│       ├── thiserror v2.0.20 (*)
+│       ├── unicode-normalization-alignments v0.1.12
+│       │   └── smallvec v1.15.2
+│       ├── unicode-segmentation v1.13.3
+│       └── unicode_categories v0.1.1
+├── kokin-blob v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-blob) (*)
+├── kokin-connectors v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-connectors)
+│   ├── bech32 v0.11.1
+│   ├── bs58 v0.5.1
+│   │   └── sha2 v0.10.9
+│   │       ├── cfg-if v1.0.4
+│   │       ├── cpufeatures v0.2.17
+│   │       │   └── libc v0.2.189
+│   │       └── digest v0.10.7 (*)
+│   ├── kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+│   │   ├── blake3 v1.8.6 (*)
+│   │   ├── reqwest v0.12.28
+│   │   │   ├── base64 v0.22.1
+│   │   │   ├── bytes v1.12.1
+│   │   │   ├── futures-channel v0.3.34
+│   │   │   │   ├── futures-core v0.3.34
+│   │   │   │   └── futures-sink v0.3.34
+│   │   │   ├── futures-core v0.3.34
+│   │   │   ├── futures-util v0.3.34
+│   │   │   │   ├── futures-core v0.3.34
+│   │   │   │   ├── futures-io v0.3.34
+│   │   │   │   ├── futures-sink v0.3.34
+│   │   │   │   ├── futures-task v0.3.34
+│   │   │   │   ├── memchr v2.8.3
+│   │   │   │   ├── pin-project-lite v0.2.17
+│   │   │   │   └── slab v0.4.12
+│   │   │   ├── http v1.5.0
+│   │   │   │   ├── bytes v1.12.1
+│   │   │   │   └── itoa v1.0.18
+│   │   │   ├── http-body v1.1.0
+│   │   │   │   ├── bytes v1.12.1
+│   │   │   │   └── http v1.5.0 (*)
+│   │   │   ├── http-body-util v0.1.4
+│   │   │   │   ├── bytes v1.12.1
+│   │   │   │   ├── futures-core v0.3.34
+│   │   │   │   ├── http v1.5.0 (*)
+│   │   │   │   ├── http-body v1.1.0 (*)
+│   │   │   │   └── pin-project-lite v0.2.17
+│   │   │   ├── hyper v1.11.0
+│   │   │   │   ├── atomic-waker v1.1.2
+│   │   │   │   ├── bytes v1.12.1
+│   │   │   │   ├── futures-channel v0.3.34 (*)
+│   │   │   │   ├── futures-core v0.3.34
+│   │   │   │   ├── http v1.5.0 (*)
+│   │   │   │   ├── http-body v1.1.0 (*)
+│   │   │   │   ├── httparse v1.10.1
+│   │   │   │   ├── itoa v1.0.18
+│   │   │   │   ├── pin-project-lite v0.2.17
+│   │   │   │   ├── smallvec v1.15.2
+│   │   │   │   ├── tokio v1.53.1
+│   │   │   │   │   ├── bytes v1.12.1
+│   │   │   │   │   ├── libc v0.2.189
+│   │   │   │   │   ├── mio v1.2.2
+│   │   │   │   │   │   └── libc v0.2.189
+│   │   │   │   │   ├── pin-project-lite v0.2.17
+│   │   │   │   │   ├── socket2 v0.6.5
+│   │   │   │   │   │   └── libc v0.2.189
+│   │   │   │   │   └── tokio-macros v2.7.2 (proc-macro)
+│   │   │   │   │       ├── proc-macro2 v1.0.107 (*)
+│   │   │   │   │       ├── quote v1.0.47 (*)
+│   │   │   │   │       └── syn v3.0.3 (*)
+│   │   │   │   └── want v0.3.1
+│   │   │   │       └── try-lock v0.2.5
+│   │   │   ├── hyper-rustls v0.27.10
+│   │   │   │   ├── http v1.5.0 (*)
+│   │   │   │   ├── hyper v1.11.0 (*)
+│   │   │   │   ├── hyper-util v0.1.20
+│   │   │   │   │   ├── base64 v0.22.1
+│   │   │   │   │   ├── bytes v1.12.1
+│   │   │   │   │   ├── futures-channel v0.3.34 (*)
+│   │   │   │   │   ├── futures-util v0.3.34 (*)
+│   │   │   │   │   ├── http v1.5.0 (*)
+│   │   │   │   │   ├── http-body v1.1.0 (*)
+│   │   │   │   │   ├── hyper v1.11.0 (*)
+│   │   │   │   │   ├── ipnet v2.12.1
+│   │   │   │   │   ├── libc v0.2.189
+│   │   │   │   │   ├── percent-encoding v2.3.2
+│   │   │   │   │   ├── pin-project-lite v0.2.17
+│   │   │   │   │   ├── socket2 v0.6.5 (*)
+│   │   │   │   │   ├── tokio v1.53.1 (*)
+│   │   │   │   │   ├── tower-service v0.3.3
+│   │   │   │   │   └── tracing v0.1.44
+│   │   │   │   │       ├── pin-project-lite v0.2.17
+│   │   │   │   │       └── tracing-core v0.1.36
+│   │   │   │   │           └── once_cell v1.21.4
+│   │   │   │   ├── rustls v0.23.45
+│   │   │   │   │   ├── once_cell v1.21.4
+│   │   │   │   │   ├── ring v0.17.14
+│   │   │   │   │   │   ├── cfg-if v1.0.4
+│   │   │   │   │   │   ├── getrandom v0.2.17
+│   │   │   │   │   │   │   ├── cfg-if v1.0.4
+│   │   │   │   │   │   │   └── libc v0.2.189
+│   │   │   │   │   │   ├── libc v0.2.189
+│   │   │   │   │   │   └── untrusted v0.9.0
+│   │   │   │   │   ├── rustls-pki-types v1.15.1
+│   │   │   │   │   │   └── zeroize v1.9.0 (*)
+│   │   │   │   │   ├── rustls-webpki v0.103.15
+│   │   │   │   │   │   ├── ring v0.17.14 (*)
+│   │   │   │   │   │   ├── rustls-pki-types v1.15.1 (*)
+│   │   │   │   │   │   └── untrusted v0.9.0
+│   │   │   │   │   ├── subtle v2.6.1
+│   │   │   │   │   └── zeroize v1.9.0 (*)
+│   │   │   │   ├── tokio v1.53.1 (*)
+│   │   │   │   ├── tokio-rustls v0.26.6
+│   │   │   │   │   ├── rustls v0.23.45 (*)
+│   │   │   │   │   └── tokio v1.53.1 (*)
+│   │   │   │   ├── tower-service v0.3.3
+│   │   │   │   └── webpki-roots v1.0.9
+│   │   │   │       └── rustls-pki-types v1.15.1 (*)
+│   │   │   ├── hyper-util v0.1.20 (*)
+│   │   │   ├── log v0.4.33
+│   │   │   ├── percent-encoding v2.3.2
+│   │   │   ├── pin-project-lite v0.2.17
+│   │   │   ├── rustls v0.23.45 (*)
+│   │   │   ├── rustls-pki-types v1.15.1 (*)
+│   │   │   ├── serde v1.0.229 (*)
+│   │   │   ├── serde_urlencoded v0.7.1
+│   │   │   │   ├── form_urlencoded v1.2.2
+│   │   │   │   │   └── percent-encoding v2.3.2
+│   │   │   │   ├── itoa v1.0.18
+│   │   │   │   ├── ryu v1.0.23
+│   │   │   │   └── serde v1.0.229 (*)
+│   │   │   ├── sync_wrapper v1.0.2
+│   │   │   │   └── futures-core v0.3.34
+│   │   │   ├── tokio v1.53.1 (*)
+│   │   │   ├── tokio-rustls v0.26.6 (*)
+│   │   │   ├── tokio-util v0.7.19
+│   │   │   │   ├── bytes v1.12.1
+│   │   │   │   ├── futures-core v0.3.34
+│   │   │   │   ├── futures-sink v0.3.34
+│   │   │   │   ├── pin-project-lite v0.2.17
+│   │   │   │   └── tokio v1.53.1 (*)
+│   │   │   ├── tower v0.5.3
+│   │   │   │   ├── futures-core v0.3.34
+│   │   │   │   ├── futures-util v0.3.34 (*)
+│   │   │   │   ├── pin-project-lite v0.2.17
+│   │   │   │   ├── sync_wrapper v1.0.2 (*)
+│   │   │   │   ├── tokio v1.53.1 (*)
+│   │   │   │   ├── tower-layer v0.3.3
+│   │   │   │   └── tower-service v0.3.3
+│   │   │   ├── tower-http v0.6.11
+│   │   │   │   ├── bitflags v2.13.1 (*)
+│   │   │   │   ├── bytes v1.12.1
+│   │   │   │   ├── futures-util v0.3.34 (*)
+│   │   │   │   ├── http v1.5.0 (*)
+│   │   │   │   ├── http-body v1.1.0 (*)
+│   │   │   │   ├── pin-project-lite v0.2.17
+│   │   │   │   ├── tower v0.5.3 (*)
+│   │   │   │   ├── tower-layer v0.3.3
+│   │   │   │   ├── tower-service v0.3.3
+│   │   │   │   └── url v2.5.8
+│   │   │   │       ├── form_urlencoded v1.2.2 (*)
+│   │   │   │       ├── idna v1.1.0
+│   │   │   │       │   ├── idna_adapter v1.2.1
+│   │   │   │       │   │   ├── icu_normalizer v2.1.1
+│   │   │   │       │   │   │   ├── icu_collections v2.1.1
+│   │   │   │       │   │   │   │   ├── displaydoc v0.2.7 (proc-macro)
+│   │   │   │       │   │   │   │   │   ├── proc-macro2 v1.0.107 (*)
+│   │   │   │       │   │   │   │   │   ├── quote v1.0.47 (*)
+│   │   │   │       │   │   │   │   │   └── syn v3.0.3 (*)
+│   │   │   │       │   │   │   │   ├── potential_utf v0.1.5
+│   │   │   │       │   │   │   │   │   └── zerovec v0.11.6
+│   │   │   │       │   │   │   │   │       ├── yoke v0.8.3
+│   │   │   │       │   │   │   │   │       │   ├── stable_deref_trait v1.2.1
+│   │   │   │       │   │   │   │   │       │   ├── yoke-derive v0.8.2 (proc-macro)
+│   │   │   │       │   │   │   │   │       │   │   ├── proc-macro2 v1.0.107 (*)
+│   │   │   │       │   │   │   │   │       │   │   ├── quote v1.0.47 (*)
+│   │   │   │       │   │   │   │   │       │   │   ├── syn v2.0.119 (*)
+│   │   │   │       │   │   │   │   │       │   │   └── synstructure v0.13.2
+│   │   │   │       │   │   │   │   │       │   │       ├── proc-macro2 v1.0.107 (*)
+│   │   │   │       │   │   │   │   │       │   │       ├── quote v1.0.47 (*)
+│   │   │   │       │   │   │   │   │       │   │       └── syn v2.0.119 (*)
+│   │   │   │       │   │   │   │   │       │   └── zerofrom v0.1.8
+│   │   │   │       │   │   │   │   │       │       └── zerofrom-derive v0.1.7 (proc-macro)
+│   │   │   │       │   │   │   │   │       │           ├── proc-macro2 v1.0.107 (*)
+│   │   │   │       │   │   │   │   │       │           ├── quote v1.0.47 (*)
+│   │   │   │       │   │   │   │   │       │           ├── syn v2.0.119 (*)
+│   │   │   │       │   │   │   │   │       │           └── synstructure v0.13.2 (*)
+│   │   │   │       │   │   │   │   │       ├── zerofrom v0.1.8 (*)
+│   │   │   │       │   │   │   │   │       └── zerovec-derive v0.11.3 (proc-macro)
+│   │   │   │       │   │   │   │   │           ├── proc-macro2 v1.0.107 (*)
+│   │   │   │       │   │   │   │   │           ├── quote v1.0.47 (*)
+│   │   │   │       │   │   │   │   │           └── syn v2.0.119 (*)
+│   │   │   │       │   │   │   │   ├── yoke v0.8.3 (*)
+│   │   │   │       │   │   │   │   ├── zerofrom v0.1.8 (*)
+│   │   │   │       │   │   │   │   └── zerovec v0.11.6 (*)
+│   │   │   │       │   │   │   ├── icu_normalizer_data v2.1.1
+│   │   │   │       │   │   │   ├── icu_provider v2.1.1
+│   │   │   │       │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) (*)
+│   │   │   │       │   │   │   │   ├── icu_locale_core v2.1.1
+│   │   │   │       │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) (*)
+│   │   │   │       │   │   │   │   │   ├── litemap v0.8.2
+│   │   │   │       │   │   │   │   │   ├── tinystr v0.8.3
+│   │   │   │       │   │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) (*)
+│   │   │   │       │   │   │   │   │   │   └── zerovec v0.11.6 (*)
+│   │   │   │       │   │   │   │   │   ├── writeable v0.6.3
+│   │   │   │       │   │   │   │   │   └── zerovec v0.11.6 (*)
+│   │   │   │       │   │   │   │   ├── writeable v0.6.3
+│   │   │   │       │   │   │   │   ├── yoke v0.8.3 (*)
+│   │   │   │       │   │   │   │   ├── zerofrom v0.1.8 (*)
+│   │   │   │       │   │   │   │   ├── zerotrie v0.2.4
+│   │   │   │       │   │   │   │   │   ├── displaydoc v0.2.7 (proc-macro) (*)
+│   │   │   │       │   │   │   │   │   ├── yoke v0.8.3 (*)
+│   │   │   │       │   │   │   │   │   └── zerofrom v0.1.8 (*)
+│   │   │   │       │   │   │   │   └── zerovec v0.11.6 (*)
+│   │   │   │       │   │   │   ├── smallvec v1.15.2
+│   │   │   │       │   │   │   └── zerovec v0.11.6 (*)
+│   │   │   │       │   │   └── icu_properties v2.1.2
+│   │   │   │       │   │       ├── icu_collections v2.1.1 (*)
+│   │   │   │       │   │       ├── icu_locale_core v2.1.1 (*)
+│   │   │   │       │   │       ├── icu_properties_data v2.1.2
+│   │   │   │       │   │       ├── icu_provider v2.1.1 (*)
+│   │   │   │       │   │       ├── zerotrie v0.2.4 (*)
+│   │   │   │       │   │       └── zerovec v0.11.6 (*)
+│   │   │   │       │   ├── smallvec v1.15.2
+│   │   │   │       │   └── utf8_iter v1.0.4
+│   │   │   │       ├── percent-encoding v2.3.2
+│   │   │   │       ├── serde v1.0.229 (*)
+│   │   │   │       └── serde_derive v1.0.229 (proc-macro) (*)
+│   │   │   ├── tower-service v0.3.3
+│   │   │   ├── url v2.5.8 (*)
+│   │   │   └── webpki-roots v1.0.9 (*)
+│   │   ├── serde v1.0.229 (*)
+│   │   ├── serde_json v1.0.151 (*)
+│   │   ├── sha2 v0.10.9 (*)
+│   │   ├── thiserror v2.0.20 (*)
+│   │   ├── tokio v1.53.1 (*)
+│   │   ├── tokio-util v0.7.19 (*)
+│   │   ├── url v2.5.8 (*)
+│   │   └── zeroize v1.9.0 (*)
+│   ├── serde v1.0.229 (*)
+│   ├── serde_json v1.0.151 (*)
+│   ├── sha3 v0.10.9
+│   │   ├── digest v0.10.7 (*)
+│   │   └── keccak v0.1.6
+│   │       └── cpufeatures v0.2.17 (*)
+│   ├── thiserror v2.0.20 (*)
+│   └── url v2.5.8 (*)
+├── kokin-export v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-export)
+│   ├── blake3 v1.8.6 (*)
+│   ├── kokin-blob v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-blob) (*)
+│   ├── kokin-keys v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-keys) (*)
+│   ├── kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store) (*)
+│   ├── rusqlite v0.40.2 (*)
+│   ├── rustix v1.1.5
+│   │   ├── bitflags v2.13.1 (*)
+│   │   ├── errno v0.3.14
+│   │   │   └── libc v0.2.189
+│   │   └── libc v0.2.189
+│   ├── serde v1.0.229 (*)
+│   ├── serde_json v1.0.151 (*)
+│   ├── tempfile v3.27.0
+│   │   ├── fastrand v2.5.0
+│   │   ├── getrandom v0.4.3 (*)
+│   │   ├── once_cell v1.21.4
+│   │   └── rustix v1.1.5 (*)
+│   └── thiserror v2.0.20 (*)
+├── kokin-extract v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-extract)
+│   ├── getrandom v0.4.3 (*)
+│   ├── html-escape v0.2.15
+│   ├── kokin-blob v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-blob) (*)
+│   ├── kokin-keys v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-keys) (*)
+│   ├── kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store) (*)
+│   ├── lol_html v3.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/lol_html)
+│   │   ├── bitflags v2.13.1 (*)
+│   │   ├── cfg-if v1.0.4
+│   │   ├── cssparser v0.36.0
+│   │   │   ├── cssparser-macros v0.6.1 (proc-macro)
+│   │   │   │   ├── quote v1.0.47 (*)
+│   │   │   │   └── syn v2.0.119 (*)
+│   │   │   ├── dtoa-short v0.3.5
+│   │   │   │   └── dtoa v1.0.11
+│   │   │   ├── itoa v1.0.18
+│   │   │   ├── phf v0.13.1
+│   │   │   │   ├── phf_macros v0.13.1 (proc-macro)
+│   │   │   │   │   ├── phf_generator v0.13.1
+│   │   │   │   │   │   ├── fastrand v2.5.0
+│   │   │   │   │   │   └── phf_shared v0.13.1
+│   │   │   │   │   │       └── siphasher v1.0.3
+│   │   │   │   │   ├── phf_shared v0.13.1 (*)
+│   │   │   │   │   ├── proc-macro2 v1.0.107 (*)
+│   │   │   │   │   ├── quote v1.0.47 (*)
+│   │   │   │   │   └── syn v2.0.119 (*)
+│   │   │   │   └── phf_shared v0.13.1
+│   │   │   │       └── siphasher v1.0.3
+│   │   │   └── smallvec v1.15.2
+│   │   ├── encoding_rs v0.8.35
+│   │   │   └── cfg-if v1.0.4
+│   │   ├── foldhash v0.2.0
+│   │   ├── hashbrown v0.17.1 (*)
+│   │   ├── memchr v2.8.3
+│   │   ├── mime v0.3.17
+│   │   ├── precomputed-hash v0.1.1
+│   │   ├── selectors v0.37.0
+│   │   │   ├── bitflags v2.13.1 (*)
+│   │   │   ├── cssparser v0.36.0 (*)
+│   │   │   ├── derive_more v2.1.1
+│   │   │   │   └── derive_more-impl v2.1.1 (proc-macro)
+│   │   │   │       ├── proc-macro2 v1.0.107 (*)
+│   │   │   │       ├── quote v1.0.47 (*)
+│   │   │   │       └── syn v2.0.119 (*)
+│   │   │   ├── log v0.4.33
+│   │   │   ├── new_debug_unreachable v1.0.6
+│   │   │   ├── phf v0.13.1 (*)
+│   │   │   ├── precomputed-hash v0.1.1
+│   │   │   ├── rustc-hash v2.1.3
+│   │   │   ├── servo_arc v0.4.3
+│   │   │   │   └── stable_deref_trait v1.2.1
+│   │   │   └── smallvec v1.15.2
+│   │   └── thiserror v2.0.20 (*)
+│   ├── rusqlite v0.40.2 (*)
+│   ├── serde_json v1.0.151 (*)
+│   ├── thiserror v2.0.20 (*)
+│   └── url v2.5.8 (*)
+├── kokin-faces v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-faces)
+│   ├── base64 v0.22.1
+│   ├── serde v1.0.229 (*)
+│   ├── serde_json v1.0.151 (*)
+│   └── thiserror v2.0.20 (*)
+├── kokin-graph v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-graph)
+│   ├── getrandom v0.4.3 (*)
+│   ├── kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store) (*)
+│   ├── rusqlite v0.40.2 (*)
+│   ├── serde v1.0.229 (*)
+│   ├── serde_json v1.0.151 (*)
+│   ├── thiserror v2.0.20 (*)
+│   └── yaml_serde v0.10.6
+│       ├── indexmap v2.14.0
+│       │   ├── equivalent v1.0.2
+│       │   └── hashbrown v0.17.1 (*)
+│       ├── itoa v1.0.18
+│       ├── libyaml-rs v0.3.0
+│       ├── ryu v1.0.23
+│       └── serde v1.0.229 (*)
+├── kokin-ingest v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-ingest)
+│   ├── getrandom v0.4.3 (*)
+│   ├── kokin-blob v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-blob) (*)
+│   ├── kokin-keys v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-keys) (*)
+│   ├── kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net) (*)
+│   ├── kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store) (*)
+│   ├── rusqlite v0.40.2 (*)
+│   ├── serde_json v1.0.151 (*)
+│   └── thiserror v2.0.20 (*)
+├── kokin-keys v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-keys) (*)
+├── kokin-maps v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-maps)
+│   ├── flate2 v1.1.9 (*)
+│   ├── serde_json v1.0.151 (*)
+│   └── thiserror v2.0.20 (*)
+├── kokin-media v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-media)
+│   ├── kokin-faces v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-faces) (*)
+│   ├── serde v1.0.229 (*)
+│   ├── serde_json v1.0.151 (*)
+│   └── thiserror v2.0.20 (*)
+├── kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net) (*)
+├── kokin-search v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-search) (*)
+├── kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store) (*)
+├── rfd v0.15.4
+│   ├── block2 v0.6.2
+│   │   └── objc2 v0.6.4
+│   │       ├── objc2-encode v4.1.0
+│   │       └── objc2-exception-helper v0.1.1
+│   ├── dispatch2 v0.3.1
+│   │   ├── bitflags v2.13.1 (*)
+│   │   ├── block2 v0.6.2 (*)
+│   │   ├── libc v0.2.189
+│   │   └── objc2 v0.6.4 (*)
+│   ├── log v0.4.33
+│   ├── objc2 v0.6.4 (*)
+│   ├── objc2-app-kit v0.3.2
+│   │   ├── bitflags v2.13.1 (*)
+│   │   ├── block2 v0.6.2 (*)
+│   │   ├── objc2 v0.6.4 (*)
+│   │   ├── objc2-core-foundation v0.3.2
+│   │   │   ├── bitflags v2.13.1 (*)
+│   │   │   └── objc2 v0.6.4 (*)
+│   │   └── objc2-foundation v0.3.2
+│   │       ├── bitflags v2.13.1 (*)
+│   │       ├── objc2 v0.6.4 (*)
+│   │       └── objc2-core-foundation v0.3.2 (*)
+│   ├── objc2-core-foundation v0.3.2 (*)
+│   ├── objc2-foundation v0.3.2 (*)
+│   └── raw-window-handle v0.6.2
+├── rusqlite v0.40.2 (*)
+├── serde v1.0.229 (*)
+├── serde_json v1.0.151 (*)
+├── sha2 v0.10.9 (*)
+└── tauri v2.11.5
+    ├── anyhow v1.0.104
+    ├── cookie v0.18.2
+    │   └── time v0.3.45 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/time)
+    │       ├── deranged v0.5.8
+    │       │   └── powerfmt v0.2.0
+    │       ├── itoa v1.0.18
+    │       ├── num-conv v0.1.0
+    │       ├── powerfmt v0.2.0
+    │       ├── time-core v0.1.7
+    │       └── time-macros v0.2.25 (proc-macro)
+    │           ├── num-conv v0.1.0
+    │           └── time-core v0.1.7
+    ├── dirs v6.0.0
+    │   └── dirs-sys v0.5.0
+    │       ├── libc v0.2.189
+    │       └── option-ext v0.2.0
+    ├── dunce v1.0.5
+    ├── embed_plist v1.2.2
+    ├── getrandom v0.3.4 (*)
+    ├── glob v0.3.4
+    ├── heck v0.5.0
+    ├── http v1.5.0 (*)
+    ├── log v0.4.33
+    ├── mime v0.3.17
+    ├── muda v0.19.3
+    │   ├── crossbeam-channel v0.5.16
+    │   │   └── crossbeam-utils v0.8.22
+    │   ├── dpi v0.1.2
+    │   │   └── serde v1.0.229 (*)
+    │   ├── keyboard-types v0.7.0
+    │   │   ├── bitflags v2.13.1 (*)
+    │   │   ├── serde v1.0.229 (*)
+    │   │   └── unicode-segmentation v1.13.3
+    │   ├── objc2 v0.6.4 (*)
+    │   ├── objc2-app-kit v0.3.2 (*)
+    │   ├── objc2-core-foundation v0.3.2 (*)
+    │   ├── objc2-foundation v0.3.2 (*)
+    │   ├── once_cell v1.21.4
+    │   ├── png v0.18.1
+    │   │   ├── bitflags v2.13.1 (*)
+    │   │   ├── crc32fast v1.5.0 (*)
+    │   │   ├── fdeflate v0.3.7 (*)
+    │   │   ├── flate2 v1.1.9 (*)
+    │   │   └── miniz_oxide v0.8.9 (*)
+    │   ├── serde v1.0.229 (*)
+    │   └── thiserror v2.0.20 (*)
+    ├── objc2 v0.6.4 (*)
+    ├── objc2-app-kit v0.3.2 (*)
+    ├── objc2-foundation v0.3.2 (*)
+    ├── objc2-web-kit v0.3.2
+    │   ├── bitflags v2.13.1 (*)
+    │   ├── block2 v0.6.2 (*)
+    │   ├── objc2 v0.6.4 (*)
+    │   ├── objc2-app-kit v0.3.2 (*)
+    │   ├── objc2-core-foundation v0.3.2 (*)
+    │   └── objc2-foundation v0.3.2 (*)
+    ├── percent-encoding v2.3.2
+    ├── plist v1.8.0 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/plist)
+    │   ├── base64 v0.22.1
+    │   ├── indexmap v2.14.0 (*)
+    │   ├── quick-xml v0.41.0
+    │   │   └── memchr v2.8.3
+    │   ├── serde v1.0.229 (*)
+    │   └── time v0.3.45 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/time) (*)
+    ├── raw-window-handle v0.6.2
+    ├── serde v1.0.229 (*)
+    ├── serde_json v1.0.151 (*)
+    ├── serde_repr v0.1.21 (proc-macro)
+    │   ├── proc-macro2 v1.0.107 (*)
+    │   ├── quote v1.0.47 (*)
+    │   └── syn v3.0.3 (*)
+    ├── serialize-to-javascript v0.1.2
+    │   ├── serde v1.0.229 (*)
+    │   ├── serde_json v1.0.151 (*)
+    │   └── serialize-to-javascript-impl v0.1.2 (proc-macro)
+    │       ├── proc-macro2 v1.0.107 (*)
+    │       ├── quote v1.0.47 (*)
+    │       └── syn v2.0.119 (*)
+    ├── tauri-macros v2.6.3 (proc-macro)
+    │   ├── heck v0.5.0
+    │   ├── proc-macro2 v1.0.107 (*)
+    │   ├── quote v1.0.47 (*)
+    │   ├── syn v2.0.119 (*)
+    │   ├── tauri-codegen v2.6.3
+    │   │   ├── base64 v0.22.1
+    │   │   ├── brotli v8.0.4
+    │   │   │   ├── alloc-no-stdlib v2.0.4
+    │   │   │   ├── alloc-stdlib v0.2.4
+    │   │   │   │   └── alloc-no-stdlib v2.0.4
+    │   │   │   └── brotli-decompressor v5.0.3
+    │   │   │       ├── alloc-no-stdlib v2.0.4
+    │   │   │       └── alloc-stdlib v0.2.4 (*)
+    │   │   ├── ico v0.5.0
+    │   │   │   ├── byteorder v1.5.0
+    │   │   │   └── png v0.17.16 (*)
+    │   │   ├── json-patch v3.0.1
+    │   │   │   ├── jsonptr v0.6.3
+    │   │   │   │   ├── serde v1.0.229
+    │   │   │   │   │   ├── serde_core v1.0.229
+    │   │   │   │   │   └── serde_derive v1.0.229 (proc-macro) (*)
+    │   │   │   │   └── serde_json v1.0.151
+    │   │   │   │       ├── itoa v1.0.18
+    │   │   │   │       ├── memchr v2.8.3
+    │   │   │   │       ├── serde_core v1.0.229
+    │   │   │   │       └── zmij v1.0.23
+    │   │   │   ├── serde v1.0.229 (*)
+    │   │   │   ├── serde_json v1.0.151 (*)
+    │   │   │   └── thiserror v1.0.69
+    │   │   │       └── thiserror-impl v1.0.69 (proc-macro)
+    │   │   │           ├── proc-macro2 v1.0.107 (*)
+    │   │   │           ├── quote v1.0.47 (*)
+    │   │   │           └── syn v2.0.119 (*)
+    │   │   ├── plist v1.8.0 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/plist) (*)
+    │   │   ├── png v0.17.16 (*)
+    │   │   ├── proc-macro2 v1.0.107 (*)
+    │   │   ├── quote v1.0.47 (*)
+    │   │   ├── semver v1.0.28
+    │   │   │   └── serde_core v1.0.229
+    │   │   ├── serde v1.0.229 (*)
+    │   │   ├── serde_json v1.0.151 (*)
+    │   │   ├── sha2 v0.10.9 (*)
+    │   │   ├── syn v2.0.119 (*)
+    │   │   ├── tauri-utils v2.9.3
+    │   │   │   ├── anyhow v1.0.104
+    │   │   │   ├── brotli v8.0.4 (*)
+    │   │   │   ├── cargo_metadata v0.19.2
+    │   │   │   │   ├── camino v1.2.5
+    │   │   │   │   │   └── serde_core v1.0.229
+    │   │   │   │   ├── cargo-platform v0.1.9
+    │   │   │   │   │   └── serde v1.0.229 (*)
+    │   │   │   │   ├── semver v1.0.28 (*)
+    │   │   │   │   ├── serde v1.0.229 (*)
+    │   │   │   │   ├── serde_json v1.0.151 (*)
+    │   │   │   │   └── thiserror v2.0.20 (*)
+    │   │   │   ├── ctor v0.8.0
+    │   │   │   │   └── ctor-proc-macro v0.0.7 (proc-macro)
+    │   │   │   ├── dom_query v0.27.0
+    │   │   │   │   ├── bit-set v0.8.0
+    │   │   │   │   │   └── bit-vec v0.8.0
+    │   │   │   │   ├── cssparser v0.36.0 (*)
+    │   │   │   │   ├── foldhash v0.2.0
+    │   │   │   │   ├── html5ever v0.38.0
+    │   │   │   │   │   ├── log v0.4.33
+    │   │   │   │   │   └── markup5ever v0.38.0
+    │   │   │   │   │       ├── log v0.4.33
+    │   │   │   │   │       ├── tendril v0.5.1
+    │   │   │   │   │       │   └── new_debug_unreachable v1.0.6
+    │   │   │   │   │       └── web_atoms v0.2.6
+    │   │   │   │   │           ├── phf v0.13.1 (*)
+    │   │   │   │   │           └── string_cache v0.9.0
+    │   │   │   │   │               ├── new_debug_unreachable v1.0.6
+    │   │   │   │   │               ├── parking_lot v0.12.5
+    │   │   │   │   │               │   ├── lock_api v0.4.14
+    │   │   │   │   │               │   │   └── scopeguard v1.2.0
+    │   │   │   │   │               │   └── parking_lot_core v0.9.12
+    │   │   │   │   │               │       ├── cfg-if v1.0.4
+    │   │   │   │   │               │       ├── libc v0.2.189
+    │   │   │   │   │               │       └── smallvec v1.15.2
+    │   │   │   │   │               ├── phf_shared v0.13.1 (*)
+    │   │   │   │   │               └── precomputed-hash v0.1.1
+    │   │   │   │   ├── precomputed-hash v0.1.1
+    │   │   │   │   ├── selectors v0.36.1
+    │   │   │   │   │   ├── bitflags v2.13.1
+    │   │   │   │   │   ├── cssparser v0.36.0 (*)
+    │   │   │   │   │   ├── derive_more v2.1.1 (*)
+    │   │   │   │   │   ├── log v0.4.33
+    │   │   │   │   │   ├── new_debug_unreachable v1.0.6
+    │   │   │   │   │   ├── phf v0.13.1 (*)
+    │   │   │   │   │   ├── precomputed-hash v0.1.1
+    │   │   │   │   │   ├── rustc-hash v2.1.3
+    │   │   │   │   │   ├── servo_arc v0.4.3 (*)
+    │   │   │   │   │   └── smallvec v1.15.2
+    │   │   │   │   └── tendril v0.5.1 (*)
+    │   │   │   ├── dunce v1.0.5
+    │   │   │   ├── glob v0.3.4
+    │   │   │   ├── http v1.5.0 (*)
+    │   │   │   ├── infer v0.19.0
+    │   │   │   │   └── cfb v0.7.3
+    │   │   │   │       ├── byteorder v1.5.0
+    │   │   │   │       ├── fnv v1.0.7
+    │   │   │   │       └── uuid v1.24.0
+    │   │   │   │           ├── getrandom v0.4.3
+    │   │   │   │           │   ├── cfg-if v1.0.4
+    │   │   │   │           │   └── libc v0.2.189
+    │   │   │   │           └── serde_core v1.0.229
+    │   │   │   ├── json-patch v3.0.1 (*)
+    │   │   │   ├── log v0.4.33
+    │   │   │   ├── memchr v2.8.3
+    │   │   │   ├── phf v0.13.1 (*)
+    │   │   │   ├── plist v1.8.0 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/plist) (*)
+    │   │   │   ├── proc-macro2 v1.0.107 (*)
+    │   │   │   ├── quote v1.0.47 (*)
+    │   │   │   ├── regex v1.13.1 (*)
+    │   │   │   ├── schemars v0.8.22
+    │   │   │   │   ├── dyn-clone v1.0.20
+    │   │   │   │   ├── indexmap v1.9.3
+    │   │   │   │   │   ├── hashbrown v0.12.3
+    │   │   │   │   │   └── serde v1.0.229 (*)
+    │   │   │   │   ├── schemars_derive v0.8.22 (proc-macro)
+    │   │   │   │   │   ├── proc-macro2 v1.0.107 (*)
+    │   │   │   │   │   ├── quote v1.0.47 (*)
+    │   │   │   │   │   ├── serde_derive_internals v0.29.1
+    │   │   │   │   │   │   ├── proc-macro2 v1.0.107 (*)
+    │   │   │   │   │   │   ├── quote v1.0.47 (*)
+    │   │   │   │   │   │   └── syn v2.0.119 (*)
+    │   │   │   │   │   └── syn v2.0.119 (*)
+    │   │   │   │   ├── serde v1.0.229 (*)
+    │   │   │   │   ├── serde_json v1.0.151 (*)
+    │   │   │   │   ├── url v2.5.8 (*)
+    │   │   │   │   └── uuid v1.24.0 (*)
+    │   │   │   ├── semver v1.0.28 (*)
+    │   │   │   ├── serde v1.0.229 (*)
+    │   │   │   ├── serde-untagged v0.1.9
+    │   │   │   │   ├── erased-serde v0.4.10
+    │   │   │   │   │   ├── serde_core v1.0.229
+    │   │   │   │   │   └── typeid v1.0.3
+    │   │   │   │   ├── serde_core v1.0.229
+    │   │   │   │   └── typeid v1.0.3
+    │   │   │   ├── serde_json v1.0.151 (*)
+    │   │   │   ├── serde_with v3.17.0
+    │   │   │   │   ├── serde_core v1.0.229
+    │   │   │   │   └── serde_with_macros v3.17.0 (proc-macro)
+    │   │   │   │       ├── darling v0.21.3
+    │   │   │   │       │   ├── darling_core v0.21.3
+    │   │   │   │       │   │   ├── fnv v1.0.7
+    │   │   │   │       │   │   ├── ident_case v1.0.1
+    │   │   │   │       │   │   ├── proc-macro2 v1.0.107 (*)
+    │   │   │   │       │   │   ├── quote v1.0.47 (*)
+    │   │   │   │       │   │   ├── strsim v0.11.1
+    │   │   │   │       │   │   └── syn v2.0.119 (*)
+    │   │   │   │       │   └── darling_macro v0.21.3 (proc-macro)
+    │   │   │   │       │       ├── darling_core v0.21.3 (*)
+    │   │   │   │       │       ├── quote v1.0.47 (*)
+    │   │   │   │       │       └── syn v2.0.119 (*)
+    │   │   │   │       ├── proc-macro2 v1.0.107 (*)
+    │   │   │   │       ├── quote v1.0.47 (*)
+    │   │   │   │       └── syn v2.0.119 (*)
+    │   │   │   ├── swift-rs v1.0.7
+    │   │   │   │   ├── base64 v0.21.7
+    │   │   │   │   ├── serde v1.0.229 (*)
+    │   │   │   │   └── serde_json v1.0.151 (*)
+    │   │   │   ├── thiserror v2.0.20 (*)
+    │   │   │   ├── toml v1.1.4+spec-1.1.0
+    │   │   │   │   ├── serde_core v1.0.229
+    │   │   │   │   ├── serde_spanned v1.1.1
+    │   │   │   │   │   └── serde_core v1.0.229
+    │   │   │   │   ├── toml_datetime v1.1.1+spec-1.1.0
+    │   │   │   │   │   └── serde_core v1.0.229
+    │   │   │   │   ├── toml_parser v1.1.3+spec-1.1.0
+    │   │   │   │   │   └── winnow v1.0.4
+    │   │   │   │   ├── toml_writer v1.1.2+spec-1.1.0
+    │   │   │   │   └── winnow v1.0.4
+    │   │   │   ├── url v2.5.8 (*)
+    │   │   │   ├── urlpattern v0.3.0
+    │   │   │   │   ├── regex v1.13.1 (*)
+    │   │   │   │   ├── serde v1.0.229 (*)
+    │   │   │   │   ├── unic-ucd-ident v0.9.0
+    │   │   │   │   │   ├── unic-char-property v0.9.0
+    │   │   │   │   │   │   └── unic-char-range v0.9.0
+    │   │   │   │   │   ├── unic-char-range v0.9.0
+    │   │   │   │   │   └── unic-ucd-version v0.9.0
+    │   │   │   │   │       └── unic-common v0.9.0
+    │   │   │   │   └── url v2.5.8 (*)
+    │   │   │   ├── uuid v1.24.0 (*)
+    │   │   │   └── walkdir v2.5.0
+    │   │   │       └── same-file v1.0.6
+    │   │   ├── thiserror v2.0.20 (*)
+    │   │   ├── time v0.3.45 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/time)
+    │   │   │   ├── deranged v0.5.8 (*)
+    │   │   │   ├── itoa v1.0.18
+    │   │   │   ├── num-conv v0.1.0
+    │   │   │   ├── powerfmt v0.2.0
+    │   │   │   └── time-core v0.1.7
+    │   │   ├── url v2.5.8 (*)
+    │   │   ├── uuid v1.24.0 (*)
+    │   │   └── walkdir v2.5.0 (*)
+    │   └── tauri-utils v2.9.3 (*)
+    ├── tauri-runtime v2.11.3
+    │   ├── cookie v0.18.2 (*)
+    │   ├── dpi v0.1.2 (*)
+    │   ├── http v1.5.0 (*)
+    │   ├── objc2 v0.6.4 (*)
+    │   ├── objc2-web-kit v0.3.2 (*)
+    │   ├── raw-window-handle v0.6.2
+    │   ├── serde v1.0.229 (*)
+    │   ├── serde_json v1.0.151 (*)
+    │   ├── tauri-utils v2.9.3
+    │   │   ├── anyhow v1.0.104
+    │   │   ├── brotli v8.0.4 (*)
+    │   │   ├── ctor v0.8.0 (*)
+    │   │   ├── dunce v1.0.5
+    │   │   ├── glob v0.3.4
+    │   │   ├── http v1.5.0 (*)
+    │   │   ├── infer v0.19.0 (*)
+    │   │   ├── json-patch v3.0.1 (*)
+    │   │   ├── log v0.4.33
+    │   │   ├── memchr v2.8.3
+    │   │   ├── phf v0.13.1 (*)
+    │   │   ├── plist v1.8.0 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/plist) (*)
+    │   │   ├── regex v1.13.1 (*)
+    │   │   ├── semver v1.0.28
+    │   │   ├── serde v1.0.229 (*)
+    │   │   ├── serde-untagged v0.1.9 (*)
+    │   │   ├── serde_json v1.0.151 (*)
+    │   │   ├── serde_with v3.17.0 (*)
+    │   │   ├── thiserror v2.0.20 (*)
+    │   │   ├── toml v1.1.4+spec-1.1.0 (*)
+    │   │   ├── url v2.5.8 (*)
+    │   │   ├── urlpattern v0.3.0 (*)
+    │   │   ├── uuid v1.24.0
+    │   │   │   └── serde_core v1.0.229
+    │   │   └── walkdir v2.5.0 (*)
+    │   ├── thiserror v2.0.20 (*)
+    │   └── url v2.5.8 (*)
+    ├── tauri-runtime-wry v2.11.4
+    │   ├── http v1.5.0 (*)
+    │   ├── log v0.4.33
+    │   ├── objc2 v0.6.4 (*)
+    │   ├── objc2-app-kit v0.3.2 (*)
+    │   ├── raw-window-handle v0.6.2
+    │   ├── tao v0.35.3
+    │   │   ├── bitflags v2.13.1 (*)
+    │   │   ├── block2 v0.6.2 (*)
+    │   │   ├── core-foundation v0.10.1
+    │   │   │   ├── core-foundation-sys v0.8.7
+    │   │   │   └── libc v0.2.189
+    │   │   ├── core-graphics v0.25.0
+    │   │   │   ├── bitflags v2.13.1 (*)
+    │   │   │   ├── core-foundation v0.10.1 (*)
+    │   │   │   ├── core-graphics-types v0.2.0
+    │   │   │   │   ├── bitflags v2.13.1 (*)
+    │   │   │   │   ├── core-foundation v0.10.1 (*)
+    │   │   │   │   └── libc v0.2.189
+    │   │   │   ├── foreign-types v0.5.0
+    │   │   │   │   ├── foreign-types-macros v0.2.4 (proc-macro)
+    │   │   │   │   │   ├── proc-macro2 v1.0.107 (*)
+    │   │   │   │   │   ├── quote v1.0.47 (*)
+    │   │   │   │   │   └── syn v3.0.3 (*)
+    │   │   │   │   └── foreign-types-shared v0.3.1
+    │   │   │   └── libc v0.2.189
+    │   │   ├── crossbeam-channel v0.5.16 (*)
+    │   │   ├── dispatch2 v0.3.1 (*)
+    │   │   ├── dpi v0.1.2 (*)
+    │   │   ├── libc v0.2.189
+    │   │   ├── log v0.4.33
+    │   │   ├── objc2 v0.6.4 (*)
+    │   │   ├── objc2-app-kit v0.3.2 (*)
+    │   │   ├── objc2-foundation v0.3.2 (*)
+    │   │   ├── once_cell v1.21.4
+    │   │   ├── raw-window-handle v0.6.2
+    │   │   └── url v2.5.8 (*)
+    │   ├── tauri-runtime v2.11.3 (*)
+    │   ├── tauri-utils v2.9.3 (*)
+    │   ├── url v2.5.8 (*)
+    │   └── wry v0.55.1
+    │       ├── block2 v0.6.2 (*)
+    │       ├── cookie v0.18.2 (*)
+    │       ├── dirs v6.0.0 (*)
+    │       ├── dpi v0.1.2 (*)
+    │       ├── http v1.5.0 (*)
+    │       ├── objc2 v0.6.4 (*)
+    │       ├── objc2-app-kit v0.3.2 (*)
+    │       ├── objc2-core-foundation v0.3.2 (*)
+    │       ├── objc2-foundation v0.3.2 (*)
+    │       ├── objc2-web-kit v0.3.2 (*)
+    │       ├── once_cell v1.21.4
+    │       ├── raw-window-handle v0.6.2
+    │       ├── thiserror v2.0.20 (*)
+    │       └── url v2.5.8 (*)
+    ├── tauri-utils v2.9.3 (*)
+    ├── thiserror v2.0.20 (*)
+    ├── tokio v1.53.1 (*)
+    ├── url v2.5.8 (*)
+    └── window-vibrancy v0.6.0
+        ├── objc2 v0.6.4 (*)
+        ├── objc2-app-kit v0.3.2 (*)
+        ├── objc2-core-foundation v0.3.2 (*)
+        ├── objc2-foundation v0.3.2 (*)
+        └── raw-window-handle v0.6.2

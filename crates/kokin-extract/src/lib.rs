@@ -34,6 +34,7 @@ use rusqlite::Connection;
 use std::collections::HashMap;
 
 pub mod html;
+pub mod json;
 
 pub use html::{Extraction, HtmlExtractor, Limits, Locator, RawObservation};
 

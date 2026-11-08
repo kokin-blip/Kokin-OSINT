@@ -1,0 +1,4 @@
+# Respect the workspace's declared Rust 1.85 baseline when resolving updates.
+# This is supported by Cargo 1.84+; the lockfile still pins reproducible builds.
+[resolver]
+incompatible-rust-versions = "fallback"

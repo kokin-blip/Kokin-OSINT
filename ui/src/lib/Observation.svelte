@@ -24,6 +24,10 @@
 
   function verdict(quote: QuoteView): Verdict {
     switch (quote.agreement) {
+      case "structured_exact":
+        return {tone:"qualified",label:"Verified JSON field",explanation:quote.basis};
+      case "derived_exact":
+        return {tone:"qualified",label:"Verified transformation",explanation:quote.basis};
       case "exact":
         return {
           tone: "supported",
@@ -76,6 +80,8 @@
 
   let shown = $derived(verdict(observation.quote));
   let excerpt = $derived(
+    observation.quote.agreement === "structured_exact" ||
+    observation.quote.agreement === "derived_exact" ||
     observation.quote.agreement === "exact" ||
       observation.quote.agreement === "contains" ||
       observation.quote.agreement === "differs"
@@ -102,11 +108,10 @@
       <p>
         {#if observation.superseded.superseded_by}
           A rerun of the extractor on {observation.superseded.recorded_utc} recorded
-          a different value in this position.
+          a newer observation at this position. Review both readings and their processing metadata.
         {:else}
           A rerun of the extractor on {observation.superseded.recorded_utc} read the
-          same document and did not find this at all — a stronger statement than
-          a corrected value.
+          same document without a linked replacement. This may reflect changed processing or a coverage gap; it does not establish absence from the source.
         {/if}
       </p>
     </div>
@@ -213,7 +218,7 @@
           <p class="detail">
             {observation.locator.scheme}{#if observation.locator.selector}
               · {observation.locator.selector}{/if}{#if observation.locator.start !== null}
-              · bytes {observation.locator.start}–{observation.locator.end}{/if}
+              · {observation.locator.scheme === "html_byte_range" ? "bytes" : observation.locator.scheme === "pdf_char_range" ? "characters" : "range"} {observation.locator.start}–{observation.locator.end}{/if}
           </p>
           <p class="detail raw">{observation.locator.raw_json}</p>
         </div>

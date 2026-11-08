@@ -1,0 +1,11 @@
+   Compiling ring v0.17.14
+    Checking bs58 v0.5.1
+    Checking sha3 v0.10.9
+   Compiling rustls v0.23.45
+    Checking rustls-webpki v0.103.15
+    Checking tokio-rustls v0.26.6
+    Checking hyper-rustls v0.27.10
+    Checking reqwest v0.12.28
+    Checking kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+    Checking kokin-connectors v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-connectors)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.80s

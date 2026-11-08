@@ -13,7 +13,16 @@ workspace = true
 blake3 = "1.8.6"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
+zeroize = "1.9.0"
 thiserror = "2.0.20"
 url = "2.5.8"
 
-reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "stream"] }
+
+tokio = {version="1",features=["rt","time","macros","fs","io-util"]}
+
+sha2="0.10"
+tokio-util={version="0.7",features=["io"]}
+
+[dev-dependencies]
+kokin-media = { path = "../kokin-media" }

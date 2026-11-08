@@ -1,0 +1,8 @@
+{
+  "version": "7.1.5",
+  "url": "https://ffmpeg.org/releases/ffmpeg-7.1.5.tar.xz",
+  "bytes": 11050340,
+  "sha256": "de668509caf9e35e3cd162473441fdb29538c6d96ed080292b3cf9e6fc5d558f",
+  "license": "LGPL-2.1-or-later",
+  "configuration": "No GPL, nonfree, network, hardware, external codecs or programs; static LGPL libraries linked into the supplied helper source."
+}

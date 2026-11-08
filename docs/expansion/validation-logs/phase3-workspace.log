@@ -1,0 +1,810 @@
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> vendor/tokenizers/src/models/unigram/model.rs:359:17
+    |
+359 |     pub fn iter(&self) -> UnigramIterator {
+    |                 ^^^^^     ^^^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                 |
+    |                 the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+    = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+    |
+359 |     pub fn iter(&self) -> UnigramIterator<'_> {
+    |                                          ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/tokenizers/src/models/unigram/trie.rs:33:36
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<Label, T>
+   |                                    ^^^^^                  ^^^^^^^^^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                    |
+   |                                    the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<'_, Label, T>
+   |                                                                        +++
+
+warning: `tokenizers` (lib) generated 2 warnings (run `cargo fix --lib -p tokenizers` to apply 2 suggestions)
+   Compiling kokin-osint v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 15.88s
+     Running unittests src/lib.rs (target/debug/deps/kokin_ai-2b2b88daa321bcb6)
+
+running 4 tests
+test hardware::tests::absent_fields_are_unknown_not_zero ... ok
+test tests::pinned_resources_without_real_benchmarks_are_not_recommendations ... ok
+test tests::measured_quality_not_download_size_selects_balanced ... ok
+test tests::injected_commands_cannot_become_decisions_or_uncited_claims ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_blob-bcc7e35dc637460f)
+
+running 17 tests
+test tests::a_missing_blob_is_named_as_such ... ok
+test tests::an_empty_blob_round_trips ... ok
+test tests::destroying_the_wrapped_key_makes_a_blob_unreadable ... ok
+test tests::a_blob_round_trips ... ok
+test staging::tests::cleanup_failure_is_an_error_even_after_complete_publication ... ok
+test tests::the_storage_name_differs_between_cases ... ok
+test tests::a_dribbling_source_still_produces_full_chunks ... ok
+test tests::a_deduplicated_blob_can_still_be_read ... ok
+test tests::a_modified_blob_fails_authentication ... ok
+test staging::tests::short_writes_are_completed_and_existing_evidence_is_not_overwritten ... ok
+test tests::the_size_limit_is_enforced_during_the_read ... ok
+test tests::the_on_disk_name_is_not_the_content_hash ... ok
+test staging::tests::interrupted_full_disk_and_publication_failures_never_leave_incoming_files ... ok
+test tests::the_wrong_case_key_cannot_read_a_blob ... ok
+test tests::identical_content_hashes_identically ... ok
+test tests::a_truncated_blob_is_caught_by_the_content_hash ... ok
+test tests::a_multi_chunk_blob_round_trips ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_connectors-532e7387e693babc)
+
+running 32 tests
+test enrichment::tests::native_record_cards_link_source_fields_and_registration_dates ... ok
+test enrichment::tests::native_creation_dates_are_filterable_and_unix_conversion_is_bounded ... ok
+test research::tests::challenges_soft_errors_and_mismatched_names_are_never_available ... ok
+test enrichment::tests::module_coverage_counts_unclassified_contracts_and_platform_omissions ... ok
+test candidates::tests::mixed_text_candidates_preserve_origins_duplicates_and_errors_without_guessing_names ... ok
+test enrichment::tests::breach_and_score_flags_never_become_breach_membership_or_confidence ... ok
+test research::tests::empty_dns_and_unrelated_domain_records_are_not_positive_findings ... ok
+test enrichment::tests::malformed_status_only_negative_and_mismatched_queries_do_not_establish_accounts ... ok
+test research::tests::malformed_email_and_ambiguous_ipv4_cannot_enter_a_plan ... ok
+test enrichment::tests::typed_profiles_preserve_false_and_distinct_raw_evidence_origins ... ok
+test research::tests::credit_balance_is_one_explicit_usage_call_without_any_query_or_spending ... ok
+test research::tests::every_native_profile_rule_has_positive_negative_and_challenge_contracts ... ok
+test research::tests::normalization_preserves_identity_and_requires_country ... ok
+test tabular::tests::quoted_cells_do_not_split_identifiers_or_drop_unselected_rows ... ok
+test candidates::tests::repeated_candidates_disclose_the_origin_reference_bound ... ok
+test tabular::tests::mapping_suggests_syntax_without_sending_and_joins_only_explicit_name_columns ... ok
+test tests::certificate_and_archive_requests_are_bounded_and_separate ... ok
+test research::tests::unsupported_rows_cannot_silently_disappear_from_a_mixed_plan ... ok
+test research::tests::name_discovery_and_archives_are_scoped_leads_not_account_claims ... ok
+test research::tests::plans_are_closed_and_bulk_never_sends_automatically ... ok
+test tests::dns_types_and_disclosure_are_closed ... ok
+test profiles::tests::reviewed_rules_reject_soft_404_challenges_redirects_and_mismatched_identities ... ok
+test research::tests::provider_plans_bind_calls_pages_eligibility_and_premium ... ok
+test tests::unsafe_manifests_are_refused ... ok
+test wallet::tests::base58check_rejects_corruption_private_keys_and_wrong_payloads ... ok
+test wallet::tests::segwit_checksums_witness_lengths_and_mixed_case_are_checked ... ok
+test enrichment::tests::official_integer_fields_and_numeric_age_project_without_losing_raw_origins ... ok
+test wallet::tests::eip55_official_vectors_and_mutations ... ok
+test tests::rdap_uses_reviewed_registry_and_has_no_insecure_fallback ... ok
+test tabular::tests::json_columns_and_import_bounds_are_explicit ... ok
+test directory::tests::catalog_is_complete_and_not_executable ... ok
+test enrichment::tests::projections_are_bounded_and_disclose_omissions ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_export-d1492ba2ad3aa85e)
+
+running 9 tests
+test container::tests::a_name_that_is_not_on_the_list_is_refused ... ok
+test research::tests::csv_preserves_quotes_and_neutralizes_spreadsheet_execution ... ok
+test container::tests::the_names_this_format_writes_round_trip ... ok
+test manifest::tests::control_characters_are_escaped_the_way_the_spec_says ... ok
+test manifest::tests::keys_are_sorted_and_nothing_is_padded ... ok
+test manifest::tests::the_canonical_form_round_trips ... ok
+test manifest::tests::a_package_from_a_later_build_is_refused_by_name ... ok
+test package::publication_tests::a_racing_empty_restore_destination_is_preserved ... ok
+test faults::failed_package_writes_cleanup_and_never_publish_and_short_writes_roundtrip ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.99s
+
+     Running tests/roundtrip.rs (target/debug/deps/roundtrip-9da55e4e91846b32)
+
+running 19 tests
+test a_file_that_is_not_a_package_is_refused_before_anything_is_read ... ok
+test a_modified_package_fails_and_says_which_entry ... ok
+test a_truncated_package_is_reported_as_truncated ... ok
+test a_complete_package_verifies_ok_without_a_passphrase ... ok
+test a_package_holding_a_shredded_document_can_never_verify_ok ... ok
+test importing_a_modified_package_leaves_nothing_behind ... ok
+test a_document_the_case_lost_is_not_filed_as_a_deliberate_deletion ... ok
+test packaging_cleans_up_after_itself ... ok
+test an_existing_destination_is_never_overwritten ... ok
+test a_package_has_no_recovery_wrap ... ok
+test an_excluded_document_leaves_its_row_and_its_absence_on_the_record ... ok
+test an_exported_case_opens_under_its_new_passphrase ... ok
+test the_package_carries_no_plaintext ... ok
+test a_document_larger_than_the_copy_buffer_survives_intact ... ok
+test the_case_passphrase_does_not_open_a_package_made_from_it ... ok
+test wrong_restore_credentials_leave_no_destination_or_staging ... ok
+test workspace_revisions_survive_the_same_package_roundtrip ... ok
+test the_audit_chain_still_verifies_after_the_trip ... ok
+test work_done_immediately_before_the_export_is_in_the_package ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 20.10s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_extract-e5d32ed55800778d)
+
+running 13 tests
+test tests::a_panic_in_the_parser_becomes_an_error_and_not_a_crash ... ok
+test tests::every_limit_changes_the_params_hash ... ok
+test json::tests::pointers_and_normalized_scalars_are_reproducible ... ok
+test json::tests::malformed_depth_and_oversized_values_do_not_look_complete ... ok
+test tests::a_missing_artifact_leaves_a_failed_run_and_no_observations ... ok
+test tests::a_non_html_artifact_is_refused ... ok
+test tests::an_ingested_page_becomes_observations_with_lineage ... ok
+test tests::an_observation_cannot_be_edited_or_deleted ... ok
+test tests::re_extracting_supersedes_the_earlier_reading ... ok
+test tests::a_shredded_blob_is_reported_as_shredded ... ok
+test tests::a_refused_document_writes_no_observations ... ok
+test tests::an_extraction_is_recorded_in_the_audit_chain ... ok
+test tests::a_withdrawn_observation_is_superseded_by_nothing ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.82s
+
+     Running tests/hostile_corpus.rs (target/debug/deps/hostile_corpus-422f88b98ebe618a)
+
+running 24 tests
+test an_unterminated_title_swallows_the_rest_of_the_document ... ok
+test an_oversized_value_is_skipped_and_counted ... ok
+test a_document_with_no_body_tag_still_yields_its_prose ... ok
+test a_mailto_with_headers_yields_the_address_alone ... ok
+test a_meta_tag_with_no_key_or_no_content_is_not_an_observation ... ok
+test an_unterminated_tag_hits_the_memory_ceiling_rather_than_growing ... ok
+test a_locator_points_at_the_bytes_it_claims_to ... ok
+test csv_formula_payloads_survive_extraction_unescaped ... ok
+test a_page_yields_a_title_meta_tags_and_links ... ok
+test invalid_utf8_bytes_do_not_panic ... ok
+test a_document_over_the_observation_cap_is_refused_not_truncated ... ok
+test layout_whitespace_is_collapsed ... ok
+test inline_markup_does_not_fragment_a_sentence ... ok
+test relative_links_are_recorded_but_produce_no_domain ... ok
+test script_and_style_bodies_are_not_indexed_as_prose ... ok
+test text_from_separate_blocks_does_not_run_together ... ok
+test unfetchable_schemes_are_links_but_not_domains ... ok
+test malformed_markup_does_not_panic_and_still_reads_what_it_can ... ok
+test injection_strings_are_stored_verbatim_and_inert ... ok
+test streaming_in_small_chunks_gives_identical_results ... ok
+test prose_past_the_budget_is_reported_rather_than_dropped_in_silence ... ok
+test markup_inside_script_and_style_is_not_extracted ... ok
+test a_document_that_is_all_prose_is_read_not_refused ... ok
+test a_500_mb_document_is_read_in_bounded_memory ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.74s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_faces-fd1256db4973ab40)
+
+running 5 tests
+test tests::sampling_ranges ... ok
+test cancellation_tests::grouping_checks_cancellation_before_pairwise_work ... ok
+test tests::complete_link_does_not_chain ... ok
+test tests::vector_validation ... ok
+test protocol_tests::crop_messages_are_compact_bounded_and_roundtrip ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/native.rs (target/debug/deps/native-90792a0de499940e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_graph-0f30a138fcf7614c)
+
+running 5 tests
+test scales::tests::every_authored_scale_is_embedded ... ok
+test scales::tests::the_machine_ceiling_matches_what_each_scale_says_in_prose ... ok
+test scales::tests::insufficient_information_is_offered_everywhere_and_is_never_the_worst_value ... ok
+test scales::tests::all_seven_scales_parse ... ok
+test scales::tests::a_scale_with_unmeasured_thresholds_is_marked_partial ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/l2.rs (target/debug/deps/l2-110b4aa73c36a7a3)
+
+running 18 tests
+test an_entity_opens_the_evidence_it_was_built_from ... ok
+test multi_seed_expansion_filters_direction_and_new_evidence_preserves_prior_links ... ok
+test an_invented_scale_value_is_refused_by_name ... ok
+test confidence_is_recorded_per_dimension_and_never_totalled ... ok
+test a_live_entity_cannot_be_stripped_of_its_last_evidence ... ok
+test an_automated_actor_cannot_assign_a_value_reserved_for_a_human ... ok
+test normalisation_folds_the_email_domain_and_leaves_the_local_part_alone ... ok
+test an_unknown_entity_type_is_refused_by_name ... ok
+test a_case_carries_the_scale_definitions_its_assessments_were_made_under ... ok
+test canonical_root_keeps_relationships_attached_to_absorbed_records ... ok
+test contradicting_evidence_is_recorded_next_to_the_thing_it_contradicts ... ok
+test initialising_repeatedly_changes_nothing ... ok
+test nothing_in_l2_can_be_created_without_evidence ... ok
+test the_audit_chain_records_l2_and_still_verifies ... ok
+test reassessing_replaces_the_value_and_leaves_the_change_in_the_audit_chain ... ok
+test the_machine_limit_holds_even_going_around_this_crate ... ok
+test the_rule_holds_even_going_around_this_crate ... ok
+test two_things_on_one_page_are_related_at_co_occurrence_and_no_higher ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.59s
+
+     Running tests/resolution.rs (target/debug/deps/resolution-9a53c1cbbbf2460b)
+
+running 10 tests
+test merging_changes_no_entity_and_destroys_no_evidence ... ok
+test splitting_restores_two_entities_and_keeps_the_history ... ok
+test the_older_entity_survives_even_when_both_were_created_in_one_second ... ok
+test a_cluster_shows_the_evidence_of_everything_in_it ... ok
+test a_rule_may_propose_and_reject_but_never_merge ... ok
+test merging_something_already_merged_is_refused_by_name ... ok
+test a_rationale_full_of_json_does_not_corrupt_the_chain ... ok
+test every_resolution_decision_reaches_the_audit_chain ... ok
+test merging_two_clusters_moves_every_member ... ok
+test re_proposing_a_pair_updates_it_rather_than_duplicating_it ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.38s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_ingest-e645a317e20c2a3b)
+
+running 14 tests
+test tests::a_missing_fixture_leaves_a_failed_run_and_no_evidence ... ok
+test tests::an_unsuccessful_response_is_not_recorded_as_evidence ... ok
+test tests::cancellation_between_chunks_removes_partial_encrypted_staging ... ok
+test tests::a_local_file_becomes_provenance_and_lineage ... ok
+test tests::an_ingest_is_recorded_in_the_audit_chain ... ok
+test tests::an_oversized_file_is_refused_and_recorded_as_such ... ok
+test tests::controlled_import_cancels_before_work_and_at_commit_without_evidence ... ok
+test tests::a_file_and_a_url_with_the_same_bytes_share_one_blob ... ok
+test tests::a_missing_file_leaves_a_failed_run_and_no_evidence ... ok
+test tests::an_unknown_extension_is_not_guessed_at ... ok
+test tests::a_fetched_url_becomes_provenance_and_lineage ... ok
+test tests::an_orphaned_blob_does_not_poison_later_ingests ... ok
+test tests::refetching_a_url_adds_a_capture_without_duplicating_the_source ... ok
+test tests::two_paths_to_the_same_file_are_one_source ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.91s
+
+     Running tests/reopen.rs (target/debug/deps/reopen-9753c2c931c4757b)
+
+running 4 tests
+test a_recovery_key_reaches_the_evidence_the_passphrase_would_have ... ok
+test the_wrong_passphrase_never_gets_as_far_as_the_blobs ... ok
+test a_case_can_still_read_its_evidence_after_being_closed_and_opened ... ok
+test evidence_destroyed_on_purpose_does_not_read_as_a_broken_case ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.62s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_keys-1c638f9d13a47a48)
+
+running 17 tests
+test phrase::tests::the_encoding_divides_evenly_into_characters ... ok
+test tests::profile_ids_round_trip_and_unknown_ids_are_rejected ... ok
+test tests::debug_never_prints_key_material ... ok
+test phrase::tests::a_character_outside_the_alphabet_is_refused ... ok
+test phrase::tests::the_written_form_is_grouped_and_uses_no_confusable_characters ... ok
+test phrase::tests::the_wrong_length_is_reported_as_a_length ... ok
+test phrase::tests::read_alike_characters_decode_to_what_they_look_like ... ok
+test phrase::tests::dashes_case_and_line_breaks_are_forgiven ... ok
+test phrase::tests::a_key_survives_being_written_down_and_typed_back ... ok
+test tests::tampering_with_the_ciphertext_is_detected ... ok
+test tests::a_recovery_key_unwraps_the_same_master_key ... ok
+test tests::kdf_known_answer ... ok
+test tests::round_trip_recovers_the_master_key ... ok
+test tests::a_wrapped_key_cannot_be_transplanted_into_another_case ... ok
+test tests::rotating_the_passphrase_does_not_change_the_master_key ... ok
+test tests::wrong_passphrase_is_rejected ... ok
+test phrase::tests::one_wrong_character_is_caught ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests examples/kdf_timing.rs (target/debug/examples/kdf_timing-c7e9cd097e7a5ed7)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_maps-bdc7e96c50f75eaf)
+
+running 3 tests
+test tests::header_and_directory_reject_truncation_overflow_and_unsupported_compression ... ok
+test tests::local_ranges_never_escape_declared_archive ... ok
+test tests::coarse_world_extraction_preserves_tile_bytes_and_refuses_partial_transfers ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_media-6e7863888ceb8dbe)
+
+running 2 tests
+test worker::tests::crashes_and_mid_processing_cancellation_never_return_a_result ... ignored, explicit sandboxed process fault fixtures on Mac
+test image_query::tests::rectangles_and_recipes_are_bounded ... ok
+
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/faces.rs (target/debug/deps/faces-1073c5a2e4fc4e5e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/worker.rs (target/debug/deps/worker-4676bd0b95ed4beb)
+
+running 2 tests
+test isolated_worker_processes_a_synthetic_image_and_rejects_cancellation ... ignored, requires the locally packaged native engine; deliberately separate from default offline fixtures
+test real_pdf_text_ocr_and_malformed_inputs_are_bounded ... ignored, requires the reviewed packaged PDF/OCR engines and installed English data
+
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_net-274ea707a1457ec1)
+
+running 60 tests
+test guard::tests::the_metadata_endpoint_is_named_in_the_refusal ... ok
+test guard::tests::ordinary_public_addresses_are_allowed ... ok
+test guard::tests::ipv4_mapped_loopback_is_refused ... ok
+test guard::tests::cross_host_redirects_are_never_followed ... ok
+test guard::tests::the_poc_p4_addresses_are_all_refused ... ok
+test guard::tests::only_http_and_https_are_fetchable ... ok
+test http::tests::a_malformed_url_fails_before_any_lookup ... ok
+test guard::tests::host_matching_ignores_case_and_a_trailing_dot ... ok
+test guard::tests::a_leading_dot_allows_subdomains_only ... ok
+test guard::tests::an_exact_host_allowlist_does_not_match_a_prefix ... ok
+test discovery::tests::queries_cannot_change_destination ... ok
+test http::tests::different_urls_have_different_keys ... ok
+test http::tests::volatile_headers_do_not_change_the_key ... ok
+test http::tests::a_missing_fixture_is_an_error_and_not_a_live_request ... ok
+test http::tests::tracking_parameters_do_not_change_the_fixture_key ... ok
+test http::tests::a_keyed_header_does_change_the_key ... ok
+test http::tests::the_method_participates_in_the_key ... ok
+test local::tests::endpoint_does_not_resolve_names_or_allow_redirect_targets ... ok
+test provider::tests::an_echoed_credential_cannot_enter_case_evidence ... ok
+test live::connector_headers::only_reviewed_accept_values_can_cross_the_public_boundary ... ok
+test local::tests::requests_have_no_tools_remote_pull_or_cloud_model_path ... ok
+test live::tests::offline_and_cancelled_requests_fail_before_dns ... ok
+test provider::tests::credit_capability_is_only_the_fixed_get_without_body_headers_or_selector ... ok
+test provider::tests::no_credentials_are_read_for_invalid_or_offline_requests ... ok
+test resolver::tests::the_offline_resolver_always_refuses ... ok
+test resolver::tests::an_unknown_host_is_an_error_not_an_empty_answer ... ok
+test http::tests::a_replayed_response_is_marked_as_coming_from_a_fixture ... ok
+test http::tests::a_corrupt_fixture_file_is_named_as_such ... ok
+test http::tests::a_fixture_recorded_without_tracking_serves_a_request_with_it ... ok
+test http::tests::a_recorded_fixture_replays ... ok
+test resolver::tests::an_answer_can_change_to_model_rebinding ... ok
+test resolver::tests::a_static_answer_round_trips_and_ignores_case ... ok
+test tests::a_disallowed_scheme_is_refused_before_any_resolution ... ok
+test tests::a_permitted_host_resolving_to_loopback_is_refused ... ok
+test tests::a_denied_network_makes_no_request_and_says_so ... ok
+test tests::a_permitted_public_host_is_vetted ... ok
+test tests::a_disallowed_host_is_refused_before_any_resolution ... ok
+test tests::a_zero_rate_never_permits_a_request_and_does_not_divide_by_zero ... ok
+test tests::a_response_within_the_cap_reads_normally ... ok
+test tests::dns_rebinding_between_vetting_and_connecting_is_caught ... ok
+test tests::every_resolved_address_must_pass_not_just_one ... ok
+test tests::network_mode_defaults_to_deny ... ok
+test tests::the_byte_cap_stops_at_the_limit_rather_than_after_it ... ok
+test tests::the_rate_limiter_refills_over_time ... ok
+test tests::the_rate_limiter_allows_a_burst_then_refuses ... ok
+test url_norm::handoff_tests::catalog_cannot_invoke_a_shell_file_or_credential_url ... ok
+test url_norm::tests::a_malformed_url_is_an_error_not_a_guess ... ok
+test url_norm::tests::a_meaningful_parameter_is_never_stripped ... ok
+test url_norm::tests::a_url_without_a_host_is_rejected_here ... ok
+test url_norm::tests::an_empty_path_becomes_the_root_path ... ok
+test url_norm::tests::fragments_are_dropped_because_they_never_reach_the_server ... ok
+test url_norm::tests::host_case_and_default_ports_are_normalised ... ok
+test url_norm::tests::parameter_order_does_not_change_identity ... ok
+test url_norm::tests::scheme_host_and_port_are_reported_for_the_guard ... ok
+test url_norm::tests::the_same_page_reached_two_ways_has_one_identity ... ok
+test url_norm::tests::tracking_parameters_are_stripped_from_identity_but_kept_verbatim ... ok
+test url_norm::tests::utm_style_prefixes_are_handled_as_families ... ok
+test live::tests::raw_byte_recordings_replay_without_cookie_headers ... ok
+test provider::tests::cancellation_drops_a_transport_waiting_for_a_response ... ok
+test scheduler::tests::four_destinations_run_but_a_fifth_or_same_host_waits_and_cancels ... ok
+
+test result: ok. 60 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/discovery.rs (target/debug/deps/discovery-7e76f4a6355a0b5c)
+
+running 1 test
+test loopback_discovery_refuses_offline_redirects_and_oversized_responses ... ignored, binds the fixed local SearXNG port to an owned synthetic server
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/local_inference.rs (target/debug/deps/local_inference-0db0dd2f41650fd5)
+
+running 1 test
+test loopback_json_redirect_denial_and_prompt_cancellation ... ignored, owned loopback server; run explicitly with KOKIN_NETWORK=allow
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/media_containment.rs (target/debug/deps/media_containment-a8d5d41399a24c01)
+
+running 1 test
+test media_policy_denies_unrelated_files_and_network ... ignored, explicit Mac containment proof using an owned loopback server; no live service
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/review_model_metadata.rs (target/debug/examples/review_model_metadata-407bd4192a4680e1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/review_resource_metadata.rs (target/debug/examples/review_resource_metadata-1e58ef3eb3da14d5)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_osint_lib-4252539de25c7e7c)
+
+running 12 tests
+test media::resource_tests::reviewed_resource_installation_is_atomic_and_idempotent ... ignored, explicit acceptance using the already reviewed local English OCR asset
+test operations::tests::resource_admission_bounds_network_and_native_work ... ok
+test reports::tests::hostile_markup_is_text ... ok
+test operations::tests::report_publication_rejects_a_cancel_after_assembly ... ok
+test reports::tests::citation_description_keeps_source_identity_and_fixture_status ... ok
+test operations::tests::closing_operations_invalidates_selections_and_disables_network ... ok
+test operations::tests::selections_are_single_use_case_bound_and_expiring ... ok
+test research::tests::authorizations_are_single_use_expiring_and_case_bound ... ok
+test media::resource_tests::invalid_resources_never_publish_or_replace_existing_data ... ok
+test operations::tests::native_drop_is_bounded_single_use_and_case_bound ... ok
+test operations::tests::changed_files_and_existing_destinations_are_refused ... ok
+test media::resource_tests::rendering_only_does_not_extract_or_supersede_observations ... ok
+
+test result: ok. 11 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.33s
+
+     Running unittests src/main.rs (target/debug/deps/kokin_osint-16959ffb4b707d75)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/acceptance.rs (target/debug/deps/acceptance-cf97613ac008592c)
+
+running 1 test
+test the_eleven_step_reference_workflow_completes_offline ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.54s
+
+     Running tests/ai.rs (target/debug/deps/ai-08ddca02a8df8e3a)
+
+running 1 test
+test suggestions_reviews_vectors_are_encrypted_restorable_and_never_analytical_writes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.64s
+
+     Running tests/bindings.rs (target/debug/deps/bindings-17a299e08ab08c3d)
+
+running 6 tests
+test the_content_security_policy_still_forbids_every_execution_route ... ok
+test every_error_code_reaches_the_interface ... ok
+test every_view_type_is_either_bound_or_knowingly_not ... ok
+test only_the_bindings_module_calls_invoke ... ok
+test the_typescript_bindings_cover_every_bound_view_field ... ok
+test no_part_of_the_interface_can_render_a_document_as_markup ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/demo_case.rs (target/debug/deps/demo_case-c5991ed5ec7706c1)
+
+running 1 test
+test build_a_case_to_look_at ... ignored, builds a case on disk to look at; not a test
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/dependency_backports.rs (target/debug/deps/dependency_backports-ef1d50c30f55c6a4)
+
+running 2 tests
+test rfc2822_nested_comments_are_bounded_without_rejecting_normal_dates ... ok
+test source_and_lock_guards_are_part_of_the_default_suite ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/faces.rs (target/debug/deps/faces-f1e14ba3a88413f9)
+
+running 6 tests
+test discovery_parsing_treats_results_as_text_and_requires_structure ... ok
+test exact_search_10000_face_comparison_benchmark ... ok
+test overlapping_video_jobs_preserve_unsampled_sightings ... ok
+test search_separates_model_versions_and_runs_do_not_supersede_other_pages ... ok
+test encrypted_10000_face_case_search_benchmark ... ok
+test local_faces_review_combined_search_encryption_and_restore ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.66s
+
+     Running tests/image_query.rs (target/debug/deps/image_query-2634206d06344f29)
+
+running 3 tests
+test clipboard_input_records_origin_and_rejects_encoding_or_type_confusion ... ok
+test encrypted_ten_thousand_image_candidates_are_bounded_filtered_and_paged ... ok
+test prepared_queries_duplicates_package_and_descendant_shredding ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.63s
+
+     Running tests/maps.rs (target/debug/deps/maps-1e84a0d8322fc27b)
+
+running 1 test
+test grounded_locations_cameras_and_cited_illustrations_survive_restore_without_basemap ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.51s
+
+     Running tests/media.rs (target/debug/deps/media-8c9968793c757bc7)
+
+running 1 test
+test encrypted_media_snapshots_supersede_validate_and_survive_restore ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.53s
+
+     Running tests/read.rs (target/debug/deps/read-49b3411073308294)
+
+running 32 tests
+test a_modified_document_is_reported_as_damage ... ok
+test a_hit_carries_no_relevance_score ... ok
+test a_citation_that_does_not_support_its_claim_says_so ... ok
+test a_narrow_page_still_reports_the_whole_total ... ok
+test a_missing_artifact_and_a_missing_entity_are_both_not_found ... ok
+test a_merged_entity_shows_both_records_identifiers_and_evidence ... ok
+test a_locator_past_the_end_of_the_document_is_out_of_range ... ok
+test a_document_whose_bytes_have_vanished_is_lost_not_shredded ... ok
+test a_document_the_case_still_holds_reads_back_byte_for_byte ... ok
+test a_document_that_arrived_twice_names_both_arrivals ... ok
+test a_quote_from_a_shredded_document_says_which_kind_of_missing ... ok
+test a_result_list_arrives_with_the_coverage_it_needs ... ok
+test a_quote_is_not_shown_from_a_document_that_failed_authentication ... ok
+test an_artifact_row_reports_whether_anything_has_read_it ... ok
+test a_shredded_document_says_so_and_still_reports_what_it_was ... ok
+test serialize_is_derived_only_where_the_boundary_is_declared ... ok
+test every_observation_quotes_the_bytes_it_says_it_came_from ... ok
+test an_observation_withdrawn_by_a_rerun_names_what_replaced_it ... ok
+test every_dimension_is_present_whether_or_not_anyone_assessed_it ... ok
+test an_unknown_locator_scheme_is_shown_rather_than_interpreted ... ok
+test a_closed_case_generation_cannot_commit_into_a_reopened_case ... ok
+test asking_for_a_merged_away_entity_redirects_and_says_it_did ... ok
+test graph_expansion_is_bounded_cancellable_and_edges_keep_their_evidence ... ok
+test lineage_names_the_run_the_capture_and_the_source ... ok
+test identifier_and_relationship_details_open_their_own_evidence ... ok
+test rows_assessed_differently_are_reported_as_a_disagreement ... ok
+test the_evidence_table_counts_what_it_is_not_showing ... ok
+test workbench_pages_reach_the_remainder_without_repeating_rows ... ok
+test the_confidence_block_carries_nothing_that_could_be_added_up ... ok
+test the_entity_list_shows_one_row_per_person_not_per_record ... ok
+test the_quote_carries_the_document_around_it_and_not_just_the_value ... ok
+test an_excerpt_is_verified_against_the_whole_document ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 28.70s
+
+     Running tests/research.rs (target/debug/deps/research-228a6243b3785ec4)
+
+running 2 tests
+test image_request_provenance_keeps_a_digest_without_an_immutable_upload_copy ... ok
+test research_is_grounded_encrypted_cached_and_restorable ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.56s
+
+     Running tests/research_phase2.rs (target/debug/deps/research_phase2-8ed267ef3c01c1c2)
+
+running 1 test
+test hybrid_imports_provider_cards_and_encrypted_disk_pages ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.44s
+
+     Running tests/research_preview.rs (target/debug/deps/research_preview-971a36b5a849d66a)
+
+running 1 test
+test evidence_candidates_authenticate_snapshots_preserve_origins_and_refuse_stale_publication ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.38s
+
+     Running tests/resources.rs (target/debug/deps/resources-dc4354c31d65adae)
+
+running 1 test
+test local_resource_identity_size_and_cancellation_are_mandatory ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/scale.rs (target/debug/deps/scale-f605512a8e148895)
+
+running 3 tests
+test maximum_board_expansion_keeps_shared_budgets_and_attribution ... ignored, maximum board on the 100k/20k/300k corpus; run deliberately with --release
+test merged_search_warm_reopened_and_concurrent_writes ... ignored, 100k search timing; run deliberately
+test the_storage_layer_holds_at_a_hundred_thousand_observations ... ignored, PoC P2: builds a 100k-observation case; run deliberately with --release
+
+test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/session.rs (target/debug/deps/session-a23997b6fb4105a5)
+
+running 11 tests
+test commands_that_need_a_case_report_no_case_open ... ok
+test an_error_serialises_as_a_code_the_interface_can_match_on ... ok
+test opening_a_second_case_is_refused_and_the_first_stays_open ... ok
+test a_mistyped_recovery_key_is_told_apart_from_a_wrong_one ... ok
+test the_views_carry_exactly_these_fields_and_no_key_material ... ok
+test the_recovery_key_shown_at_creation_opens_the_case ... ok
+test fresh_case_has_analysis_choices_before_the_first_write ... ok
+test a_wrong_passphrase_is_a_code_and_leaves_nothing_open ... ok
+test a_case_can_be_created_closed_and_opened_again ... ok
+test creating_a_case_over_something_that_exists_is_refused ... ok
+test automatic_case_folders_are_unique_and_reopenable ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.91s
+
+     Running tests/sources.rs (target/debug/deps/sources-7e36fe598ce3bdd9)
+
+running 1 test
+test source_json_is_grounded_superseded_and_restorable_with_errors_preserved ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.92s
+
+     Running tests/vector_scale.rs (target/debug/deps/vector_scale-edef1b0bfa9abda4)
+
+running 1 test
+test encrypted_vectors_match_exact_reference_at_100k ... ignored, 100,000 x 384 vector reference benchmark; run release explicitly
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/write.rs (target/debug/deps/write-d72b2025bf1f2ab4)
+
+running 21 tests
+test a_request_that_omits_its_evidence_does_not_deserialise ... ok
+test a_write_needs_an_open_case ... ok
+test a_request_cannot_name_its_own_actor ... ok
+test an_entity_cannot_be_offered_as_evidence ... ok
+test a_judgement_with_no_stated_reason_is_refused ... ok
+test a_case_cannot_ingest_itself ... ok
+test a_document_this_extractor_cannot_read_is_not_a_damaged_case ... ok
+test an_imported_file_arrives_whole_and_with_its_provenance ... ok
+test a_rejection_is_recorded_and_changes_nothing_else ... ok
+test a_write_that_cites_nothing_is_refused ... ok
+test a_merge_returns_the_entity_the_interface_should_now_show ... ok
+test evidence_may_argue_against_the_thing_it_is_attached_to ... ok
+test a_machine_is_refused_the_decision_only_a_person_may_make ... ok
+test every_write_is_attributed_to_the_person_at_the_keyboard ... ok
+test an_extraction_reports_the_values_it_had_to_drop ... ok
+test re_reading_a_document_withdraws_what_the_last_reading_said ... ok
+test the_reasons_given_are_what_the_case_stores ... ok
+test splitting_gives_an_entity_back_its_own_identity ... ok
+test the_same_document_twice_is_reported_as_the_same_document ... ok
+test the_resolution_refusals_are_answers_rather_than_faults ... ok
+test what_a_write_records_is_searchable_at_once ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.67s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_search-b8db7f33980627c7)
+
+running 11 tests
+test query::tests::a_query_of_only_exclusions_matches_nothing ... ok
+test query::tests::an_email_address_is_one_phrase_not_three_loose_words ... ok
+test query::tests::a_leading_dash_excludes_and_an_internal_one_does_not ... ok
+test query::tests::an_empty_query_matches_nothing_rather_than_everything ... ok
+test query::tests::an_inner_quote_is_escaped_rather_than_ending_the_phrase ... ok
+test query::tests::a_user_quoted_phrase_stays_one_phrase ... ok
+test query::tests::words_become_phrases_joined_by_and ... ok
+test query::tests::typeahead_extends_the_last_word_but_not_a_quoted_phrase ... ok
+test query::tests::operators_typed_by_a_user_are_matched_as_words_not_obeyed ... ok
+test query::tests::hostile_input_never_becomes_syntax ... ok
+test query::tests::no_single_character_can_escape_the_quoting ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/coverage.rs (target/debug/deps/coverage-3f441ab22d49eb24)
+
+running 10 tests
+test a_rerun_in_the_same_second_still_supersedes_the_reading_before_it ... ok
+test a_rerun_that_still_falls_short_does_not_report_the_gap_twice ... ok
+test prose_past_the_budget_is_visible_at_the_point_of_search ... ok
+test a_document_the_extractor_refused_is_reported_not_forgotten ... ok
+test an_empty_case_is_complete_because_it_holds_nothing ... ok
+test the_worst_gaps_are_reported_first ... ok
+test a_case_that_has_read_everything_says_so ... ok
+test a_document_read_and_found_empty_is_not_a_document_nobody_read ... ok
+test a_document_nobody_has_read_is_reported_as_unread ... ok
+test a_rerun_that_reads_the_whole_document_clears_the_gap ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.94s
+
+     Running tests/search.rs (target/debug/deps/search-839ebfa96004b8f2)
+
+running 24 tests
+test a_hundred_thousand_observations_stay_searchable ... ignored, scale measurement; minutes, not seconds
+test a_merged_entity_is_one_result_not_two ... ok
+test a_name_match_outranks_a_passing_mention ... ok
+test merging_two_entities_does_not_merge_what_they_hold ... ok
+test a_snippet_shows_why_a_result_matched ... ok
+test a_relationship_carries_only_the_text_it_owns ... ok
+test a_hit_routes_back_to_the_row_it_came_from ... ok
+test a_diacritic_does_not_hide_a_name ... ok
+test deleting_an_l2_row_removes_it_from_the_index ... ok
+test a_rerun_does_not_double_every_result ... ok
+test entities_and_identifiers_are_findable_by_what_they_are_called ... ok
+test one_address_does_not_match_another_at_the_same_domain ... ok
+test hostile_queries_return_nothing_rather_than_erroring ... ok
+test paging_is_not_shrunk_by_collapsing ... ok
+test the_index_can_be_rebuilt_from_the_case ... ok
+test results_can_be_narrowed_by_kind_and_by_facet ... ok
+test the_words_on_the_page_are_findable ... ok
+test the_rows_are_still_reachable_when_asked_for ... ok
+test script_bodies_do_not_become_searchable_text ... ok
+test the_index_agrees_with_the_case_after_a_workload ... ok
+test renaming_an_entity_changes_what_finds_it ... ok
+test skipping_the_collapse_changes_nothing_until_something_is_merged ... ok
+test splitting_puts_the_second_result_back ... ok
+test the_count_and_the_facets_agree_with_the_list ... ok
+
+test result: ok. 23 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 5.88s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_store-5ea6b3cbcf743ce7)
+
+running 52 tests
+test audit::tests::a_different_predecessor_produces_a_different_hash ... ok
+test audit::tests::hashing_is_deterministic_for_identical_input ... ok
+test migrations::tests::a_newer_schema_is_refused_by_name ... ok
+test audit::tests::a_payload_that_is_not_a_json_object_is_refused_at_write_time ... ok
+test audit::tests::anyone_who_can_write_can_forge_a_valid_chain ... ok
+test audit::tests::the_first_event_chains_from_genesis ... ok
+test audit::tests::a_chain_of_many_events_verifies ... ok
+test audit::tests::an_empty_chain_is_intact ... ok
+test audit::tests::modifying_an_event_breaks_the_chain ... ok
+test migrations::tests::a_transform_run_may_complete_but_not_be_rewritten ... ok
+test migrations::tests::a_pair_is_unordered_and_proposed_once_per_proposer ... ok
+test audit::tests::deleting_an_event_breaks_the_chain ... ok
+test migrations::tests::a_merge_may_be_split_but_not_rewritten ... ok
+test migrations::tests::an_assessment_cannot_use_a_value_outside_its_scale ... ok
+test migrations::tests::a_blob_may_be_shredded_but_not_otherwise_changed ... ok
+test migrations::tests::migrating_a_fresh_database_reaches_the_target_version ... ok
+test migrations::tests::migrating_twice_is_a_no_op ... ok
+test audit::tests::key_order_in_a_payload_does_not_change_the_event_hash ... ok
+test migrations::tests::upgrading_a_case_recovers_which_artifacts_a_run_had_read ... ok
+test migrations::tests::the_schema_has_no_composite_confidence_column ... ok
+test migrations::tests::schema_matches_the_golden_fingerprint ... ok
+test migrations::tests::upgrading_a_populated_case_makes_its_existing_rows_searchable ... ok
+test migrations::tests::workspace_migration_failure_keeps_the_previous_schema_version ... ok
+test migrations::tests::automated_actors_may_propose_a_merge_but_never_decide_one ... ok
+test migrations::tests::an_automated_actor_cannot_assign_a_value_reserved_for_humans ... ok
+test migrations::tests::the_last_evidence_for_a_live_row_cannot_be_removed ... ok
+test migrations::tests::nothing_in_l2_can_be_created_without_evidence ... ok
+test migrations::tests::the_merge_map_cannot_be_made_to_chain_or_to_cycle ... ok
+test tests::a_directory_without_a_header_is_not_a_case ... ok
+test research::tests::detailed_filter_bounds_and_legacy_deserialization ... ok
+test migrations::tests::provenance_tables_refuse_updates_and_deletes ... ok
+test research::tests::document_revisions_and_case_membership_are_enforced ... ok
+test research::tests::partial_runs_preserve_results_and_interrupted_work_is_not_retried ... ok
+test research::tests::normalized_filters_correlate_cards_and_preserve_unknown ... ok
+test research::tests::filters_cover_the_whole_run_and_facets_use_effective_outcomes ... ok
+test research::tests::detailed_filters_page_after_matching_and_withhold_shredded_fields ... ok
+test research::tests::only_import_sessions_allow_eight_mib_documents ... ok
+test research::tests::ten_thousand_case_results_keep_bounded_pages_and_selected_export ... ok
+test workspace::fault_tests::full_database_does_not_commit_an_incomplete_revision ... ok
+test workspace::tests::invalid_payload_and_kind_change_cannot_commit ... ok
+test workspace::tests::stale_saves_are_refused_and_archive_preserves_history ... ok
+test tests::a_corrupt_header_is_named_as_such ... ok
+test tests::a_header_from_a_future_version_is_rejected_by_name ... ok
+test tests::case_database_contains_no_plaintext ... ok
+test tests::a_recovery_key_opens_a_case_whose_passphrase_is_lost ... ok
+test tests::tampering_with_the_header_kdf_profile_is_detected ... ok
+test tests::temp_store_is_memory_so_nothing_spills_to_disk ... ok
+test tests::the_header_carries_no_usable_key_material ... ok
+test tests::a_case_survives_close_and_reopen ... ok
+test tests::wrong_passphrase_is_rejected_and_named_as_such ... ok
+test tests::the_case_lifecycle_is_recorded_in_a_verifiable_chain ... ok
+test tests::changing_the_passphrase_preserves_data_and_the_recovery_key ... ok
+
+test result: ok. 52 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.61s
+
+     Running unittests src/lib.rs (target/debug/deps/kokin_vector_adapter-b9f3e75672449058)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

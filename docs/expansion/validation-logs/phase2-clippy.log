@@ -1,0 +1,71 @@
+    Checking ring v0.17.14
+    Checking openssl-sys v0.9.117
+    Checking sqlite-vec v0.1.9
+    Checking objc2-exception-helper v0.1.1
+    Checking onig_sys v69.9.3
+   Compiling kokin-osint v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/src-tauri)
+    Checking objc2 v0.6.4
+    Checking onig v6.5.3
+    Checking libsqlite3-sys v0.38.2
+    Checking rusqlite v0.40.2
+    Checking kokin-vector-adapter v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-vector-adapter)
+    Checking rustls-webpki v0.103.15
+    Checking tokenizers v0.21.4 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/vendor/tokenizers)
+    Checking block2 v0.6.2
+    Checking objc2-core-foundation v0.3.2
+    Checking dispatch2 v0.3.1
+    Checking rustls v0.23.45
+    Checking kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store)
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> vendor/tokenizers/src/models/unigram/model.rs:359:17
+    |
+359 |     pub fn iter(&self) -> UnigramIterator {
+    |                 ^^^^^     ^^^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                 |
+    |                 the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+    = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+    |
+359 |     pub fn iter(&self) -> UnigramIterator<'_> {
+    |                                          ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/tokenizers/src/models/unigram/trie.rs:33:36
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<Label, T>
+   |                                    ^^^^^                  ^^^^^^^^^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                    |
+   |                                    the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<'_, Label, T>
+   |                                                                        +++
+
+    Checking objc2-foundation v0.3.2
+warning: `tokenizers` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p tokenizers -- -D warnings` to apply 2 suggestions)
+    Checking kokin-extract v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-extract)
+    Checking kokin-graph v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-graph)
+    Checking kokin-search v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-search)
+    Checking kokin-export v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-export)
+    Checking kokin-ai v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-ai)
+    Checking tokio-rustls v0.26.6
+    Checking hyper-rustls v0.27.10
+    Checking reqwest v0.12.28
+    Checking objc2-app-kit v0.3.2
+    Checking kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+    Checking kokin-ingest v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-ingest)
+    Checking kokin-connectors v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-connectors)
+    Checking objc2-web-kit v0.3.2
+    Checking tao v0.35.3
+    Checking muda v0.19.3
+    Checking window-vibrancy v0.6.0
+    Checking rfd v0.15.4
+    Checking tauri-runtime v2.11.3
+    Checking wry v0.55.1
+    Checking tauri-runtime-wry v2.11.4
+    Checking tauri v2.11.5
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.13s

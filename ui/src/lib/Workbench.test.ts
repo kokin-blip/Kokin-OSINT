@@ -4,7 +4,7 @@ import Workbench from './Workbench.svelte';
 import * as api from './bindings';
 vi.mock('./bindings',async()=>{
  const actual=await vi.importActual<typeof import('./bindings')>('./bindings');
- return {...actual,artifactPage:vi.fn().mockResolvedValue({rows:[],total:151,offset:0,limit:50}),entityPage:vi.fn().mockResolvedValue({rows:[],total:0,offset:0,limit:50}),entityTypes:vi.fn().mockResolvedValue([]),scaleOptions:vi.fn().mockResolvedValue([]),networkMode:vi.fn().mockResolvedValue(false),searchCase:vi.fn().mockResolvedValue({hits:[{subject_id:'obs',subject_kind:'observation',title:'Match',facet:'text',snippet:'synthetic',superseded:false,canonical_id:null}],total:1,facets:[],coverage:{artifacts:2,complete:1,never_attempted:1,in_progress:0,partial:0,failed:0}}),activityPage:vi.fn().mockResolvedValue({page:{rows:[],total:0,offset:0,limit:50},chain_status:'Intact',chain_detail:'Verified'})};
+ return {...actual,resourceJobs:vi.fn().mockResolvedValue([]),artifactPage:vi.fn().mockResolvedValue({rows:[],total:151,offset:0,limit:50}),entityPage:vi.fn().mockResolvedValue({rows:[],total:0,offset:0,limit:50}),entityTypes:vi.fn().mockResolvedValue([]),scaleOptions:vi.fn().mockResolvedValue([]),networkMode:vi.fn().mockResolvedValue(false),searchCase:vi.fn().mockResolvedValue({hits:[{subject_id:'obs',subject_kind:'observation',title:'Match',facet:'text',snippet:'synthetic',superseded:false,canonical_id:null}],total:1,facets:[],coverage:{artifacts:2,complete:1,never_attempted:1,in_progress:0,partial:0,failed:0}}),activityPage:vi.fn().mockResolvedValue({page:{rows:[],total:0,offset:0,limit:50},chain_status:'Intact',chain_detail:'Verified'})};
 });
 let component:ReturnType<typeof mount>|undefined;
 afterEach(async()=>{if(component)await unmount(component);document.body.replaceChildren();vi.restoreAllMocks();vi.clearAllMocks();vi.mocked(api.entityPage).mockResolvedValue({rows:[],total:0,offset:0,limit:50});});
@@ -14,9 +14,9 @@ function button(label:string){return [...document.querySelectorAll('button')].fi
 it('paginates beyond the old list cap using advertised totals',async()=>{await setup();expect(document.body.textContent).toContain('of 151');button('Next').click();await settle();expect(api.artifactPage).toHaveBeenLastCalledWith(50);});
 it('shows coverage even alongside nonempty search results and audit limitations',async()=>{await setup();document.querySelector<HTMLButtonElement>('nav button:nth-child(3)')!.click();await settle();expect(document.body.textContent).toContain('Match');expect(document.body.textContent).toContain('1 of 2 documents fully read');expect(document.body.textContent).toContain('No match does not establish absence');document.querySelector<HTMLButtonElement>('nav button:nth-child(4)')!.click();await settle();expect(document.body.textContent).toContain('Tamper-evident, not chain of custody');});
 
-it('focuses case search with Control K and waits for explicit submission',async()=>{
- await setup();document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true}));
- const input=document.querySelector<HTMLInputElement>('#case-global-query')!;expect(document.activeElement).toBe(input);
+it('focuses case search with Control F and waits for explicit submission',async()=>{
+ await setup();document.dispatchEvent(new KeyboardEvent('keydown',{key:'f',ctrlKey:true,bubbles:true}));
+ await settle();const input=document.querySelector<HTMLInputElement>('#case-global-query')!;expect(document.activeElement).toBe(input);
  const reads=vi.mocked(api.searchCase).mock.calls.length;input.value='stored keyword';input.dispatchEvent(new Event('input',{bubbles:true}));await settle();expect(api.searchCase).toHaveBeenCalledTimes(reads);
  document.querySelector<HTMLFormElement>('.global-search')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await settle();
  expect(api.searchCase).toHaveBeenLastCalledWith(expect.objectContaining({query:'stored keyword',offset:0}));expect(document.querySelector('nav button[aria-current="page"]')?.textContent).toBe('Search');

@@ -1,0 +1,13 @@
+{
+  "version": "1.31.0",
+  "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-osx-arm64-1.31.0.tgz",
+  "bytes": 36549009,
+  "sha256": "1031b36dd3bdaa8d976a6130d9cf2a05e9be320b93ae804f8427b91dc3432afc",
+  "license": "MIT",
+  "files": {
+    "libonnxruntime.1.31.0.dylib": "2a50a63e7f41f8d4d551d3ee47248df3864f6540109fce8ad520ca3b51af4b70",
+    "LICENSE": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+    "ThirdPartyNotices.txt": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3",
+    "VERSION_NUMBER": "b4808e6e33fef47c318b7a15f93484ea3656ce673ddde651b5cc4375087f3739"
+  }
+}

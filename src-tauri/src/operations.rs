@@ -16,6 +16,7 @@ struct Selection {
     identity: Option<(u64, SystemTime)>,
 }
 struct Operation {
+    kind: String,
     view: OperationView,
     cancel: Arc<AtomicBool>,
 }
@@ -49,10 +50,19 @@ fn fault(message: impl Into<String>) -> CommandError {
 fn refused(message: impl Into<String>) -> CommandError {
     CommandError::new(ErrorCode::InvalidValue, message)
 }
-fn random_id() -> Result<String, CommandError> {
+pub(crate) fn random_id() -> Result<String, CommandError> {
     let mut bytes = [0u8; 32];
     getrandom::fill(&mut bytes).map_err(|_| fault("random generator unavailable"))?;
-    Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    Ok(bytes
+        .iter()
+        .flat_map(|b| {
+            [
+                char::from(HEX[(b >> 4) as usize]),
+                char::from(HEX[(b & 15) as usize]),
+            ]
+        })
+        .collect())
 }
 fn policy(hosts: Vec<String>) -> kokin_net::EgressPolicy {
     kokin_net::EgressPolicy {
@@ -63,6 +73,12 @@ fn policy(hosts: Vec<String>) -> kokin_net::EgressPolicy {
     }
 }
 impl Operations {
+    pub fn online_flag(&self) -> Arc<AtomicBool> {
+        self.online.clone()
+    }
+    pub fn is_online(&self) -> bool {
+        self.online.load(Ordering::SeqCst)
+    }
     pub fn cancel_all(&self) {
         if let Ok(jobs) = self.jobs.lock() {
             for job in jobs.values() {
@@ -72,13 +88,38 @@ impl Operations {
         #[cfg(feature = "desktop-test")]
         if let Ok(mut state) = self.test_state.lock() {
             state.selections.clear();
+            state.ai_response = None;
         }
         self.online.store(false, Ordering::SeqCst);
         if let Ok(mut selections) = self.selections.lock() {
             selections.clear();
         }
     }
-    fn select(&self, path: PathBuf, mode: &str, generation: u64) -> Result<String, CommandError> {
+    /// Called only with paths from the native window drop event, never IPC paths.
+    pub(crate) fn select_drop(
+        &self,
+        paths: &[PathBuf],
+        generation: u64,
+    ) -> Result<serde_json::Value, CommandError> {
+        if paths.len() != 1 {
+            return Err(refused("drop one local file at a time"));
+        }
+        let path = &paths[0];
+        let metadata = std::fs::metadata(path).map_err(|_| refused("dropped file unavailable"))?;
+        if !metadata.is_file() || metadata.len() > 64 * 1024 * 1024 {
+            return Err(refused("drop a regular file up to 64 MiB"));
+        }
+        let selection = self.select(path.clone(), "input", generation)?;
+        Ok(
+            serde_json::json!({"generation":generation,"selection":selection,"name":path.file_name().and_then(|v|v.to_str()).unwrap_or("Dropped file")}),
+        )
+    }
+    pub(crate) fn select(
+        &self,
+        path: PathBuf,
+        mode: &str,
+        generation: u64,
+    ) -> Result<String, CommandError> {
         let path = if mode == "input" {
             std::fs::canonicalize(path).map_err(|_| refused("selected file is unavailable"))?
         } else {
@@ -122,7 +163,12 @@ impl Operations {
         );
         Ok(token)
     }
-    fn consume(&self, token: &str, mode: &str, generation: u64) -> Result<PathBuf, CommandError> {
+    pub(crate) fn consume(
+        &self,
+        token: &str,
+        mode: &str,
+        generation: u64,
+    ) -> Result<PathBuf, CommandError> {
         let selected = self
             .selections
             .lock()
@@ -153,7 +199,24 @@ impl Operations {
         }
         Ok(selected.path)
     }
-    fn update(&self, id: &str, stage: &str, cancellable: bool) {
+    pub(crate) fn begin_publish(&self, id: &str) -> Result<(), CommandError> {
+        // Use the same lock as cancel_operation: cancellation and publication
+        // have one atomic boundary, including a cancel arriving after assembly.
+        let mut jobs = self
+            .jobs
+            .lock()
+            .map_err(|_| fault("operation registry unavailable"))?;
+        let job = jobs
+            .get_mut(id)
+            .ok_or_else(|| refused("unknown operation"))?;
+        if job.cancel.load(Ordering::SeqCst) {
+            return Err(refused("operation cancelled before publication"));
+        }
+        job.view.stage = "Committing complete output".into();
+        job.view.cancellable = false;
+        Ok(())
+    }
+    pub(crate) fn update(&self, id: &str, stage: &str, cancellable: bool) {
         if let Ok(mut jobs) = self.jobs.lock() {
             if let Some(job) = jobs.get_mut(id) {
                 job.view.stage = stage.into();
@@ -186,7 +249,7 @@ pub async fn select_path(
             if queued_purpose != purpose {
                 return Err(refused("unexpected test selection purpose"));
             }
-            let mode = if matches!(purpose.as_str(), "import" | "package") {
+            let mode = if matches!(purpose.as_str(), "import" | "package" | "research_import") {
                 "input"
             } else {
                 "output"
@@ -197,6 +260,13 @@ pub async fn select_path(
                 .map(Some);
         }
         let (path, mode) = match purpose.as_str() {
+            "research_import" => (
+                rfd::FileDialog::new()
+                    .set_title("Preview research selectors locally")
+                    .add_filter("Text tables", &["csv", "tsv", "json", "txt", "md", "log"])
+                    .pick_file(),
+                "input",
+            ),
             "import" => (
                 rfd::FileDialog::new()
                     .set_title("Import evidence")
@@ -212,6 +282,30 @@ pub async fn select_path(
             "export" => (
                 rfd::FileDialog::new()
                     .set_file_name("Case.kokinpkg")
+                    .save_file(),
+                "output",
+            ),
+            "research_csv" => (
+                rfd::FileDialog::new()
+                    .set_file_name("Research.csv")
+                    .save_file(),
+                "output",
+            ),
+            "research_json" => (
+                rfd::FileDialog::new()
+                    .set_file_name("Research.json")
+                    .save_file(),
+                "output",
+            ),
+            "report_markdown" => (
+                rfd::FileDialog::new()
+                    .set_file_name("Investigation.md")
+                    .save_file(),
+                "output",
+            ),
+            "report_html" => (
+                rfd::FileDialog::new()
+                    .set_file_name("Investigation.html")
                     .save_file(),
                 "output",
             ),
@@ -288,6 +382,35 @@ pub fn cancel_operation(
     Ok(())
 }
 
+// Network work shares kokin-net's four-request admission; native inference stays serial.
+fn network_job(kind: &str) -> bool {
+    matches!(
+        kind,
+        "research_run" | "source_collect" | "collect" | "web_discover"
+    )
+}
+fn admit<'a>(kind: &str, running: impl Iterator<Item = &'a str>) -> Result<(), CommandError> {
+    let active = running.collect::<Vec<_>>();
+    if active.len() >= 8 || active.contains(&"restore") || (kind == "restore" && !active.is_empty())
+    {
+        return Err(refused(
+            "operation capacity reached or restore requires an idle workspace",
+        ));
+    }
+    if network_job(kind) {
+        if active.iter().filter(|k| network_job(k)).count() >= 4 {
+            return Err(refused(
+                "four network jobs are already scheduled; wait or cancel one",
+            ));
+        }
+    } else if active.iter().any(|k| !network_job(k)) {
+        return Err(refused(
+            "a native operation is running; network research may continue alongside it",
+        ));
+    }
+    Ok(())
+}
+
 /// Args are command-layer requests. Actor identities never come from the caller.
 #[tauri::command]
 pub fn start_operation(
@@ -308,11 +431,11 @@ pub fn start_operation(
             .jobs
             .lock()
             .map_err(|_| fault("operation registry unavailable"))?;
-        if jobs.values().any(|job| job.view.status == "running") {
-            return Err(refused(
-                "an operation is already running; wait or cancel it",
-            ));
-        }
+        let running = jobs
+            .values()
+            .filter(|job| job.view.status == "running")
+            .collect::<Vec<_>>();
+        admit(&kind, running.iter().map(|job| job.kind.as_str()))?;
         // Bound in-memory history. The persistent audit remains in the case.
         if jobs.len() >= 100 {
             jobs.retain(|_, job| job.view.status == "running");
@@ -320,6 +443,7 @@ pub fn start_operation(
         jobs.insert(
             id.clone(),
             Operation {
+                kind: kind.clone(),
                 view: OperationView {
                     operation_id: id.clone(),
                     status: "running".into(),
@@ -349,7 +473,19 @@ pub fn start_operation(
                 job.view.stage = "Finished".into();
                 match result {
                     Ok(result) => {
-                        job.view.status = "completed".into();
+                        job.view.status =
+                            if kind == "research_run" && result["status"] == "cancelled" {
+                                "cancelled"
+                            } else if matches!(
+                                kind.as_str(),
+                                "source_collect" | "face_analyze" | "research_run"
+                            ) && result["complete"] == false
+                            {
+                                "partial"
+                            } else {
+                                "completed"
+                            }
+                            .into();
                         job.view.result_json = Some(result.to_string());
                     }
                     Err(error) => {
@@ -388,19 +524,83 @@ fn run(
     if cancel.load(Ordering::SeqCst) || session.generation() != generation {
         return Err(refused("operation cancelled or originating case closed"));
     }
-    if kind == "graph" {
+    if kind == "face_analyze" {
+        return crate::faces::run(app, id, generation, decode(args)?, cancel);
+    }
+    if kind == "research_export" {
+        return crate::research::export(app, id, generation, &args, cancel);
+    }
+    if kind == "research_run" {
+        return crate::research::run(app, id, generation, args, cancel);
+    }
+    if kind == "face_regroup" {
+        return crate::faces::regroup(app, id, generation, cancel);
+    }
+    if kind == "web_discover" {
+        return crate::discovery::run(
+            app,
+            id,
+            generation,
+            decode(args)?,
+            cancel,
+            &operations.online,
+        );
+    }
+    if kind == "ai_benchmark" {
+        return crate::ai::benchmark(app, id, field(&args, "endpoint")?, generation, cancel);
+    }
+    if kind == "map_illustration" {
+        operations.begin_publish(id)?;
+        let request = decode::<crate::views::MapIllustrationRequest>(args)?;
+        crate::maps::verify_illustration_archive(app, &request)?;
+        return session.with_generation(generation, |open| {
+            crate::maps::save_illustration(open, &request)
+        });
+    }
+    if kind == "embedding_rebuild" {
+        return crate::semantic::rebuild(app, id, generation, cancel);
+    }
+    if kind == "ai_generate" {
+        return crate::ai::run(app, id, decode(args)?, generation, cancel);
+    }
+    if kind == "ai_model_import" {
+        return crate::ai::import_model(app, &args, cancel.clone());
+    }
+    if matches!(kind, "graph" | "graph_explore") {
         operations.update(id, "Expanding relationships within limits", true);
         return session.with_generation(generation, |open| {
-            let seed = field(&args, "seed")?;
+            let seeds = if kind == "graph_explore" {
+                decode::<Vec<String>>(args["seeds"].clone())?
+            } else {
+                vec![field(&args, "seed")?.to_owned()]
+            };
+            let direction = args["direction"].as_str().unwrap_or("both");
+            let kinds = if args["kinds"].is_null() {
+                Vec::new()
+            } else {
+                decode::<Vec<String>>(args["kinds"].clone())?
+            };
+            if seeds.is_empty()
+                || seeds.len() > 300
+                || !matches!(direction, "both" | "incoming" | "outgoing")
+                || kinds.len() > 32
+                || kinds.iter().any(|k| k.len() > 128)
+            {
+                return Err(refused("invalid graph roots or filters"));
+            }
             let number = |key: &str, default: usize| {
                 args[key].as_u64().map(|v| v as usize).unwrap_or(default)
             };
-            let result = kokin_graph::explore::expand(
+            let result = kokin_graph::explore::expand_multi(
                 &open.conn,
-                seed,
-                number("hops", 2),
-                number("node_limit", 100),
-                number("per_node", 32),
+                &seeds,
+                kokin_graph::explore::ExpansionOptions {
+                    hops: number("hops", 2),
+                    node_limit: number("node_limit", 40),
+                    per_node: number("per_node", 16),
+                    direction,
+                    kinds: &kinds,
+                },
                 cancel,
             )?;
             let view = crate::views::GraphView {
@@ -426,8 +626,182 @@ fn run(
                     .collect(),
                 truncated: result.truncated,
                 completed_hops: result.completed_hops,
+                truncation_reasons: result.truncation_reasons,
             };
             serde_json::to_value(view).map_err(|_| fault("graph encoding failed"))
+        });
+    }
+    if kind == "image_clipboard_import" {
+        if cancel.load(Ordering::SeqCst) {
+            return Err(refused("clipboard import cancelled"));
+        }
+        let request = decode::<crate::views::ClipboardImageRequest>(args)?;
+        operations.begin_publish(id)?;
+        return session.with_generation(generation, |open| {
+            crate::image_query::import_clipboard(open, id, request)
+        });
+    }
+    if kind == "image_prepare" {
+        operations.update(id, "Preparing a local derived query image", true);
+        return crate::image_query::run(
+            app,
+            id,
+            generation,
+            decode::<crate::views::ImagePrepareRequest>(args)?,
+            cancel,
+        );
+    }
+    if matches!(kind, "extract" | "media_extract" | "media_preview") {
+        let request = if kind == "extract" {
+            let request = decode::<crate::views::ExtractRequest>(args.clone())?;
+            crate::views::MediaProcessRequest {
+                version: 1,
+                artifact_id: request.artifact_id,
+                page: 0,
+                ocr: false,
+            }
+        } else {
+            decode::<crate::views::MediaProcessRequest>(args.clone())?
+        };
+        if request.version != 1 || (kind == "media_preview" && request.ocr) {
+            return Err(refused("unsupported media request version or preview mode"));
+        }
+        let artifact = request.artifact_id.as_str();
+        let media = session.with_generation(generation, |open| {
+            open.conn
+                .query_row(
+                    "SELECT media_type FROM artifact WHERE id=?1",
+                    [artifact],
+                    |r| r.get::<_, String>(0),
+                )
+                .map_err(|_| refused("artifact is unavailable"))
+        })?;
+        if kind == "extract"
+            && (media == "application/json"
+                || media == "application/dns-json"
+                || media.ends_with("+json"))
+        {
+            operations.begin_publish(id)?;
+            return session.with_generation(generation,|open| {
+                let blobs=kokin_blob::BlobStore::new(open.paths.blobs());
+                let (run,count,complete)=kokin_extract::json::extract(&mut open.conn,&blobs,&open.cmk,artifact).map_err(|_|CommandError::new(ErrorCode::FileUnreadable,"JSON extraction failed; raw evidence remains preserved"))?;
+                Ok(serde_json::json!({"artifact_id":artifact,"run_id":run,"observations":count,"complete":complete}))
+            });
+        }
+        if crate::media::supported(&media) {
+            operations.update(id, "Processing media in isolated worker", true);
+            return crate::media::run(
+                app,
+                id,
+                crate::media::MediaJob {
+                    artifact,
+                    page: request.page,
+                    ocr: request.ocr,
+                    preview_only: kind == "media_preview",
+                    generation,
+                },
+                cancel,
+            );
+        }
+        if kind != "extract" {
+            return Err(refused(
+                "unsupported media format; raw evidence is preserved",
+            ));
+        }
+    }
+    if kind == "source_collect" {
+        let request = decode::<crate::views::SourceRequest>(args)?;
+        if !request.consent || !operations.online.load(Ordering::SeqCst) {
+            return Err(refused(
+                "enable online mode and acknowledge the disclosed request first",
+            ));
+        }
+        let plan = crate::sources::plan(&request)?;
+        let case = session
+            .view()?
+            .case
+            .ok_or_else(CommandError::no_case_open)?;
+        let hosts = plan
+            .manifest
+            .destinations
+            .iter()
+            .map(|v| kokin_net::normalise(v).map(|u| u.host))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|_| refused("invalid declared destination"))?;
+        let mut policy = policy(hosts);
+        policy.max_response_bytes = plan.manifest.max_response_bytes;
+        let live = kokin_net::live::LiveHttp::new(
+            policy,
+            kokin_net::Attribution {
+                connector: plan.manifest.id.clone(),
+                job_id: id.into(),
+                case_id: case.case_id,
+            },
+            operations.online.clone(),
+            cancel.clone(),
+            operations.limiter.clone(),
+        );
+        let http: Box<dyn kokin_net::HttpCapability> = {
+            #[cfg(feature = "desktop-test")]
+            {
+                if let Some(path) = operations
+                    .test_state
+                    .lock()
+                    .map_err(|_| fault("test state unavailable"))?
+                    .replay
+                    .clone()
+                {
+                    Box::new(kokin_net::ReplayHttp::new(path))
+                } else {
+                    Box::new(live)
+                }
+            }
+            #[cfg(not(feature = "desktop-test"))]
+            {
+                Box::new(live)
+            }
+        };
+        let outgoing = plan
+            .requests
+            .first()
+            .ok_or_else(|| refused("empty source plan"))?;
+        operations.update(id, "Collecting disclosed public-source response", true);
+        let response = http.send(outgoing).map_err(|e| {
+            CommandError::new(
+                ErrorCode::FileUnreadable,
+                format!("source request refused or failed: {e}"),
+            )
+        })?;
+        if cancel.load(Ordering::SeqCst) || !operations.online.load(Ordering::SeqCst) {
+            return Err(refused("source collection cancelled before commit"));
+        }
+        operations.begin_publish(id)?;
+        let completeness = if request.connector == "wayback_capture" {
+            if response
+                .headers
+                .iter()
+                .any(|(k, v)| k.eq_ignore_ascii_case("memento-datetime") && !v.is_empty())
+            {
+                "archived_static_html_only"
+            } else {
+                "unverified_archive_response"
+            }
+        } else {
+            "structured_response_only"
+        };
+        return session.with_generation(generation,|open| {
+            let blobs=kokin_blob::BlobStore::new(open.paths.blobs());
+            let captured=kokin_ingest::ingest_response(&mut open.conn,&blobs,&open.cmk,outgoing,&response,&kokin_ingest::IngestContext{connector:&plan.manifest.id,job_id:id},completeness)?;
+            let mut result=crate::views::SourceResultView{artifact_id:captured.artifact_id.clone(),size_bytes:captured.size_bytes,deduplicated:captured.deduplicated,from_fixture:captured.from_fixture,http_status:response.status,capture_completeness:completeness.into(),limitation:plan.limitation,complete:true,run_id:None,observations:0,processing_error:None};
+            if completeness=="unverified_archive_response" {result.complete=false;result.processing_error=Some("Archived response lacks Memento metadata; raw bytes are preserved with unverified archive provenance.".into());}
+            if !(200..300).contains(&response.status) {result.complete=false;result.processing_error=Some("Service error response preserved as evidence; extraction was not attempted.".into());}
+            else if request.connector!="wayback_capture" {
+                match kokin_extract::json::extract(&mut open.conn,&blobs,&open.cmk,&captured.artifact_id){
+                    Ok((run,count,complete))=>{result.run_id=Some(run);result.observations=count;result.complete=complete;},
+                    Err(_)=>{result.complete=false;result.processing_error=Some("Raw response saved, but JSON extraction failed; inspect evidence and the failed run.".into());}
+                }
+            }
+            serde_json::to_value(result).map_err(|_|fault("source result encoding failed"))
         });
     }
     if kind == "collect" {
@@ -490,12 +864,32 @@ fn run(
             Ok(serde_json::json!({"artifact_id":result.artifact_id,"size_bytes":result.size_bytes,"deduplicated":result.deduplicated,"capture_completeness":"static_html_only","from_fixture":from_fixture}))
         });
     }
+    if kind == "import" {
+        let path = operations.consume(field(&args, "selection")?, "input", generation)?;
+        operations.update(
+            id,
+            "Encrypting selected file; cancellation remains available",
+            true,
+        );
+        return session.with_generation(generation, |open| {
+            let result = crate::write::ingest_file_controlled(
+                open,
+                &crate::views::IngestFileRequest {
+                    path: path.to_string_lossy().into_owned(),
+                },
+                id,
+                cancel,
+                || operations.begin_publish(id).is_ok(),
+            )?;
+            serde_json::to_value(result).map_err(|_| fault("result encoding failed"))
+        });
+    }
     let input = if matches!(kind, "import" | "verify" | "restore") {
         Some(operations.consume(field(&args, "selection")?, "input", generation)?)
     } else {
         None
     };
-    let output = if matches!(kind, "export" | "restore") {
+    let output = if matches!(kind, "export" | "restore" | "report_export") {
         Some(operations.consume(field(&args, "destination")?, "output", generation)?)
     } else {
         None
@@ -532,6 +926,37 @@ fn run(
             serde_json::json!({"root":report.root,"case_id":report.case_id,"omissions":report.omissions}),
         );
     }
+    if kind == "report_preview" {
+        operations.update(id, "Validating report citations", true);
+        return session.with_generation(generation,|open|Ok(serde_json::json!({"report_id":field(&args,"report_id")?,"revision":args["revision"],"content":crate::reports::render(open,field(&args,"report_id")?,"markdown",args["revision"].as_i64().ok_or_else(||refused("missing report revision"))?,cancel)?})));
+    }
+    if kind == "report_export" {
+        operations.update(id, "Assembling and validating report citations", true);
+        let content = session.with_generation(generation, |open| {
+            crate::reports::render(
+                open,
+                field(&args, "report_id")?,
+                field(&args, "format")?,
+                args["revision"]
+                    .as_i64()
+                    .ok_or_else(|| refused("missing report revision"))?,
+                cancel,
+            )
+        })?;
+        operations.begin_publish(id)?;
+        let destination = output
+            .as_ref()
+            .ok_or_else(|| refused("missing destination"))?;
+        let staging = destination.with_extension(format!("{}.staging", random_id()?));
+        let publish=session.with_generation(generation,|_|{
+            use std::io::Write;
+            let result=(||->std::io::Result<()>{let mut file=std::fs::OpenOptions::new().write(true).create_new(true).open(&staging)?;file.write_all(content.as_bytes())?;file.sync_all()?;std::fs::hard_link(&staging,destination)?;Ok(())})();
+            let _=std::fs::remove_file(&staging);
+            result.map_err(|_|CommandError::new(ErrorCode::Storage,"report export failed; destination must be new and have enough space"))?;
+            Ok(serde_json::json!({"destination":destination,"bytes":content.len(),"plaintext":true}))
+        });
+        return publish;
+    }
     session.with_generation(generation,|open| {
         match kind {
             "import" => serde_json::to_value(crate::write::ingest_file(open,&crate::views::IngestFileRequest {path:input.as_ref().ok_or_else(||refused("missing file"))?.to_string_lossy().into_owned()})?).map_err(|_|fault("result encoding failed")),
@@ -539,6 +964,7 @@ fn run(
             "create_entity" => serde_json::to_value(crate::write::create_entity(open,&decode(args)?)?).map_err(|_|fault("result encoding failed")),
             "add_identifier" => serde_json::to_value(crate::write::add_identifier(open,&decode(args)?)?).map_err(|_|fault("result encoding failed")),
             "relate" => serde_json::to_value(crate::write::relate(open,&decode(args)?)?).map_err(|_|fault("result encoding failed")),
+            "add_evidence"=>serde_json::to_value(crate::write::add_evidence(open,&decode(args)?)?).map_err(|_|fault("result encoding failed")),
             "assess" => serde_json::to_value(crate::write::assess(open,&decode(args)?)?).map_err(|_|fault("result encoding failed")),
             "merge" => serde_json::to_value(crate::write::merge(open,&decode(args)?)?).map_err(|_|fault("result encoding failed")),
             "reject" => serde_json::to_value(crate::write::reject(open,&decode(args)?)?).map_err(|_|fault("result encoding failed")),
@@ -559,10 +985,85 @@ fn run(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    #[test]
+    fn resource_admission_bounds_network_and_native_work() {
+        assert!(admit(
+            "research_run",
+            ["face_analyze", "research_run", "source_collect"].into_iter()
+        )
+        .is_ok());
+        assert!(admit("research_run", ["research_run"; 4].into_iter()).is_err());
+        assert!(admit("face_analyze", ["embedding_rebuild"].into_iter()).is_err());
+        assert!(admit("restore", ["research_run"].into_iter()).is_err());
+        assert!(admit("research_run", ["restore"].into_iter()).is_err());
+    }
+    #[test]
+    fn report_publication_rejects_a_cancel_after_assembly() {
+        let ops = Operations::default();
+        let cancel = Arc::new(AtomicBool::new(true));
+        ops.jobs.lock().unwrap().insert(
+            "report".into(),
+            Operation {
+                kind: "report_export".into(),
+                view: OperationView {
+                    operation_id: "report".into(),
+                    status: "running".into(),
+                    stage: "Assembling".into(),
+                    cancellable: true,
+                    result_json: None,
+                    error: None,
+                },
+                cancel: cancel.clone(),
+            },
+        );
+        assert!(ops.begin_publish("report").is_err());
+        assert!(ops.jobs.lock().unwrap()["report"].view.cancellable);
+        cancel.store(false, Ordering::SeqCst);
+        ops.begin_publish("report").unwrap();
+        assert!(!ops.jobs.lock().unwrap()["report"].view.cancellable);
+    }
     fn directory() -> PathBuf {
         let dir = std::env::temp_dir().join(format!("kokin-selection-{}", random_id().unwrap()));
         std::fs::create_dir(&dir).unwrap();
         dir
+    }
+    #[test]
+    fn native_drop_is_bounded_single_use_and_case_bound() {
+        let root = std::env::temp_dir().join(format!("kokin-drop-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let path = root.join("synthetic.csv");
+        std::fs::write(&path, b"name\nsynthetic").unwrap();
+        let operations = Operations::default();
+        assert!(operations.select_drop(&[], 7).is_err());
+        assert!(operations
+            .select_drop(&[path.clone(), path.clone()], 7)
+            .is_err());
+        assert!(operations
+            .select_drop(std::slice::from_ref(&root), 7)
+            .is_err());
+        let dropped = operations
+            .select_drop(std::slice::from_ref(&path), 7)
+            .unwrap();
+        let token = dropped["selection"].as_str().unwrap();
+        assert_eq!(dropped["name"], "synthetic.csv");
+        assert!(operations.consume(token, "input", 8).is_err());
+        let dropped = operations
+            .select_drop(std::slice::from_ref(&path), 7)
+            .unwrap();
+        let token = dropped["selection"].as_str().unwrap();
+        assert_eq!(
+            operations.consume(token, "input", 7).unwrap(),
+            std::fs::canonicalize(&path).unwrap()
+        );
+        assert!(operations.consume(token, "input", 7).is_err());
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_len(64 * 1024 * 1024 + 1)
+            .unwrap();
+        assert!(operations.select_drop(&[path], 7).is_err());
+        std::fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn selections_are_single_use_case_bound_and_expiring() {

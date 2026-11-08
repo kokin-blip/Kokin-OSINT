@@ -239,6 +239,7 @@ impl From<kokin_ingest::IngestError> for CommandError {
     fn from(e: kokin_ingest::IngestError) -> Self {
         use kokin_ingest::IngestError as I;
         let code = match &e {
+            kokin_ingest::IngestError::Cancelled => ErrorCode::FileUnreadable,
             I::FileUnreadable { .. } => ErrorCode::FileUnreadable,
             I::BlobOrphaned { .. } => ErrorCode::EvidenceUnavailable,
             I::Store(inner) => return Self::from_store_ref(inner),
@@ -297,5 +298,11 @@ impl From<kokin_keys::KeyError> for CommandError {
             _ => ErrorCode::Storage,
         };
         Self::new(code, e.to_string())
+    }
+}
+
+impl From<rusqlite::Error> for CommandError {
+    fn from(error: rusqlite::Error) -> Self {
+        Self::from(kokin_store::StoreError::from(error))
     }
 }

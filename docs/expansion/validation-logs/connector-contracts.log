@@ -1,0 +1,22 @@
+   Compiling kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+   Compiling kokin-connectors v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-connectors)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.09s
+     Running unittests src/lib.rs (target/debug/deps/kokin_connectors-cb0ffb8dd2ce04de)
+
+running 13 tests
+test research::tests::challenges_soft_errors_and_mismatched_names_are_never_available ... ok
+test research::tests::every_native_profile_rule_has_positive_negative_and_challenge_contracts ... ok
+test research::tests::normalization_preserves_identity_and_requires_country ... ok
+test research::tests::empty_dns_and_unrelated_domain_records_are_not_positive_findings ... ok
+test tabular::tests::quoted_cells_do_not_split_identifiers_or_drop_unselected_rows ... ok
+test tests::unsafe_manifests_are_refused ... ok
+test tests::certificate_and_archive_requests_are_bounded_and_separate ... ok
+test tests::dns_types_and_disclosure_are_closed ... ok
+test research::tests::plans_are_closed_and_bulk_never_sends_automatically ... ok
+test research::tests::provider_plans_bind_calls_pages_eligibility_and_premium ... ok
+test tests::rdap_uses_reviewed_registry_and_has_no_insecure_fallback ... ok
+test tabular::tests::json_columns_and_import_bounds_are_explicit ... ok
+test directory::tests::catalog_is_complete_and_not_executable ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+

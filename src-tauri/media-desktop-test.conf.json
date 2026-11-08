@@ -1,0 +1,32 @@
+{
+  "build": {
+    "devUrl": null
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "capabilities": [
+        {
+          "identifier": "desktop-test",
+          "windows": [
+            "main"
+          ],
+          "permissions": [
+            "core:default",
+            "wdio:default",
+            "wdio-webdriver:default"
+          ]
+        }
+      ]
+    }
+  },
+  "bundle": {
+    "externalBin": [
+      "binaries/kokin-media-worker",
+      "binaries/kokin-face-worker"
+    ],
+    "resources": {
+      "native/": "native/"
+    }
+  }
+}

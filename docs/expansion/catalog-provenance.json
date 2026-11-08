@@ -1,0 +1,9 @@
+{
+  "repository": "lockfale/OSINT-Framework",
+  "git_blob": "ff4107ba8904f04588636ccee1f61ef1e7540dbc",
+  "git_blob_verified": true,
+  "sha256": "657fdc50c8b005df482c53854602521304745421f9f13107cd1d738c51c2cbaa",
+  "bytes": 1110228,
+  "license": "MIT",
+  "notice": "resources/notices/osint-framework-MIT.txt"
+}

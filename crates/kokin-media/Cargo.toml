@@ -1,0 +1,39 @@
+[package]
+name = "kokin-media"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+engine = ["kokin-faces/inference","dep:image", "dep:kamadak-exif", "dep:pdfium-render", "dep:leptess", "dep:home", "dep:tesseract-plumbing"]
+
+[dependencies]
+kokin-faces = {path="../kokin-faces",default-features=false}
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+image = { version = "=0.25.6", default-features = false, features = ["jpeg", "png", "webp", "tiff"], optional = true }
+kamadak-exif = { version = "=0.6.1", optional = true }
+# bindgen -> which permits home 0.5.12, which raises MSRV to 1.88.
+home = { version = "=0.5.11", optional = true }
+tesseract-plumbing = { version = "=0.8.0", optional = true }
+leptess = { version = "=0.14.0", optional = true }
+pdfium-render = { version = "=0.9.4", default-features = false, features = ["pdfium_7881", "thread_safe"], optional = true }
+
+[[bin]]
+name = "kokin-media-worker"
+path = "src/main.rs"
+required-features = ["engine"]
+
+[dev-dependencies]
+crc32fast = "1.5"
+
+[[bin]]
+name="kokin-face-worker"
+path="src/face_main.rs"
+required-features=["engine"]

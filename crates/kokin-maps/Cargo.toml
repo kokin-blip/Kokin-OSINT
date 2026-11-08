@@ -1,0 +1,13 @@
+[package]
+name="kokin-maps"
+version.workspace=true
+edition.workspace=true
+rust-version.workspace=true
+license.workspace=true
+publish=false
+[lints]
+workspace=true
+[dependencies]
+thiserror="2"
+serde_json="1"
+flate2="1"

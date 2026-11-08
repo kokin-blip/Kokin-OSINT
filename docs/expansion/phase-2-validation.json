@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-20",
+  "phase": 2,
+  "exit_criteria_passed": true,
+  "scope": "phase-2-contract.md",
+  "hybrid_direction": "Local case processing by default; optional official APIs after explicit plan/consent; native fallback is case-scoped, not a provider corpus.",
+  "checks": [
+    {
+      "name": "workspace",
+      "command": "KOKIN_NETWORK=deny cargo test --workspace --all-targets --offline",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-workspace.log",
+      "sha256": "93eb784dd0364eb05d5f7d37cca5492c8a395d21126ad90b9ff0eaa797c864df"
+    },
+    {
+      "name": "acceptance",
+      "command": "KOKIN_NETWORK=deny cargo test -p kokin-osint --test research_phase2 --offline -- --nocapture",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-acceptance.log",
+      "sha256": "daf9bd1f15139659afa4945e5a76c7f282b007381d8bbc5463dc8c14f8eab79d"
+    },
+    {
+      "name": "drop",
+      "command": "KOKIN_NETWORK=deny cargo test -p kokin-osint --lib operations::tests::native_drop --offline",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-drop.log",
+      "sha256": "a182b92d3cc5ff79ad97a44fe1823f654825c029a6b23eba8abc47973d0ada35"
+    },
+    {
+      "name": "clippy",
+      "command": "KOKIN_NETWORK=deny cargo clippy --workspace --all-targets --offline -- -D warnings",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-clippy.log",
+      "sha256": "69a6abcdf78c70f4b77756048c3d21850ea1d02f4b2d7b2d56397ad4abe90758"
+    },
+    {
+      "name": "frontend",
+      "command": "npm --prefix ui run test",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-frontend.log",
+      "sha256": "9df3fa292be2bf6d1da708f57b718700799d53b448808f62db28ef3bf6719ffc"
+    },
+    {
+      "name": "types",
+      "command": "npm --prefix ui run check",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-types.log",
+      "sha256": "3fc74609855d685bc4597f059da11d27432dfd0b6c10b7f06ecd885b06a7091d"
+    },
+    {
+      "name": "macos",
+      "command": "cd ui && npx wdio run ./wdio.research.conf.mjs",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-macos.log",
+      "sha256": "85da32af0e7e70e689f054f04c49d3bc772bba872914f64c3c743f9d437f0981"
+    },
+    {
+      "name": "native",
+      "command": "KOKIN_NETWORK=deny cargo test -p kokin-media --test worker --offline -- --ignored (matching packaged worker/native; installed hash-verified English data)",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-native.log",
+      "sha256": "6db4b33bacda18faeb36fb580d4088f20e94f659008e2ebe9d64e0c657dbdf9c"
+    },
+    {
+      "name": "production-ui",
+      "command": "npm --prefix ui run build",
+      "exit_code": 0,
+      "log": "validation-logs/phase2-finish-production-ui.log",
+      "sha256": "2ab405f03f982c76cf8808068e00239d77341ea171cd59ff5626bfa2676c78ba"
+    }
+  ],
+  "rust_full_regression_passed": 448,
+  "rust_ignored": 13,
+  "test_executables": 51,
+  "subsequent_focused_checks": "New native drop test and expanded encrypted-package/provider-card acceptance passed after full regression; strict workspace clippy passed on final sources.",
+  "frontend_tests": 87,
+  "macos_acceptance": "Passed in 6 seconds: real Tauri commands/UI and native PDF worker; local fallback, file previews CSV/TSV/JSON/text/Markdown/log, saved PDF candidates, parent binding, source fixtures/cache/review/export, themes/focus/narrow windows. Synthetic data only.",
+  "native_acceptance": "2 dedicated contained-worker tests passed in1.48s: synthetic image/cancellation and native PDF text/OCR/malformed/page bounds. Existing installed English data SHA2567d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2; no install/download.",
+  "native_drop_acceptance": "Native bounded token handling and case/expiry/single-use tests plus frontend generation/event review. Actual OS drag gesture remains manual release QA.",
+  "benchmark": "../benchmarks/research-phase2-encrypted-disk-mac.json",
+  "paid_requests": 0,
+  "image_uploads": 0,
+  "new_models_downloaded": 0,
+  "new_keys_created": 0,
+  "new_dependencies": 0,
+  "phase_3_advanced": false,
+  "remaining": "No Phase2 selector/bulk implementation work in declared contract. Mixed matrix entries preserve blocked automated HIBP/breach source, Phase4 provider live/stream/eligibility gates and Phase5 investigation presentation. Windows, manual VoiceOver/OS gesture QA and production packaging remain release gates.",
+  "scope_note": "Native behavior and deterministic provider contracts are accepted separately. Provider-backed means an optional implementation, not a passed paid-live test or verified entitlement/coverage."
+}

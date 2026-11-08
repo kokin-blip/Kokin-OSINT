@@ -2,10 +2,13 @@
 use crate::{operations::Operations, CommandError, ErrorCode, Session};
 use std::{collections::VecDeque, path::PathBuf};
 use tauri::{Manager, State};
+#[path = "../tests/support/corpus.rs"]
+mod corpus;
 #[derive(Default)]
 pub struct TestState {
     pub selections: VecDeque<(String, PathBuf)>,
     pub replay: Option<PathBuf>,
+    pub ai_response: Option<serde_json::Value>,
 }
 #[tauri::command]
 pub fn test_control(
@@ -17,6 +20,7 @@ pub fn test_control(
     let bad = || CommandError::new(ErrorCode::InvalidValue, "invalid desktop test request");
     let operations = app.state::<Operations>();
     match action.as_str() {
+        "ai_replay" => {operations.test_state.lock().map_err(|_|bad())?.ai_response=Some(args["response"].clone());Ok(serde_json::Value::Null)},
         "selection" => {
             let purpose = args["purpose"].as_str().ok_or_else(bad)?;
             let path = args["path"].as_str().ok_or_else(bad)?;
@@ -32,7 +36,8 @@ pub fn test_control(
             let directory = PathBuf::from(args["directory"].as_str().ok_or_else(bad)?);
             let url = args["url"].as_str().ok_or_else(bad)?;
             let body = args["body"].as_str().ok_or_else(bad)?;
-            let request = kokin_net::HttpRequest::get(url);
+            let mut request = kokin_net::HttpRequest::get(url);
+            if let Some(accept)=args["accept"].as_str(){request=request.with_header("Accept",accept);}
             let key = request.fixture_key().map_err(|_| bad())?;
             kokin_net::ReplayHttp::new(&directory)
                 .store(&kokin_net::http::Fixture {
@@ -40,8 +45,8 @@ pub fn test_control(
                     key,
                     request,
                     response: kokin_net::HttpResponse {
-                        status: 200,
-                        headers: [("content-type".into(), "text/html".into())].into(),
+                        status: args["status"].as_u64().unwrap_or(200) as u16,
+                        headers: [("content-type".into(), args["media_type"].as_str().unwrap_or("text/html").into())].into(),
                         body: String::new(),
                         body_bytes: Some(body.as_bytes().to_vec()),
                         redirect_chain: Vec::new(),
@@ -54,6 +59,15 @@ pub fn test_control(
             operations.test_state.lock().map_err(|_| bad())?.replay = Some(directory);
             Ok(serde_json::json!(null))
         }
+        "maximum_board" => session.with_case(|open| {
+            corpus::seed(open,100_000,20_000,300_000);
+            let seeds=corpus::board(open);
+            let kinds=vec!["stress_path".to_owned()];
+            let expansion=kokin_graph::explore::expand_multi(&open.conn,&seeds,kokin_graph::explore::ExpansionOptions{hops:4,node_limit:300,per_node:128,direction:"both",kinds:&kinds},&std::sync::atomic::AtomicBool::new(false)).map_err(|_|bad())?;
+            let view=serde_json::json!({"nodes":expansion.nodes.iter().map(|n|serde_json::json!({"id":n.id,"name":n.name,"canonical_id":n.canonical_id,"depth":n.depth})).collect::<Vec<_>>(),"edges":expansion.edges.iter().map(|e|serde_json::json!({"id":e.id,"from":e.from,"to":e.to,"kind":e.kind})).collect::<Vec<_>>(),"completed_hops":expansion.completed_hops,"truncated":expansion.truncated,"truncation_reasons":expansion.truncation_reasons});
+            let board=kokin_store::workspace::save(&open.conn,&kokin_store::workspace::SaveWorkspace{id:"maximum-board".into(),kind:"board".into(),name:"Synthetic maximum board".into(),expected_revision:0,payload:serde_json::json!({"version":1,"view":view,"roots":seeds,"positions":{},"camera":{"x":0,"y":0,"scale":1},"hops":4,"limit":300,"perNode":128,"direction":"both","relationshipKind":"stress_path","visibleQuery":""}),archived:false}).map_err(|_|bad())?;
+            Ok(serde_json::json!({"board_id":board.id,"nodes":expansion.nodes.len(),"edges":expansion.edges.len()}))
+        }),
         "snapshot" => session.with_case(|open| {
             let storage = |e: rusqlite::Error| CommandError::new(ErrorCode::Storage, e.to_string());
             let mut snapshot = serde_json::Map::new();
@@ -68,6 +82,23 @@ pub fn test_control(
                 "evidence_link",
                 "assessment",
                 "transform_run",
+                "ai_suggestion",
+                "ai_suggestion_citation",
+                "ai_review",
+                "observation_embedding",
+                "grounded_location",
+                "map_state_revision",
+                "map_illustration",
+                "image_query",
+                "face_run",
+                "face_detection",
+                "face_review",
+                "face_group",
+                "face_group_member",
+                "face_preferences",
+                "research_run",
+                "research_result",
+                "research_document",
             ] {
                 let mut statement = open
                     .conn

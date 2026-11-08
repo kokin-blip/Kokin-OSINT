@@ -6,13 +6,14 @@
 <section aria-label="Selected source citation">
   <h4>Source-backed observation</h4>
   {#if source}
-    {#if source.quote.agreement === 'exact' || source.quote.agreement === 'contains' || source.quote.agreement === 'differs'}
+    {#if source.quote.agreement === 'structured_exact' || source.quote.agreement === 'derived_exact' || source.quote.agreement === 'exact' || source.quote.agreement === 'contains' || source.quote.agreement === 'differs'}
       <blockquote>{source.quote.excerpt.quoted}</blockquote>
       {#if source.quote.agreement === 'differs'}<aside class="warning"><strong>The source differs from the recorded observation.</strong><p>Recorded value: {source.value}</p></aside>{/if}
       {#if source.quote.excerpt.lossy}<p class="warning">This excerpt includes decoding replacements. Inspect the source document before relying on its text.</p>{/if}
     {:else}
       <p class="warning">Source excerpt unavailable: {source.quote.agreement.replaceAll('_', ' ')}.</p><p>Recorded observation: {source.value}</p>
     {/if}
+    {#if source.quote.agreement === "derived_exact" || source.quote.agreement === "structured_exact"}<p class="warning">{source.quote.basis}</p>{/if}
     <p class="by">Recorded observation · {source.kind}{source.superseded ? ' · withdrawn' : ''}</p>
     <div class="source-footer"><p>{source.lineage.artifact.canonical_locator ?? source.lineage.artifact.artifact_id}<span class="by">{source.lineage.artifact.media_type} · citation verdict: {source.quote.agreement.replaceAll('_', ' ')}</span></p>
       {#if onopen}<button class="primary" type="button" onclick={() => onopen('observation', source.observation_id)}>Open cited evidence</button>{/if}

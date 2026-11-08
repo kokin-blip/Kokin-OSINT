@@ -1,0 +1,9 @@
+{
+  "architecture": "aarch64",
+  "date": "2026-10-20",
+  "filter_and_page_ms": 18,
+  "insert_10000_ms": 260,
+  "matching": 1000,
+  "page_size": 50,
+  "scope": "SQLCipher encrypted disk; 10000 synthetic result projections across ten runs; page/filter scans one 1000-result run; network/native model excluded"
+}

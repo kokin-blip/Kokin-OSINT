@@ -277,7 +277,7 @@ mod tests {
         conn
     }
 
-    fn event<'a>(action: &'a str) -> NewAuditEvent<'a> {
+    fn event(action: &str) -> NewAuditEvent<'_> {
         NewAuditEvent {
             actor: "user:local",
             action,

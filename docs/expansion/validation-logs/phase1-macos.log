@@ -1,0 +1,2259 @@
+2026-10-20T09:44:17.007Z INFO @wdio/display-server: No display server needed: not on Linux
+2026-10-20T09:44:17.008Z INFO @wdio/cli:launcher: Run onPrepare hook
+2026-10-20T09:44:17.008Z INFO tauri-service:launcher: Using embedded WebDriver provider (tauri-plugin-wdio-webdriver) - no external driver needed
+2026-10-20T09:44:17.009Z INFO tauri-service:launcher: Log capture initialized: /Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/ui/logs
+2026-10-20T09:44:17.009Z INFO tauri-service:launcher: Embedded provider mode - spawning Tauri app with embedded WebDriver server
+2026-10-20T09:44:17.011Z INFO tauri-service:launcher: Tauri app spawned (PID: 35794)
+2026-10-20T09:44:19.033Z INFO tauri-service:launcher: WebDriver server ready on port 4445
+
+Execution of 1 workers started at 2026-10-20T09:44:20.046Z
+
+2026-10-20T09:44:20.049Z INFO @wdio/cli:launcher: Run onWorkerStart hook
+2026-10-20T09:44:20.053Z INFO @wdio/local-runner: Start worker 0-0 with arg: run ./wdio.research.conf.mjs
+[0-0] 2026-10-20T09:44:20.279Z INFO @wdio/local-runner: Run worker command: run
+[0-0] RUNNING in undefined - file:///Users/kokinmartinez/Documents/ChatGPT/Kokin%20Osint/Kokin-OSINT/ui/tests/desktop/research.spec.mjs
+[0-0] 2026-10-20T09:44:20.372Z INFO webdriver: Initiate new session using the WebDriver protocol
+[0-0] 2026-10-20T09:44:20.372Z INFO @wdio/utils: Connecting to existing driver at http://127.0.0.1:4445/
+[0-0] 2026-10-20T09:44:20.372Z INFO webdriver: [POST] http://127.0.0.1:4445/session
+[0-0] 2026-10-20T09:44:20.384Z INFO webdriver: COMMAND getWindowHandle()
+[0-0] 2026-10-20T09:44:20.384Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/window
+[0-0] 2026-10-20T09:44:20.386Z INFO webdriver: RESULT main
+[0-0] 2026-10-20T09:44:20.387Z INFO webdriver: COMMAND executeScript("if(!window.__wdio_original_core__){const core=window.__TAURI__.core;window.__wdio_original_core__={invoke:core.invoke.bind(core)};}return true;", <object>)
+[0-0] 2026-10-20T09:44:20.387Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/sync
+[0-0] 2026-10-20T09:44:20.387Z INFO webdriver: DATA {
+[0-0]   script: 'if(!window.__wdio_original_core__){const core=window.__TAURI__.core;window.__wdio_original_core__={invoke:core.invoke.bind(core)};}return true;',
+[0-0]   args: []
+[0-0] }
+[0-0] 2026-10-20T09:44:20.389Z INFO webdriver: RESULT true
+[0-0] 2026-10-20T09:44:20.390Z INFO tauri-service:service: before() start — mode=binary provider=embedded multiremote=undefined instances=n/a
+[0-0] 2026-10-20T09:44:20.390Z INFO tauri-service:service: Initializing standard browser
+[0-0] 2026-10-20T09:44:20.390Z INFO webdriver: COMMAND getWindowHandles()
+[0-0] 2026-10-20T09:44:20.390Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/window/handles
+[0-0] 2026-10-20T09:44:20.391Z INFO webdriver: RESULT [ 'main' ]
+[0-0] 2026-10-20T09:44:20.391Z INFO tauri-service:service: Standard browser window available
+[0-0] 2026-10-20T09:44:20.391Z INFO tauri-service:service: Waiting for Tauri plugin initialization...
+[0-0] 2026-10-20T09:44:20.392Z INFO webdriver: COMMAND executeAsyncScript(<fn>, <object>)
+[0-0] 2026-10-20T09:44:20.392Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/async
+[0-0] 2026-10-20T09:44:20.392Z INFO webdriver: DATA {
+[0-0]   script: '\n' +
+[0-0]     '            function webdriverioPolyfill() {\n' +
+[0-0]     '  var __defProp = Object.defineProperty;\n' +
+[0-0]     '  var __name = function(target, _value) {\n' +
+[0-0]     '    return __defProp(target, "name", { value: _value, configurable: true });\n' +
+[0-0]     '  };\n' +
+[0-0]     '  var __globalThis = typeof globalThis === "object" && globalThis || typeof window === "object" && window;\n' +
+[0-0]     '  __globalThis.__name = __name;\n' +
+[0-0]     '}\n' +
+[0-0]     '            webdriverioPolyfill();\n' +
+[0-0]     '            var done = arguments[arguments.length - 1];\n' +
+[0-0]     '            var args = Array.prototype.slice.call(arguments, 0, -1);\n' +
+[0-0]     '            Promise.resolve((async function checkPluginInit() {\n' +
+[0-0]     '                        // @ts-expect-error - window exists in browser context\n' +
+[0-0]     "                        if (typeof window.wdioTauri !== 'undefined' && typeof window.wdioTauri.waitForInit === 'function') {\n" +
+[0-0]     '                            // @ts-expect-error - window exists in browser context\n' +
+[0-0]     '                            await window.wdioTauri.waitForInit();\n' +
+[0-0]     '                        }\n' +
+[0-0]     '                    }).apply(null, args)).then(function (result) {\n' +
+[0-0]     '                done(result)\n' +
+[0-0]     '            }, function (error) {\n' +
+[0-0]     '                done({\n' +
+[0-0]     '                    __wdioError: true,\n' +
+[0-0]     '                    message: error && error.message ? error.message : String(error),\n' +
+[0-0]     '                    stack: error && error.stack,\n' +
+[0-0]     '                    name: error && error.name\n' +
+[0-0]     '                })\n' +
+[0-0]     '            })\n' +
+[0-0]     '        ',
+[0-0]   args: []
+[0-0] }
+[0-0] 2026-10-20T09:44:20.393Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.394Z INFO tauri-service:service: Tauri plugin initialization complete
+[0-0] 2026-10-20T09:44:20.394Z INFO webdriver: COMMAND executeScript(<fn>, <object>)
+[0-0] 2026-10-20T09:44:20.394Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/sync
+[0-0] 2026-10-20T09:44:20.394Z INFO webdriver: DATA { script: 'clearStaleMocks(...) [698 bytes]', args: [] }
+[0-0] 2026-10-20T09:44:20.396Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.396Z INFO tauri-service:service: before() complete
+[0-0] 2026-10-20T09:44:20.404Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.404Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.405Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.408Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.408Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.410Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.410Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Skip introduction"]")
+[0-0] 2026-10-20T09:44:20.410Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:20.410Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Skip introduction"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:20.412Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:20.417Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.417Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.418Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.420Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.420Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.421Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.421Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Skip introduction"]")
+[0-0] 2026-10-20T09:44:20.421Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:20.421Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Skip introduction"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:20.422Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:20.424Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.425Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.425Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.427Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.427Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.427Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.427Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Create new"]")
+[0-0] 2026-10-20T09:44:20.427Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:20.427Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Create new"]' }
+[0-0] 2026-10-20T09:44:20.428Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '4576666e-03d6-4fba-9391-2b4fbed5eb8d'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:20.432Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.432Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.432Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.434Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.434Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.435Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.437Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.437Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.437Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.438Z INFO webdriver: COMMAND elementClick("4576666e-03d6-4fba-9391-2b4fbed5eb8d")
+[0-0] 2026-10-20T09:44:20.438Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/4576666e-03d6-4fba-9391-2b4fbed5eb8d/click
+[0-0] 2026-10-20T09:44:20.439Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.441Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.441Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.442Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.444Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.444Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.445Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.445Z INFO webdriver: COMMAND findElements("xpath", "//label[contains(.,"Case folder")]/input")
+[0-0] 2026-10-20T09:44:20.445Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:20.445Z INFO webdriver: DATA { using: 'xpath', value: '//label[contains(.,"Case folder")]/input' }
+[0-0] 2026-10-20T09:44:20.446Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c80c518d-f6c9-43e4-bafc-9f794a3659c3'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:20.447Z INFO webdriver: COMMAND getElementProperty("c80c518d-f6c9-43e4-bafc-9f794a3659c3", "<Screenshot[base64]>")
+[0-0] 2026-10-20T09:44:20.448Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/c80c518d-f6c9-43e4-bafc-9f794a3659c3/property/type
+[0-0] 2026-10-20T09:44:20.448Z INFO webdriver: RESULT text
+[0-0] 2026-10-20T09:44:20.449Z INFO webdriver: COMMAND elementClear("c80c518d-f6c9-43e4-bafc-9f794a3659c3")
+[0-0] 2026-10-20T09:44:20.449Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/c80c518d-f6c9-43e4-bafc-9f794a3659c3/clear
+[0-0] 2026-10-20T09:44:20.450Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.450Z INFO webdriver: COMMAND getElementProperty("c80c518d-f6c9-43e4-bafc-9f794a3659c3", "value")
+[0-0] 2026-10-20T09:44:20.450Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/c80c518d-f6c9-43e4-bafc-9f794a3659c3/property/value
+[0-0] 2026-10-20T09:44:20.451Z INFO webdriver: RESULT 
+[0-0] 2026-10-20T09:44:20.451Z INFO webdriver: COMMAND elementSendKeys("c80c518d-f6c9-43e4-bafc-9f794a3659c3", "/var/folders/yl/gm0x2l4j3_39zddqdllnnfzw0000gn/T/kokin-research-desktop-FggpSS/case")
+[0-0] 2026-10-20T09:44:20.451Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/c80c518d-f6c9-43e4-bafc-9f794a3659c3/value
+[0-0] 2026-10-20T09:44:20.451Z INFO webdriver: DATA {
+[0-0]   text: '/var/folders/yl/gm0x2l4j3_39zddqdllnnfzw0000gn/T/kokin-research-desktop-FggpSS/case'
+[0-0] }
+[0-0] 2026-10-20T09:44:20.452Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.454Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.454Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.454Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.456Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.456Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.457Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.457Z INFO webdriver: COMMAND findElements("xpath", "//label[contains(.,"Case name")]/input")
+[0-0] 2026-10-20T09:44:20.457Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:20.457Z INFO webdriver: DATA { using: 'xpath', value: '//label[contains(.,"Case name")]/input' }
+[0-0] 2026-10-20T09:44:20.458Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'de12185e-822f-4d72-9778-87ac430a70c6'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:20.459Z INFO webdriver: COMMAND getElementProperty("de12185e-822f-4d72-9778-87ac430a70c6", "<Screenshot[base64]>")
+[0-0] 2026-10-20T09:44:20.459Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de12185e-822f-4d72-9778-87ac430a70c6/property/type
+[0-0] 2026-10-20T09:44:20.460Z INFO webdriver: RESULT text
+[0-0] 2026-10-20T09:44:20.460Z INFO webdriver: COMMAND elementClear("de12185e-822f-4d72-9778-87ac430a70c6")
+[0-0] 2026-10-20T09:44:20.460Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de12185e-822f-4d72-9778-87ac430a70c6/clear
+[0-0] 2026-10-20T09:44:20.460Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.460Z INFO webdriver: COMMAND getElementProperty("de12185e-822f-4d72-9778-87ac430a70c6", "value")
+[0-0] 2026-10-20T09:44:20.461Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de12185e-822f-4d72-9778-87ac430a70c6/property/value
+[0-0] 2026-10-20T09:44:20.461Z INFO webdriver: RESULT 
+[0-0] 2026-10-20T09:44:20.461Z INFO webdriver: COMMAND elementSendKeys("de12185e-822f-4d72-9778-87ac430a70c6", "Synthetic research acceptance")
+[0-0] 2026-10-20T09:44:20.461Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de12185e-822f-4d72-9778-87ac430a70c6/value
+[0-0] 2026-10-20T09:44:20.461Z INFO webdriver: DATA { text: 'Synthetic research acceptance' }
+[0-0] 2026-10-20T09:44:20.462Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.464Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.464Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.464Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.466Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.466Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.466Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.466Z INFO webdriver: COMMAND findElements("xpath", "//label[contains(.,"Passphrase")]/input")
+[0-0] 2026-10-20T09:44:20.466Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:20.466Z INFO webdriver: DATA { using: 'xpath', value: '//label[contains(.,"Passphrase")]/input' }
+[0-0] 2026-10-20T09:44:20.467Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'de8340ee-5779-409c-8a2b-9dd603bc2efa'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:20.468Z INFO webdriver: COMMAND getElementProperty("de8340ee-5779-409c-8a2b-9dd603bc2efa", "<Screenshot[base64]>")
+[0-0] 2026-10-20T09:44:20.468Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de8340ee-5779-409c-8a2b-9dd603bc2efa/property/type
+[0-0] 2026-10-20T09:44:20.469Z INFO webdriver: RESULT password
+[0-0] 2026-10-20T09:44:20.469Z INFO webdriver: COMMAND elementClear("de8340ee-5779-409c-8a2b-9dd603bc2efa")
+[0-0] 2026-10-20T09:44:20.469Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de8340ee-5779-409c-8a2b-9dd603bc2efa/clear
+[0-0] 2026-10-20T09:44:20.470Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.470Z INFO webdriver: COMMAND getElementProperty("de8340ee-5779-409c-8a2b-9dd603bc2efa", "value")
+[0-0] 2026-10-20T09:44:20.470Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de8340ee-5779-409c-8a2b-9dd603bc2efa/property/value
+[0-0] 2026-10-20T09:44:20.470Z INFO webdriver: RESULT 
+[0-0] 2026-10-20T09:44:20.470Z INFO webdriver: COMMAND elementSendKeys("de8340ee-5779-409c-8a2b-9dd603bc2efa", "synthetic research secret")
+[0-0] 2026-10-20T09:44:20.470Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de8340ee-5779-409c-8a2b-9dd603bc2efa/value
+[0-0] 2026-10-20T09:44:20.470Z INFO webdriver: DATA { text: 'synthetic research secret' }
+[0-0] 2026-10-20T09:44:20.471Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:20.473Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.473Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.473Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.475Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.475Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.475Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.475Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Create case"]")
+[0-0] 2026-10-20T09:44:20.475Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:20.475Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Create case"]' }
+[0-0] 2026-10-20T09:44:20.476Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0037f650-d5c3-442e-87d9-cdcdac87cf74'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:20.478Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.478Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.479Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.480Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.480Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.480Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.482Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:20.482Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:20.482Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:20.482Z INFO webdriver: COMMAND elementClick("0037f650-d5c3-442e-87d9-cdcdac87cf74")
+[0-0] 2026-10-20T09:44:20.482Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/0037f650-d5c3-442e-87d9-cdcdac87cf74/click
+[0-0] 2026-10-20T09:44:21.716Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:21.723Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.723Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.724Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.726Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.726Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.727Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.727Z INFO webdriver: COMMAND findElements("css selector", ".key")
+[0-0] 2026-10-20T09:44:21.727Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.727Z INFO webdriver: DATA { using: 'css selector', value: '.key' }
+[0-0] 2026-10-20T09:44:21.728Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'd540a55b-ca68-4c24-9fa9-83987bdd0e36'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.729Z INFO webdriver: COMMAND executeScript(<fn>, <object>)
+[0-0] 2026-10-20T09:44:21.730Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/sync
+[0-0] 2026-10-20T09:44:21.730Z INFO webdriver: DATA {
+[0-0]   script: '\n' +
+[0-0]     '            function webdriverioPolyfill() {\n' +
+[0-0]     '  var __defProp = Object.defineProperty;\n' +
+[0-0]     '  var __name = function(target, _value) {\n' +
+[0-0]     '    return __defProp(target, "name", { value: _value, configurable: true });\n' +
+[0-0]     '  };\n' +
+[0-0]     '  var __globalThis = typeof globalThis === "object" && globalThis || typeof window === "object" && window;\n' +
+[0-0]     '  __globalThis.__name = __name;\n' +
+[0-0]     '}\n' +
+[0-0]     '            webdriverioPolyfill();\n' +
+[0-0]     '            return (function(elem) {\n' +
+[0-0]     '      try {\n' +
+[0-0]     '        const style = window.getComputedStyle(elem);\n' +
+[0-0]     '        return { value: style?.display ?? "" };\n' +
+[0-0]     '      } catch {\n' +
+[0-0]     '        if (typeof elem.isConnected === "boolean" && !elem.isConnected) {\n' +
+[0-0]     '          throw new Error("stale element reference: element is not attached to the page document");\n' +
+[0-0]     '        }\n' +
+[0-0]     '        return { value: "" };\n' +
+[0-0]     '      }\n' +
+[0-0]     '    }).apply(null, arguments)\n' +
+[0-0]     '        ',
+[0-0]   args: [
+[0-0]     {
+[0-0]       'element-6066-11e4-a52e-4f735466cecf': 'd540a55b-ca68-4c24-9fa9-83987bdd0e36'
+[0-0]     }
+[0-0]   ]
+[0-0] }
+[0-0] 2026-10-20T09:44:21.730Z INFO webdriver: COMMAND executeScript(<fn>, <object>)
+[0-0] 2026-10-20T09:44:21.730Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/sync
+[0-0] 2026-10-20T09:44:21.730Z INFO webdriver: DATA {
+[0-0]   script: 'checkVisibility(...) [614 bytes]',
+[0-0]   args: [
+[0-0]     {
+[0-0]       'element-6066-11e4-a52e-4f735466cecf': 'd540a55b-ca68-4c24-9fa9-83987bdd0e36'
+[0-0]     },
+[0-0]     {
+[0-0]       withinViewport: false,
+[0-0]       contentVisibilityAuto: true,
+[0-0]       opacityProperty: true,
+[0-0]       visibilityProperty: true
+[0-0]     }
+[0-0]   ]
+[0-0] }
+[0-0] 2026-10-20T09:44:21.732Z INFO webdriver: RESULT { value: 'flex' }
+[0-0] 2026-10-20T09:44:21.732Z INFO webdriver: RESULT true
+[0-0] 2026-10-20T09:44:21.735Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.735Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.735Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.737Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.737Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.738Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.738Z INFO webdriver: COMMAND findElements("css selector", ".key .segment")
+[0-0] 2026-10-20T09:44:21.738Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.738Z INFO webdriver: DATA { using: 'css selector', value: '.key .segment' }
+[0-0] 2026-10-20T09:44:21.739Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'fa996518-80a9-4cb1-ba89-9aea77e03bed'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '87162665-00d8-4388-96a6-ddb6f115803e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '50aca149-89f6-4332-a4c7-673e250183b5'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '6a583967-fb99-439d-839b-bf55efab8803'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '701c79c3-e0ed-4957-9dfa-c6a509024b27'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e01aa282-26e0-4ce6-b1c0-55fd43e27a94'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '895bb2f8-3a2d-406d-85dd-2c54a9d72f1e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '12529c64-23d6-4327-8d6d-eb02dcb380d7'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.744Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.744Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.745Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.746Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.746Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.747Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.747Z INFO webdriver: COMMAND findElements("css selector", "[role="dialog"] input[type="checkbox"]")
+[0-0] 2026-10-20T09:44:21.747Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.747Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: '[role="dialog"] input[type="checkbox"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:21.748Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c83fabdc-24ba-41d5-a639-f7c39b5c9714'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.750Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.750Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.751Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.752Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.752Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.753Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.754Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.754Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.755Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.755Z INFO webdriver: COMMAND elementClick("c83fabdc-24ba-41d5-a639-f7c39b5c9714")
+[0-0] 2026-10-20T09:44:21.755Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/c83fabdc-24ba-41d5-a639-f7c39b5c9714/click
+[0-0] 2026-10-20T09:44:21.756Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:21.756Z INFO webdriver: COMMAND findElements("css selector", "[role="dialog"] input[type="text"]")
+[0-0] 2026-10-20T09:44:21.756Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.756Z INFO webdriver: DATA { using: 'css selector', value: '[role="dialog"] input[type="text"]' }
+[0-0] 2026-10-20T09:44:21.756Z INFO webdriver: COMMAND getElementText("895bb2f8-3a2d-406d-85dd-2c54a9d72f1e")
+[0-0] 2026-10-20T09:44:21.756Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/895bb2f8-3a2d-406d-85dd-2c54a9d72f1e/text
+[0-0] 2026-10-20T09:44:21.757Z INFO webdriver: RESULT Z6Y729C
+[0-0] 2026-10-20T09:44:21.757Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '8e8b445f-573e-43d2-be5a-9002c796837a'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.758Z INFO webdriver: COMMAND getElementProperty("8e8b445f-573e-43d2-be5a-9002c796837a", "<Screenshot[base64]>")
+[0-0] 2026-10-20T09:44:21.758Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/8e8b445f-573e-43d2-be5a-9002c796837a/property/type
+[0-0] 2026-10-20T09:44:21.759Z INFO webdriver: RESULT text
+[0-0] 2026-10-20T09:44:21.759Z INFO webdriver: COMMAND elementClear("8e8b445f-573e-43d2-be5a-9002c796837a")
+[0-0] 2026-10-20T09:44:21.759Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/8e8b445f-573e-43d2-be5a-9002c796837a/clear
+[0-0] 2026-10-20T09:44:21.760Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:21.760Z INFO webdriver: COMMAND getElementProperty("8e8b445f-573e-43d2-be5a-9002c796837a", "value")
+[0-0] 2026-10-20T09:44:21.760Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/8e8b445f-573e-43d2-be5a-9002c796837a/property/value
+[0-0] 2026-10-20T09:44:21.760Z INFO webdriver: RESULT 
+[0-0] 2026-10-20T09:44:21.761Z INFO webdriver: COMMAND elementSendKeys("8e8b445f-573e-43d2-be5a-9002c796837a", "Z6Y729C")
+[0-0] 2026-10-20T09:44:21.761Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/8e8b445f-573e-43d2-be5a-9002c796837a/value
+[0-0] 2026-10-20T09:44:21.761Z INFO webdriver: DATA { text: 'Z6Y729C' }
+[0-0] 2026-10-20T09:44:21.762Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:21.763Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.763Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.764Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.766Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.766Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.766Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.766Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Continue to the case"]")
+[0-0] 2026-10-20T09:44:21.766Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.766Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Continue to the case"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:21.767Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'b3295a76-6132-48f7-b0c6-a5476a624654'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.769Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.769Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.770Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.771Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.771Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.772Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.773Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.773Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.774Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.774Z INFO webdriver: COMMAND elementClick("b3295a76-6132-48f7-b0c6-a5476a624654")
+[0-0] 2026-10-20T09:44:21.774Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/b3295a76-6132-48f7-b0c6-a5476a624654/click
+[0-0] 2026-10-20T09:44:21.789Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:21.800Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.800Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.801Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.803Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.803Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.803Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.803Z INFO webdriver: COMMAND findElements("xpath", "//nav/button[normalize-space(.)="Sources"]")
+[0-0] 2026-10-20T09:44:21.803Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.803Z INFO webdriver: DATA { using: 'xpath', value: '//nav/button[normalize-space(.)="Sources"]' }
+[0-0] 2026-10-20T09:44:21.804Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '643460b5-e8fe-4430-886d-ff6f2f47063c'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.808Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.808Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.808Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.810Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.810Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.811Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.812Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.812Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.813Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.813Z INFO webdriver: COMMAND elementClick("643460b5-e8fe-4430-886d-ff6f2f47063c")
+[0-0] 2026-10-20T09:44:21.813Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/643460b5-e8fe-4430-886d-ff6f2f47063c/click
+[0-0] 2026-10-20T09:44:21.814Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:21.816Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.816Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.817Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.818Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.818Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.819Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.819Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Research and tools"]")
+[0-0] 2026-10-20T09:44:21.819Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.819Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Research and tools"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:21.820Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'de00796b-7273-4a06-81f8-35efe2ae9f85'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.822Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.822Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.823Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.826Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.826Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.826Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.830Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.830Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.830Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.830Z INFO webdriver: COMMAND elementClick("de00796b-7273-4a06-81f8-35efe2ae9f85")
+[0-0] 2026-10-20T09:44:21.830Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de00796b-7273-4a06-81f8-35efe2ae9f85/click
+[0-0] 2026-10-20T09:44:21.886Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:21.892Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.892Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.893Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.895Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.895Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.896Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.896Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Tool directory"]")
+[0-0] 2026-10-20T09:44:21.896Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.896Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Tool directory"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:21.897Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '7785dc2b-6596-4671-aa47-aa0d5d1f39f4'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.899Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.899Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.901Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.903Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.903Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.903Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.905Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.905Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.905Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.905Z INFO webdriver: COMMAND elementClick("7785dc2b-6596-4671-aa47-aa0d5d1f39f4")
+[0-0] 2026-10-20T09:44:21.905Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/7785dc2b-6596-4671-aa47-aa0d5d1f39f4/click
+[0-0] 2026-10-20T09:44:21.910Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:21.914Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.914Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.915Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.917Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.917Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.917Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.917Z INFO webdriver: COMMAND findElements("css selector", ".research")
+[0-0] 2026-10-20T09:44:21.917Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.917Z INFO webdriver: DATA { using: 'css selector', value: '.research' }
+[0-0] 2026-10-20T09:44:21.918Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '16ed6517-c9d6-42e8-ae2f-16547c8fbdff'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.919Z INFO webdriver: COMMAND getElementText("16ed6517-c9d6-42e8-ae2f-16547c8fbdff")
+[0-0] 2026-10-20T09:44:21.919Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/16ed6517-c9d6-42e8-ae2f-16547c8fbdff/text
+[0-0] 2026-10-20T09:44:21.920Z INFO webdriver: RESULT Research and toolsFollow public leads, keep their evidence, and review what they mean. External checks start only after you review a request. Press / outside a form to focus the selector. LookupsTool directoryRun historyCollections   Tool directory1166 catalog entries · MIT catalog by Justin Nordine. Listings describe external tools; they are not installed connectors or verified live health.Search toolsCategoryAll categoriesAI ToolsArchivesBlockchain & CryptocurrencyBusiness RecordsClassifiedsCloud InfrastructureCompliance & Risk IntelligenceCyber Threat IntelligenceDark WebDatingDisinformation & Media VerificationDocumentation / Evidence CaptureDomain NameEmail AddressEncoding / DecodingGeolocation Tools / MapsIP & MAC AddressImages / Videos / DocsInstant MessagingLanguage TranslationMalicious File AnalysisMobile OSINTOnline CommunitiesOpSecPeople Search EnginesPublic RecordsSearch EnginesSocial NetworksTelephone NumbersToolsTrainingTransportationUsernameFavorites onlyGroup by category1166 matching entries.Catalog flags, provenance and contributionsAPI: an API is listed. T: local installation. D: Google dork. R: registration. M: edit the linked URL manually. Flags and catalog status describe the pinned snapshot, not a live health check.OSINT Framework by Justin Nordine · MIT · pinned Git blob ff4107ba8904f04588636ccee1f61ef1e7540dbc. Region and NSFW metadata are unknown where absent.Open catalog source and contribution guideSaveWhatsMyName WebUsername > Username Search EnginesfreeSaveWhatsMyName (T)Username > Username Search EnginesfreeSaveSylva Identity Discovery (T)Username > Username Search EnginesfreeSaveSherlock (T)Username > Username Search EnginesfreeSaveNamechkUsername > Username Search EnginesfreeSaveThats ThemUsername > Username Search EnginesfreemiumSaveNameCheckupUsername > Username Search EnginesfreeSaveFootprintIQUsername > Username Search EnginesfreemiumSaveGitFive (T)Username > Username Search EnginesfreeSaveSherlockUsername > Username Search EnginesfreeSaveNames DirectoryUsername > Username Search EnginesfreeSaveLullarUsername > Username Search EnginesfreeSaveAmazon Usernames (M)Username > Specific SitesfreeSaveGithub User (M)Username > Specific SitesfreeSaveTinder Usernames (M)Username > Specific SitesfreeSaveKeybaseUsername > Specific SitesfreeSaveMIT PGP Key ServerUsername > Specific SitesfreeSaveProtonMail users (M)Username > Specific SitesfreeSaveProtonMail Domains (M)Username > Specific SitesfreeSaveSylva Identity Discovery (T)Email Address > Email SearchfreeSaveThatsThemEmail Address > Email SearchfreemiumSaveHunterEmail Address > Email SearchfreemiumSaveEmail to Address (R)Email Address > Email SearchpaidSaveVoilaNorbertEmail Address > Email SearchfreemiumSaveGHunt (T)Email Address > Email SearchfreeSaveOSINT IndustriesEmail Address > Email SearchfreemiumSavetheHarvester (T)Email Address > Email SearchfreeSaveInfoga (T)Email Address > Email SearchfreeSaveSkymemEmail Address > Email SearchfreemiumSaveEpieos Email ToolEmail Address > Email SearchfreemiumSavebreach.vipEmail Address > Email SearchfreeSaveHolehe (T)Email Address > Email SearchfreeSaveEmail FormatEmail Address > Common Email FormatsfreeSaveEmail PermutatorEmail Address > Common Email FormatsfreeSaveReacher Github (T)Email Address > Email VerificationfreeSaveReacher DemoEmail Address > Email VerificationfreeSaveMailScrapEmail Address > Email VerificationfreemiumSaveRead NotifyEmail Address > Email VerificationfreemiumSaveEmail ReputationEmail Address > Email VerificationfreeSaveMailboxValidatorEmail Address > Email VerificationpaidSaveVerifyEmail (R$)Email Address > Email VerificationPricing unknownSaveDisposable Email Domains (T)Email Address > Email VerificationfreeSaveDisposable Emails RegistryEmail Address > Email VerificationfreeSaveBurner Email Providers (T)Email Address > Email VerificationfreeSaveHave I been pwned?Email Address > Breach DatafreemiumSaveHudson RockEmail Address > Breach DatafreemiumSaveDeHashed (R)Email Address > Breach DatafreemiumSaveVigilante.pwEmail Address > Breach DatafreeSaveMxToolboxEmail Address > Mail BlacklistsfreeSaveDomain DossierDomain Name > Whois RecordsfreePrevious tools1–50Next tools 
+[0-0] 2026-10-20T09:44:21.921Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.921Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.922Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.923Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.923Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.924Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:21.924Z INFO webdriver: COMMAND findElements("css selector", ".tool-row")
+[0-0] 2026-10-20T09:44:21.924Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:21.924Z INFO webdriver: DATA { using: 'css selector', value: '.tool-row' }
+[0-0] 2026-10-20T09:44:21.931Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '16228982-aca7-4e3b-8d8a-e6c0b6f8ec13'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'd5a9d7c9-3fd3-4978-923c-f21e840eea5e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'a6c5f71a-f5ae-4113-a165-f1fc98609c89'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e734b0e1-847a-4fa9-bc1a-9fe3b0450f48'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c4bc9d3e-72a3-4022-beb9-94b494ab2afc'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '6ce2f615-7a43-4c42-bba1-82ee17e53e8b'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '4fe3dcba-b900-469f-8d5e-adbc3dbe2c7e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '00f882b8-e95a-40af-8575-38f680cc7c10'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '82508903-6f4b-4195-a74d-571e16cbd15d'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'd78906c5-185f-4a8c-be96-bf0f6e506a52'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '6f937202-3b41-4f92-846b-8f8f0870824a'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '9ad8ad61-4b48-43ff-838a-c29800d4e1b9'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '2f339995-a0d7-446c-a117-6911f6e5e60f'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '84b6ea5b-c4e0-4198-a6a7-976e33b830bf'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '5798317b-59b3-4049-ac31-ce0401e5eab9'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '4d58bffe-46dd-4eb8-8b63-237fb6959c55'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '8f2d0b8a-5b94-4ad6-b558-7fe94ebf6470'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0f7beb48-402f-475b-b5c8-109b42c27607'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '550ac5af-437b-4921-9b3c-c4c454ea2285'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '77a2f8d1-297b-4e1b-a688-5f8cbe7c1ffa'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'a87b0c0c-add3-4793-8976-0e89dff8f3c0'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '54acedd1-724e-4346-ab1e-70801d42ab23'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '159a8c29-510e-45f7-9f8d-e04db2b644ff'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '466ee934-8b86-435d-8a9e-999ea0d387a1'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e46023d1-3373-4291-9a06-36956094c1d0'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '9d9157c6-5a19-47ae-a972-f0eff4fc6dc5'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '1b0ecff9-2ab9-489a-be63-8271cdc1cf22'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '5d687ab0-59a9-43a4-9448-4ee5a776a00e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '83b01c24-02b4-4b73-ac64-179b4af08802'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '41b7df66-7bd3-41fa-aa99-6f672b71dada'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '1dfe86c5-4550-4671-ba58-4d2a541b5fa2'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '62b786f4-f93a-4e1e-90d4-fd247a192526'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '53bf8034-1bb7-478a-a060-71f17567cd04'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c0381ce2-7f01-45fb-b0a0-0a01a71b7898'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '75a031a8-1bb6-485e-bf8b-61f8ff8dd704'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'f694f275-3677-474f-a7ed-6673fb5c1e8e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '95c8e2c6-bc6c-4468-9f73-928f3615dc6e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c78b35fb-0c71-40b4-be62-a952c299c8e9'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '2722c89c-5d43-4e50-8a76-a9f9e1a09802'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0f7b6de1-782d-433f-9eeb-52c198e1a194'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '754e6c93-adac-49f9-9dae-f49b666763a7'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'a0ff6edb-320b-4a02-99ec-36b5b4d36a8d'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e89e4dd5-f358-4b33-aabb-a5dd0943c642'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '6427a7dc-627f-433a-9bd8-865db625c94e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e825e614-feaf-4b19-b2af-28f0e9498a62'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'f452c6ec-fd82-4c52-8c26-711469e5cf76'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '3e427153-4459-49f3-8e5d-1dbba8016f4f'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '900359f5-d15e-4810-8fa5-e6e9231f4f31'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'a11b01f0-c62f-4b87-b123-affdb8bb4f04'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '84c16398-2069-4f55-b4e0-87ddaa533e5d'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:21.944Z INFO webdriver: COMMAND takeScreenshot()
+[0-0] 2026-10-20T09:44:21.944Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/screenshot
+[0-0] 2026-10-20T09:44:21.995Z INFO webdriver: RESULT iVBORw0KGgoAAAANSUhEUgAACvAAAAb6CAYAAAAesadKAAAAAXNSR0IArs4c6...
+[0-0] 2026-10-20T09:44:21.998Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:21.998Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:21.999Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.001Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.001Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.001Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.001Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Settings"]")
+[0-0] 2026-10-20T09:44:22.001Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.001Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Settings"]' }
+[0-0] 2026-10-20T09:44:22.002Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'de59b616-9e31-4315-b88a-7f65aab53bb3'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.004Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.004Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.005Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.006Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.006Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.007Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.008Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.008Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.009Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.009Z INFO webdriver: COMMAND elementClick("de59b616-9e31-4315-b88a-7f65aab53bb3")
+[0-0] 2026-10-20T09:44:22.009Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/de59b616-9e31-4315-b88a-7f65aab53bb3/click
+[0-0] 2026-10-20T09:44:22.010Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.035Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.035Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.036Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.038Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.038Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.039Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.039Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Close settings"]")
+[0-0] 2026-10-20T09:44:22.039Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.039Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Close settings"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.041Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'dfb8f7f9-9909-476f-a1d1-a5cd0b791a0b'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.043Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.044Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.044Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.046Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.046Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.046Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.048Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.048Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.049Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.049Z INFO webdriver: COMMAND elementClick("dfb8f7f9-9909-476f-a1d1-a5cd0b791a0b")
+[0-0] 2026-10-20T09:44:22.049Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/dfb8f7f9-9909-476f-a1d1-a5cd0b791a0b/click
+[0-0] 2026-10-20T09:44:22.053Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.056Z INFO webdriver: COMMAND setWindowRect(null, null, 1800, 1600)
+[0-0] 2026-10-20T09:44:22.056Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/window/rect
+[0-0] 2026-10-20T09:44:22.056Z INFO webdriver: DATA { x: null, y: null, width: 1800, height: 1600 }
+[0-0] 2026-10-20T09:44:22.058Z INFO webdriver: RESULT { height: 1600, width: 1800, x: 112, y: 66 }
+[0-0] 2026-10-20T09:44:22.063Z INFO webdriver: COMMAND takeScreenshot()
+[0-0] 2026-10-20T09:44:22.063Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/screenshot
+[0-0] 2026-10-20T09:44:22.093Z INFO webdriver: RESULT iVBORw0KGgoAAAANSUhEUgAABwgAAAZACAYAAABt7xYzAAAAAXNSR0IArs4c6...
+[0-0] 2026-10-20T09:44:22.097Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.097Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.098Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.100Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.100Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.101Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.101Z INFO webdriver: COMMAND findElements("css selector", ".tool-name")
+[0-0] 2026-10-20T09:44:22.101Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.101Z INFO webdriver: DATA { using: 'css selector', value: '.tool-name' }
+[0-0] 2026-10-20T09:44:22.117Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '60be418a-e2c4-4d61-b9cb-1240ac7a9e35'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0637cf29-0846-4d61-a228-921fe4ea9554'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c2683641-b2d9-436e-bf44-9edd88ce252f'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '5479cf8f-2d76-4cad-bf86-48e272d22eed'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '95f1cfb8-5dc2-44d9-a243-a39ff291eff1'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '3b150fe7-606d-466a-b3ee-bf10cf210c3c'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'bd13d102-328f-4edc-94ad-6b0ff90d6a68'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0e05f28f-8c43-40dc-a6c2-44579d0235b1'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '8627c726-5e79-499d-98b1-7707ba92dceb'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '843f5cf9-99a9-4f71-be58-a5feefa81578'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '3a0d6484-c36e-4018-abfc-5f7c9c694562'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e9ceab84-3fe4-4748-a194-01e4c67d5e9e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '8381b7fd-8e3f-4b73-b04b-1b7dbe93fd70'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'bbd04fe1-dee5-46db-806e-7a53e22a7bfc'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '95bd6e5a-6c97-4046-bf13-8d4a821397cc'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '8c06dcc2-69d1-4b37-93cc-9e79e0668d74'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '6e0c13fb-813e-4207-b1c0-4eba7f53e09e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e663c98d-69d4-4ef2-8a7e-5dbc51014f14'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '69737e02-ae7d-4d18-b953-302be9fdf700'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'b725c547-5fd9-4fea-8ba9-ba579e62898e'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'ff07d471-36a0-45b1-aefd-7961057aac91'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '00199c5f-05a2-4c13-a700-d8daf2d283d1'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0764af0b-b791-4d35-89fa-07284b01ad49'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '5df23753-eeed-4bca-a213-212ddd0df4ce'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '62f8802d-2620-4e99-b92f-a41786f2669c'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '7d1febd7-53c7-4c0b-ad30-f556564a8e1f'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c94856ad-03a4-4da3-b821-10b3885d4e3d'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'dd34c1ee-db54-4819-b81a-58dc9c186fa1'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '742b621b-1229-40f8-89bd-8ceef17e2a6c'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'cfafbec7-d3f2-428a-bf8a-cdc9122e13ec'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'eef8c699-1a71-4af4-96cc-915fba28e725'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '4b810d9d-45df-4a53-8a7a-38b5f88fd2d5'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '9a7170ee-d716-47a6-a7b3-09c76a34e638'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '91b5f0c7-6052-4950-96fe-dd0e7e22f836'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '4179cc1e-332c-4e83-934b-be4bc2bc2bb8'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '9f3a7e73-93f8-45f4-ac43-1ce148575958'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e664cac5-66de-47cf-ba96-b2efcb41e3c4'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0bea0ac0-1b8d-4be9-9c96-d34122daacd5'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '6c7cce1f-854c-47b5-91c9-2a9f184dd914'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '46b1dde7-4b36-4ced-94b0-d86e0dcd9197'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '552d398d-63a4-45d9-9b28-a2af2cf6380b'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '8ab7e66d-54b4-47f0-a4e2-a3a3cb831c5b'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '319db9c2-d2a3-4fae-920e-7b98c69522e6'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '752cdd9e-f6ac-4729-9e9b-cbeab370ea4c'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0a794118-5ed2-4f78-8763-b175ea13d05d'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c2105461-b140-4c9e-9723-9777e9319031'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '3b8c2565-5ade-4fac-b01f-a0d3b9dc393b'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'a7e9e647-bd3a-4c5c-809e-7162dcf47a66'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '604e0609-82e3-4d01-81d2-448acaa40f00'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '49d26c6e-ec92-43c2-b508-f1aecfa4b93a'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.132Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.132Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.133Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.134Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.134Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.135Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.136Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.136Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.137Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.137Z INFO webdriver: COMMAND elementClick("60be418a-e2c4-4d61-b9cb-1240ac7a9e35")
+[0-0] 2026-10-20T09:44:22.137Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/60be418a-e2c4-4d61-b9cb-1240ac7a9e35/click
+[0-0] 2026-10-20T09:44:22.141Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.144Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.144Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.145Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.146Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.146Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.147Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.147Z INFO webdriver: COMMAND findElements("xpath", "//label[contains(.,"Private notes")]/textarea")
+[0-0] 2026-10-20T09:44:22.147Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.147Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//label[contains(.,"Private notes")]/textarea'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.148Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '592908a4-ad42-4bde-a249-1391eb17420d'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.149Z INFO webdriver: COMMAND getElementProperty("592908a4-ad42-4bde-a249-1391eb17420d", "<Screenshot[base64]>")
+[0-0] 2026-10-20T09:44:22.149Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/592908a4-ad42-4bde-a249-1391eb17420d/property/type
+[0-0] 2026-10-20T09:44:22.150Z INFO webdriver: RESULT textarea
+[0-0] 2026-10-20T09:44:22.150Z INFO webdriver: COMMAND elementClear("592908a4-ad42-4bde-a249-1391eb17420d")
+[0-0] 2026-10-20T09:44:22.150Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/592908a4-ad42-4bde-a249-1391eb17420d/clear
+[0-0] 2026-10-20T09:44:22.151Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.151Z INFO webdriver: COMMAND getElementProperty("592908a4-ad42-4bde-a249-1391eb17420d", "value")
+[0-0] 2026-10-20T09:44:22.151Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/592908a4-ad42-4bde-a249-1391eb17420d/property/value
+[0-0] 2026-10-20T09:44:22.152Z INFO webdriver: RESULT 
+[0-0] 2026-10-20T09:44:22.152Z INFO webdriver: COMMAND elementSendKeys("592908a4-ad42-4bde-a249-1391eb17420d", "Synthetic private directory note")
+[0-0] 2026-10-20T09:44:22.152Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/592908a4-ad42-4bde-a249-1391eb17420d/value
+[0-0] 2026-10-20T09:44:22.152Z INFO webdriver: DATA { text: 'Synthetic private directory note' }
+[0-0] 2026-10-20T09:44:22.153Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.155Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.155Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.157Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.159Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.159Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.170Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.170Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Save private review"]")
+[0-0] 2026-10-20T09:44:22.170Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.170Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Save private review"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.171Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '9f9a9d7c-c937-4bd8-b45a-c7ab9ecddfe5'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.174Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.174Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.174Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.176Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.176Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.177Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.179Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.179Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.180Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.180Z INFO webdriver: COMMAND elementClick("9f9a9d7c-c937-4bd8-b45a-c7ab9ecddfe5")
+[0-0] 2026-10-20T09:44:22.180Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/9f9a9d7c-c937-4bd8-b45a-c7ab9ecddfe5/click
+[0-0] 2026-10-20T09:44:22.182Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.184Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.184Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.184Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.186Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.186Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.186Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.186Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Close details"]")
+[0-0] 2026-10-20T09:44:22.186Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.186Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Close details"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.187Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '642c9d4e-e875-46a2-91cb-218d0680c1b2'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.190Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.190Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.190Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.193Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.193Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.193Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.196Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.196Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.196Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.196Z INFO webdriver: COMMAND elementClick("642c9d4e-e875-46a2-91cb-218d0680c1b2")
+[0-0] 2026-10-20T09:44:22.196Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/642c9d4e-e875-46a2-91cb-218d0680c1b2/click
+[0-0] 2026-10-20T09:44:22.198Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.201Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.201Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.201Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.203Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.203Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.204Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.204Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Settings"]")
+[0-0] 2026-10-20T09:44:22.204Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.204Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Settings"]' }
+[0-0] 2026-10-20T09:44:22.205Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'b89ca302-ca3a-4318-8a58-3267cef1bdce'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.207Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.207Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.208Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.210Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.210Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.210Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.212Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.212Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.213Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.213Z INFO webdriver: COMMAND elementClick("b89ca302-ca3a-4318-8a58-3267cef1bdce")
+[0-0] 2026-10-20T09:44:22.213Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/b89ca302-ca3a-4318-8a58-3267cef1bdce/click
+[0-0] 2026-10-20T09:44:22.214Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.222Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.222Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.222Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.227Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.227Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.228Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.228Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Close settings"]")
+[0-0] 2026-10-20T09:44:22.228Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.228Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Close settings"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.229Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '22c35404-f2ec-4094-9b50-b80b29caf7bf'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.232Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.232Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.233Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.238Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.238Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.238Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.240Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.240Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.240Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.240Z INFO webdriver: COMMAND elementClick("22c35404-f2ec-4094-9b50-b80b29caf7bf")
+[0-0] 2026-10-20T09:44:22.240Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/22c35404-f2ec-4094-9b50-b80b29caf7bf/click
+[0-0] 2026-10-20T09:44:22.244Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.246Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.246Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.246Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.248Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.248Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.248Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.249Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Lookups"]")
+[0-0] 2026-10-20T09:44:22.249Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.249Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Lookups"]' }
+[0-0] 2026-10-20T09:44:22.250Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '333c6dcb-96e4-4e7f-8527-b19bf0268f67'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.252Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.252Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.253Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.254Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.254Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.255Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.257Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.257Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.257Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.257Z INFO webdriver: COMMAND elementClick("333c6dcb-96e4-4e7f-8527-b19bf0268f67")
+[0-0] 2026-10-20T09:44:22.257Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/333c6dcb-96e4-4e7f-8527-b19bf0268f67/click
+[0-0] 2026-10-20T09:44:22.263Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.267Z INFO webdriver: COMMAND takeScreenshot()
+[0-0] 2026-10-20T09:44:22.267Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/screenshot
+[0-0] 2026-10-20T09:44:22.299Z INFO webdriver: RESULT iVBORw0KGgoAAAANSUhEUgAABwgAAAZACAYAAABt7xYzAAAAAXNSR0IArs4c6...
+[0-0] 2026-10-20T09:44:22.299Z INFO webdriver: COMMAND setWindowRect(null, null, 2560, 1800)
+[0-0] 2026-10-20T09:44:22.299Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/window/rect
+[0-0] 2026-10-20T09:44:22.299Z INFO webdriver: DATA { x: null, y: null, width: 2560, height: 1800 }
+[0-0] 2026-10-20T09:44:22.301Z INFO webdriver: RESULT { height: 1786, width: 2560, x: 112, y: 66 }
+[0-0] 2026-10-20T09:44:22.305Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.305Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.306Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.309Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.309Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.310Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.310Z INFO webdriver: COMMAND findElements("css selector", ".query-form input[maxlength]")
+[0-0] 2026-10-20T09:44:22.310Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.310Z INFO webdriver: DATA { using: 'css selector', value: '.query-form input[maxlength]' }
+[0-0] 2026-10-20T09:44:22.311Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '18c6d4c6-725b-43b5-9bbf-73c0a4acedd7'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.312Z INFO webdriver: COMMAND getElementProperty("18c6d4c6-725b-43b5-9bbf-73c0a4acedd7", "<Screenshot[base64]>")
+[0-0] 2026-10-20T09:44:22.312Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/18c6d4c6-725b-43b5-9bbf-73c0a4acedd7/property/type
+[0-0] 2026-10-20T09:44:22.312Z INFO webdriver: RESULT text
+[0-0] 2026-10-20T09:44:22.312Z INFO webdriver: COMMAND elementClear("18c6d4c6-725b-43b5-9bbf-73c0a4acedd7")
+[0-0] 2026-10-20T09:44:22.313Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/18c6d4c6-725b-43b5-9bbf-73c0a4acedd7/clear
+[0-0] 2026-10-20T09:44:22.313Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.314Z INFO webdriver: COMMAND getElementProperty("18c6d4c6-725b-43b5-9bbf-73c0a4acedd7", "value")
+[0-0] 2026-10-20T09:44:22.314Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/18c6d4c6-725b-43b5-9bbf-73c0a4acedd7/property/value
+[0-0] 2026-10-20T09:44:22.315Z INFO webdriver: RESULT 
+[0-0] 2026-10-20T09:44:22.315Z INFO webdriver: COMMAND elementSendKeys("18c6d4c6-725b-43b5-9bbf-73c0a4acedd7", "example")
+[0-0] 2026-10-20T09:44:22.315Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/18c6d4c6-725b-43b5-9bbf-73c0a4acedd7/value
+[0-0] 2026-10-20T09:44:22.315Z INFO webdriver: DATA { text: 'example' }
+[0-0] 2026-10-20T09:44:22.316Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.326Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.326Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.327Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.330Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.330Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.330Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.330Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Offline — enable collection"]")
+[0-0] 2026-10-20T09:44:22.330Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.330Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Offline — enable collection"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.332Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '52369fed-3ba0-4128-9be3-b20f8f6849e0'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.334Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.334Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.335Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.336Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.336Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.337Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.338Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.338Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.339Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.339Z INFO webdriver: COMMAND elementClick("52369fed-3ba0-4128-9be3-b20f8f6849e0")
+[0-0] 2026-10-20T09:44:22.339Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/52369fed-3ba0-4128-9be3-b20f8f6849e0/click
+[0-0] 2026-10-20T09:44:22.340Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.342Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.342Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.343Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.344Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.344Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.344Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.345Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Review research request"]")
+[0-0] 2026-10-20T09:44:22.345Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.345Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Review research request"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.347Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '1ad921b6-f941-4054-a022-8297a7baedea'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.348Z INFO webdriver: COMMAND isElementEnabled("1ad921b6-f941-4054-a022-8297a7baedea")
+[0-0] 2026-10-20T09:44:22.348Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/1ad921b6-f941-4054-a022-8297a7baedea/enabled
+[0-0] 2026-10-20T09:44:22.348Z INFO webdriver: RESULT true
+[0-0] 2026-10-20T09:44:22.353Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.353Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.354Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.355Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.355Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.356Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.356Z INFO webdriver: COMMAND findElements("css selector", ".disclosure")
+[0-0] 2026-10-20T09:44:22.356Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.356Z INFO webdriver: DATA { using: 'css selector', value: '.disclosure' }
+[0-0] 2026-10-20T09:44:22.357Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'bf1b7627-2fa0-4add-a5a9-ff0f24a1997f'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.357Z INFO webdriver: COMMAND executeScript(<fn>, <object>)
+[0-0] 2026-10-20T09:44:22.357Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/sync
+[0-0] 2026-10-20T09:44:22.357Z INFO webdriver: DATA {
+[0-0]   script: '\n' +
+[0-0]     '            function webdriverioPolyfill() {\n' +
+[0-0]     '  var __defProp = Object.defineProperty;\n' +
+[0-0]     '  var __name = function(target, _value) {\n' +
+[0-0]     '    return __defProp(target, "name", { value: _value, configurable: true });\n' +
+[0-0]     '  };\n' +
+[0-0]     '  var __globalThis = typeof globalThis === "object" && globalThis || typeof window === "object" && window;\n' +
+[0-0]     '  __globalThis.__name = __name;\n' +
+[0-0]     '}\n' +
+[0-0]     '            webdriverioPolyfill();\n' +
+[0-0]     '            return (function(elem) {\n' +
+[0-0]     '      try {\n' +
+[0-0]     '        const style = window.getComputedStyle(elem);\n' +
+[0-0]     '        return { value: style?.display ?? "" };\n' +
+[0-0]     '      } catch {\n' +
+[0-0]     '        if (typeof elem.isConnected === "boolean" && !elem.isConnected) {\n' +
+[0-0]     '          throw new Error("stale element reference: element is not attached to the page document");\n' +
+[0-0]     '        }\n' +
+[0-0]     '        return { value: "" };\n' +
+[0-0]     '      }\n' +
+[0-0]     '    }).apply(null, arguments)\n' +
+[0-0]     '        ',
+[0-0]   args: [
+[0-0]     {
+[0-0]       'element-6066-11e4-a52e-4f735466cecf': 'bf1b7627-2fa0-4add-a5a9-ff0f24a1997f'
+[0-0]     }
+[0-0]   ]
+[0-0] }
+[0-0] 2026-10-20T09:44:22.358Z INFO webdriver: COMMAND executeScript(<fn>, <object>)
+[0-0] 2026-10-20T09:44:22.358Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/sync
+[0-0] 2026-10-20T09:44:22.358Z INFO webdriver: DATA {
+[0-0]   script: 'checkVisibility(...) [614 bytes]',
+[0-0]   args: [
+[0-0]     {
+[0-0]       'element-6066-11e4-a52e-4f735466cecf': 'bf1b7627-2fa0-4add-a5a9-ff0f24a1997f'
+[0-0]     },
+[0-0]     {
+[0-0]       withinViewport: false,
+[0-0]       contentVisibilityAuto: true,
+[0-0]       opacityProperty: true,
+[0-0]       visibilityProperty: true
+[0-0]     }
+[0-0]   ]
+[0-0] }
+[0-0] 2026-10-20T09:44:22.362Z INFO webdriver: RESULT { value: 'block' }
+[0-0] 2026-10-20T09:44:22.362Z INFO webdriver: RESULT true
+[0-0] 2026-10-20T09:44:22.365Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.365Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.366Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.368Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.368Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.368Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.368Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Start reviewed checks"]")
+[0-0] 2026-10-20T09:44:22.368Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.369Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Start reviewed checks"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.370Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'bfba3a37-9f8d-4bf6-8aac-f685e820acf9'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.370Z INFO webdriver: COMMAND isElementEnabled("bfba3a37-9f8d-4bf6-8aac-f685e820acf9")
+[0-0] 2026-10-20T09:44:22.370Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/bfba3a37-9f8d-4bf6-8aac-f685e820acf9/enabled
+[0-0] 2026-10-20T09:44:22.371Z INFO webdriver: RESULT false
+[0-0] 2026-10-20T09:44:22.373Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.373Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.374Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.375Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.375Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.376Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.376Z INFO webdriver: COMMAND findElements("css selector", ".disclosure input[type="checkbox"]")
+[0-0] 2026-10-20T09:44:22.376Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.376Z INFO webdriver: DATA { using: 'css selector', value: '.disclosure input[type="checkbox"]' }
+[0-0] 2026-10-20T09:44:22.377Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '202d0ccc-9a1f-4a87-ba09-bfd2f21be0b7'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.379Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.379Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.380Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.381Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.381Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.382Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.383Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.383Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.383Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.384Z INFO webdriver: COMMAND elementClick("202d0ccc-9a1f-4a87-ba09-bfd2f21be0b7")
+[0-0] 2026-10-20T09:44:22.384Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/202d0ccc-9a1f-4a87-ba09-bfd2f21be0b7/click
+[0-0] 2026-10-20T09:44:22.385Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.387Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.387Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.387Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.389Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.389Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.389Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.390Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Start reviewed checks"]")
+[0-0] 2026-10-20T09:44:22.390Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.390Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Start reviewed checks"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.392Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '06792939-2446-4f89-941b-f9524da6a27c'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.395Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.395Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.396Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.397Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.397Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.398Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.400Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.400Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.400Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.400Z INFO webdriver: COMMAND elementClick("06792939-2446-4f89-941b-f9524da6a27c")
+[0-0] 2026-10-20T09:44:22.400Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/06792939-2446-4f89-941b-f9524da6a27c/click
+[0-0] 2026-10-20T09:44:22.402Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:22.422Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.422Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.423Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.426Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.426Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.427Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.427Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research progress"]")
+[0-0] 2026-10-20T09:44:22.427Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.427Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research progress"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.428Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '53d20349-0f3d-432a-b449-9fbbbfe05efb'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.429Z INFO webdriver: COMMAND getElementText("53d20349-0f3d-432a-b449-9fbbbfe05efb")
+[0-0] 2026-10-20T09:44:22.429Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/53d20349-0f3d-432a-b449-9fbbbfe05efb/text
+[0-0] 2026-10-20T09:44:22.430Z INFO webdriver: RESULT Research progressrunning · Checking Hacker News public user · completed sources remain savedCancel remaining checks
+[0-0] 2026-10-20T09:44:22.432Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.432Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.433Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.434Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.434Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.435Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.435Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:22.435Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.435Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.436Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'f1c7008c-6949-4a9c-95ff-df5f08859dd1'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c9e3a3e1-aa46-4ed8-88d5-ef2d4b4678f3'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.536Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.536Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.537Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.539Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.539Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.540Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.540Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:22.540Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.540Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.542Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '09d5ef7a-1842-490e-b498-dd7df1fa32cb'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0023cf03-62a2-49c5-bafb-6b5e00920971'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.635Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.635Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.636Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.639Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.639Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.640Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.640Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:22.640Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.640Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.643Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '237b722c-f054-4f00-82a9-c2ee05cf45c5'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'beacf5a9-d49c-4a1c-8dc2-5037d3b28940'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.737Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.737Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.738Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.742Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.742Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.743Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.743Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:22.743Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.743Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.745Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'adb40a92-7a1c-44a2-aeb2-56634b115411'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '00fdffa4-a025-4e45-8187-c627e5cf4dd8'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.837Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.837Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.839Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.842Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.842Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.844Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.844Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:22.844Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.844Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.846Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '429c9235-0b66-4c98-a8f6-7ca7094c074c'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '7666ce26-2e5c-4a84-afc5-ba04c7a1700c'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:22.938Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.938Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.940Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.943Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:22.943Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:22.944Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:22.945Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:22.945Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:22.945Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:22.947Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '2dbf0155-4b8d-491b-9721-b1c1169ee475'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '9250cdaf-dfc4-4997-ab9d-6a8993a5e678'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.041Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.041Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.043Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.047Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.047Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.048Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.048Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.048Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.048Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.050Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'e33d762f-ac31-4bff-8a0d-31f1b286a0a6'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '39897889-cad9-4d98-8cf9-44181c3be180'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.136Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.136Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.138Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.142Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.142Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.143Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.143Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.143Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.143Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.145Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '71ec20f7-7bcc-430a-b991-a2b1e6fc42e8'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '4bbcade3-efff-4974-b3dc-6e371ff810b2'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0eab69b6-dc83-49a2-8e5f-6ec69f045d87'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.154Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.154Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.155Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.158Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.158Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.158Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.159Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"]")
+[0-0] 2026-10-20T09:44:23.159Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.159Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.160Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '79e1b00b-c341-4268-b5c9-8fd225ad257b'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.161Z INFO webdriver: COMMAND getElementText("79e1b00b-c341-4268-b5c9-8fd225ad257b")
+[0-0] 2026-10-20T09:44:23.161Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/79e1b00b-c341-4268-b5c9-8fd225ad257b/text
+[0-0] 2026-10-20T09:44:23.162Z INFO webdriver: RESULT Results3 saved responses · 3 matchingRefresh resultsProfiles are leads, not identity proof. Each successful capture opens its source evidence.Outcomeall (3)found (1)not found (1)taken (0)available (0)invalid (0)unknown (0)blocked (1)error (0)unsupported (0)Result categoryAll categoriesPublic profilesResult sourceAll sourcesCodeberg public user (1)GitHub public user (1)Hacker News public user (1)3 matching responses across the whole run. Counts beside filters describe all saved responses.Select codebergblockedexampleObserved 2026-10-20T09:44:22Z · less than a minute agoInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "status": 403
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live. Raw evidence preserved; JSON extraction unavailable.Select githubfoundexampleSynthetic public profileObserved 2026-10-20T09:44:22Z · less than a minute agoOpen public source in browserInspect captured evidenceCopy source linkSource fields and limitations{
+[0-0]   "id": 123,
+[0-0]   "login": "example",
+[0-0]   "name": "Synthetic public profile"
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live.Select hackernewsnot foundexampleObserved 2026-10-20T09:44:22Z · less than a minute agoInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "note": "The reviewed public endpoint did not find this profile. This does not establish that the handle is available to register.",
+[0-0]   "recipe_revision": 1
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live.Previous responses1–3 of 3Next responses
+[0-0] 2026-10-20T09:44:23.165Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.165Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.165Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.167Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.167Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.168Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.168Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"]")
+[0-0] 2026-10-20T09:44:23.168Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.168Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.169Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '2a8393f6-5b2b-4b1f-86c8-583a8af9bd19'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.170Z INFO webdriver: COMMAND getElementText("2a8393f6-5b2b-4b1f-86c8-583a8af9bd19")
+[0-0] 2026-10-20T09:44:23.170Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/2a8393f6-5b2b-4b1f-86c8-583a8af9bd19/text
+[0-0] 2026-10-20T09:44:23.171Z INFO webdriver: RESULT Results3 saved responses · 3 matchingRefresh resultsProfiles are leads, not identity proof. Each successful capture opens its source evidence.Outcomeall (3)found (1)not found (1)taken (0)available (0)invalid (0)unknown (0)blocked (1)error (0)unsupported (0)Result categoryAll categoriesPublic profilesResult sourceAll sourcesCodeberg public user (1)GitHub public user (1)Hacker News public user (1)3 matching responses across the whole run. Counts beside filters describe all saved responses.Select codebergblockedexampleObserved 2026-10-20T09:44:22Z · less than a minute agoInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "status": 403
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live. Raw evidence preserved; JSON extraction unavailable.Select githubfoundexampleSynthetic public profileObserved 2026-10-20T09:44:22Z · less than a minute agoOpen public source in browserInspect captured evidenceCopy source linkSource fields and limitations{
+[0-0]   "id": 123,
+[0-0]   "login": "example",
+[0-0]   "name": "Synthetic public profile"
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live.Select hackernewsnot foundexampleObserved 2026-10-20T09:44:22Z · less than a minute agoInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "note": "The reviewed public endpoint did not find this profile. This does not establish that the handle is available to register.",
+[0-0]   "recipe_revision": 1
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live.Previous responses1–3 of 3Next responses
+[0-0] 2026-10-20T09:44:23.173Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.173Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.174Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.176Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.176Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.177Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.177Z INFO webdriver: COMMAND findElements("xpath", "//article[.//label[contains(.,"Select github")]]//input")
+[0-0] 2026-10-20T09:44:23.177Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.177Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//article[.//label[contains(.,"Select github")]]//input'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.178Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c21b3422-ab44-4d58-877b-e3057eb5a901'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.181Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.181Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.182Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.185Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.186Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.186Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.189Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.189Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.189Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.190Z INFO webdriver: COMMAND elementClick("c21b3422-ab44-4d58-877b-e3057eb5a901")
+[0-0] 2026-10-20T09:44:23.190Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/c21b3422-ab44-4d58-877b-e3057eb5a901/click
+[0-0] 2026-10-20T09:44:23.191Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:23.195Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.195Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.196Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.198Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.198Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.199Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.199Z INFO webdriver: COMMAND findElements("xpath", "//label[contains(.,"Collection name")]/input")
+[0-0] 2026-10-20T09:44:23.199Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.199Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//label[contains(.,"Collection name")]/input'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.200Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '0269c627-047c-453d-aac1-d0847065e352'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.201Z INFO webdriver: COMMAND getElementProperty("0269c627-047c-453d-aac1-d0847065e352", "<Screenshot[base64]>")
+[0-0] 2026-10-20T09:44:23.201Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/0269c627-047c-453d-aac1-d0847065e352/property/type
+[0-0] 2026-10-20T09:44:23.201Z INFO webdriver: RESULT text
+[0-0] 2026-10-20T09:44:23.201Z INFO webdriver: COMMAND elementClear("0269c627-047c-453d-aac1-d0847065e352")
+[0-0] 2026-10-20T09:44:23.201Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/0269c627-047c-453d-aac1-d0847065e352/clear
+[0-0] 2026-10-20T09:44:23.202Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:23.202Z INFO webdriver: COMMAND getElementProperty("0269c627-047c-453d-aac1-d0847065e352", "value")
+[0-0] 2026-10-20T09:44:23.202Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/0269c627-047c-453d-aac1-d0847065e352/property/value
+[0-0] 2026-10-20T09:44:23.203Z INFO webdriver: RESULT 
+[0-0] 2026-10-20T09:44:23.203Z INFO webdriver: COMMAND elementSendKeys("0269c627-047c-453d-aac1-d0847065e352", "Reviewed leads")
+[0-0] 2026-10-20T09:44:23.203Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/0269c627-047c-453d-aac1-d0847065e352/value
+[0-0] 2026-10-20T09:44:23.203Z INFO webdriver: DATA { text: 'Reviewed leads' }
+[0-0] 2026-10-20T09:44:23.204Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:23.206Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.206Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.206Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.208Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.208Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.209Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.209Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Save 1 selected"]")
+[0-0] 2026-10-20T09:44:23.209Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.209Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Save 1 selected"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.210Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '1c0f0285-7a35-41b2-899b-69d30e36b094'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.212Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.212Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.212Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.214Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.214Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.215Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.216Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.216Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.217Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.217Z INFO webdriver: COMMAND elementClick("1c0f0285-7a35-41b2-899b-69d30e36b094")
+[0-0] 2026-10-20T09:44:23.217Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/1c0f0285-7a35-41b2-899b-69d30e36b094/click
+[0-0] 2026-10-20T09:44:23.219Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:23.221Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.221Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.222Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.225Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.225Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.226Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.226Z INFO webdriver: COMMAND findElements("css selector", ".research")
+[0-0] 2026-10-20T09:44:23.226Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.226Z INFO webdriver: DATA { using: 'css selector', value: '.research' }
+[0-0] 2026-10-20T09:44:23.228Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '6612682a-39ab-463e-ae55-2f72e111f6af'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.229Z INFO webdriver: COMMAND getElementText("6612682a-39ab-463e-ae55-2f72e111f6af")
+[0-0] 2026-10-20T09:44:23.229Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/6612682a-39ab-463e-ae55-2f72e111f6af/text
+[0-0] 2026-10-20T09:44:23.229Z INFO webdriver: RESULT Research and toolsFollow public leads, keep their evidence, and review what they mean. External checks start only after you review a request. Press / outside a form to focus the selector. LookupsTool directoryRun historyCollections  Saved 1 selected results to Reviewed leads. Selector typeusernameemailphonenamedomainipwalletimage Batch · select up to 15 queries Selector  Rescan · bypass reusable cached answers Safe Mode · exclude sensitive-category checks   Try locally:researcherblue_mesanight_ledgerRandom usernameClear query Recent in this encrypted case:example   Prepare a domain variantChoose an extension to prepare a domain query. DNS, certificate and RDAP records do not establish that a name is available to register. Registration prices require a registrar's own quote..com.org.net.io.co.dev.app.info.me.online.xyz.ai Sources for this selector6 compatible source definitions · 3 selected. Browser workflows do not count as automated checks.Source categoryAll categoriesPublic profilesOptional providersBrowser workflowsFavorite sources onlyGitHub public usernative · fixture-tested; live health unverifiedPublic profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked.Favorite sourceGitHub public user methodology and limitsDefinitive answers can be reused for up to 8 hours. Unknown, blocked and error outcomes are checked again.1 maximum request(s) per selector · 2097152 response bytes. Catalog listings are separate from these reviewed source definitions.Profile URL patternhttps://github.com/{username}SyntaxAt most 39 ASCII letters/numbers with single internal hyphens.Classification recipe · revision 1Require a matching login and positive numeric id at HTTP 200. Missing requires HTTP 404 and the exact JSON message Not Found. No verified badge is inferred.Redirected responses, unexpected text and unrelated identities stay Unknown. Challenges and rate limits are Blocked. Missing profiles do not establish registration availability.Codeberg public usernative · fixture-tested; live health unverifiedPublic profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked.Favorite sourceCodeberg public user methodology and limitsDefinitive answers can be reused for up to 8 hours. Unknown, blocked and error outcomes are checked again.1 maximum request(s) per selector · 2097152 response bytes. Catalog listings are separate from these reviewed source definitions.Profile URL patternhttps://codeberg.org/{username}SyntaxThe app accepts ASCII letters/numbers, dots, underscores and hyphens. Server-side restrictions may produce Unknown.Classification recipe · revision 1Require a matching login and positive numeric id at HTTP 200. Missing requires HTTP 404 and the Gitea user-does-not-exist message, optionally followed by bracketed diagnostic context. No verified badge is inferred.Redirected responses, unexpected text and unrelated identities stay Unknown. Challenges and rate limits are Blocked. Missing profiles do not establish registration availability.Hacker News public usernative · fixture-tested; live health unverifiedPublic profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked.Favorite sourceHacker News public user methodology and limitsDefinitive answers can be reused for up to 8 hours. Unknown, blocked and error outcomes are checked again.1 maximum request(s) per selector · 2097152 response bytes. Catalog listings are separate from these reviewed source definitions.Profile URL patternhttps://news.ycombinator.com/user?id={username}SyntaxCase-sensitive public user ID. The app preserves spelling; server-side restrictions may produce Unknown.Classification recipe · revision 1Require the exact requested id at HTTP 200. Missing requires the literal JSON null at HTTP 200. No verified badge or current account activity is inferred.Redirected responses, unexpected text and unrelated identities stay Unknown. Challenges and rate limits are Blocked. Missing profiles do not establish registration availability.OSINT Industries · official APIprovider backed · partial contract; credential check required; live health unverifiedRequires your own official API entitlement and a separately authorized call budget. No undocumented endpoint fallback.Favorite sourceOSINT Industries · official API methodology and limitsAnswers from this source are not reused automatically.1 maximum request(s) per selector · 8388608 response bytes. Catalog listings are separate from these reviewed source definitions.Check OSINT Industries · official API credentialInstantUsernamemanual workflow · manual workflowOpen the official website yourself and import the resulting evidence. No automatic upload or internal API access.Favorite sourceInstantUsername methodology and limitsAnswers from this source are not reused automatically.0 maximum request(s) per selector · 2097152 response bytes. Catalog listings are separate from these reviewed source definitions.Open InstantUsername in browserImport a downloaded report, screenshot or source page through Evidence. No query or image is sent by this handoff.WhatsMyNamemanual workflow · manual workflowOpen the official website yourself and import the resulting evidence. No automatic upload or internal API access.Favorite sourceWhatsMyName methodology and limitsAnswers from this source are not reused automatically.0 maximum request(s) per selector · 2097152 response bytes. Catalog listings are separate from these reviewed source definitions.Open WhatsMyName in browserImport a downloaded report, screenshot or source page through Evidence. No query or image is sent by this handoff.  Review research request  Research progresspartial · Finished Results3 saved responses · 3 matchingRefresh resultsProfiles are leads, not identity proof. Each successful capture opens its source evidence.Outcomeall (3)found (1)not found (1)taken (0)available (0)invalid (0)unknown (0)blocked (1)error (0)unsupported (0)Result categoryAll categoriesPublic profilesResult sourceAll sourcesCodeberg public user (1)GitHub public user (1)Hacker News public user (1)3 matching responses across the whole run. Counts beside filters describe all saved responses.Select codebergblockedexampleObserved 2026-10-20T09:44:22Z · less than a minute agoInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "status": 403
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live. Raw evidence preserved; JSON extraction unavailable.Select githubfoundexampleSynthetic public profileObserved 2026-10-20T09:44:22Z · less than a minute agoOpen public source in browserInspect captured evidenceCopy source linkSource fields and limitations{
+[0-0]   "id": 123,
+[0-0]   "login": "example",
+[0-0]   "name": "Synthetic public profile"
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live.Select hackernewsnot foundexampleObserved 2026-10-20T09:44:22Z · less than a minute agoInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "note": "The reviewed public endpoint did not find this profile. This does not establish that the handle is available to register.",
+[0-0]   "recipe_revision": 1
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live.Previous responses1–3 of 3Next responses
+[0-0] 2026-10-20T09:44:23.230Z INFO webdriver: COMMAND takeScreenshot()
+[0-0] 2026-10-20T09:44:23.230Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/screenshot
+[0-0] 2026-10-20T09:44:23.272Z INFO webdriver: RESULT iVBORw0KGgoAAAANSUhEUgAACgAAAAb6CAYAAAAO/SvTAAAAAXNSR0IArs4c6...
+[0-0] 2026-10-20T09:44:23.278Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.278Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.279Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.280Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.280Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.281Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.281Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.281Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.281Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.282Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '5f5a73f8-5a5c-42d4-bf43-3d6a93921068'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.285Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.285Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.285Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.287Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.287Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.288Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.288Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"]")
+[0-0] 2026-10-20T09:44:23.288Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.288Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.289Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c51425e9-5fab-4b56-a545-f0d06ca77496'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.290Z INFO webdriver: COMMAND getElementText("c51425e9-5fab-4b56-a545-f0d06ca77496")
+[0-0] 2026-10-20T09:44:23.290Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/c51425e9-5fab-4b56-a545-f0d06ca77496/text
+[0-0] 2026-10-20T09:44:23.290Z INFO webdriver: RESULT Results3 saved responses · 1 matchingRefresh resultsProfiles are leads, not identity proof. Each successful capture opens its source evidence.Outcomeall (3)found (1)not found (1)taken (0)available (0)invalid (0)unknown (0)blocked (1)error (0)unsupported (0)Result categoryAll categoriesPublic profilesResult sourceAll sourcesCodeberg public user (1)GitHub public user (1)Hacker News public user (1)1 matching responses across the whole run. Counts beside filters describe all saved responses.Select codebergblockedexampleObserved 2026-10-20T09:44:22Z · less than a minute agoInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "status": 403
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live. Raw evidence preserved; JSON extraction unavailable.Previous responses1–1 of 1Next responses
+[0-0] 2026-10-20T09:44:23.296Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.296Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.297Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.298Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.299Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.299Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.299Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.300Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.300Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.302Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '7a0cb1ff-7627-4cdf-be5c-1c7b6be10d57'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '7d58cdea-855d-4917-8e7d-f8fab6f473ec'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c8eaa4cf-f01b-4ad9-b19e-aa34a6303261'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.306Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.306Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.306Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.308Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.308Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.309Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.309Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Review research request"]")
+[0-0] 2026-10-20T09:44:23.309Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.309Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Review research request"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.310Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '9e69c9c4-3da3-4a77-a29e-95ef51f70a12'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.311Z INFO webdriver: COMMAND isElementEnabled("9e69c9c4-3da3-4a77-a29e-95ef51f70a12")
+[0-0] 2026-10-20T09:44:23.311Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/9e69c9c4-3da3-4a77-a29e-95ef51f70a12/enabled
+[0-0] 2026-10-20T09:44:23.311Z INFO webdriver: RESULT true
+[0-0] 2026-10-20T09:44:23.315Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.315Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.316Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.317Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.318Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.318Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.318Z INFO webdriver: COMMAND findElements("css selector", ".disclosure")
+[0-0] 2026-10-20T09:44:23.318Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.318Z INFO webdriver: DATA { using: 'css selector', value: '.disclosure' }
+[0-0] 2026-10-20T09:44:23.319Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '9d62e935-795a-4995-91e3-40cb2aae1d61'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.320Z INFO webdriver: COMMAND executeScript(<fn>, <object>)
+[0-0] 2026-10-20T09:44:23.320Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/sync
+[0-0] 2026-10-20T09:44:23.320Z INFO webdriver: DATA {
+[0-0]   script: '\n' +
+[0-0]     '            function webdriverioPolyfill() {\n' +
+[0-0]     '  var __defProp = Object.defineProperty;\n' +
+[0-0]     '  var __name = function(target, _value) {\n' +
+[0-0]     '    return __defProp(target, "name", { value: _value, configurable: true });\n' +
+[0-0]     '  };\n' +
+[0-0]     '  var __globalThis = typeof globalThis === "object" && globalThis || typeof window === "object" && window;\n' +
+[0-0]     '  __globalThis.__name = __name;\n' +
+[0-0]     '}\n' +
+[0-0]     '            webdriverioPolyfill();\n' +
+[0-0]     '            return (function(elem) {\n' +
+[0-0]     '      try {\n' +
+[0-0]     '        const style = window.getComputedStyle(elem);\n' +
+[0-0]     '        return { value: style?.display ?? "" };\n' +
+[0-0]     '      } catch {\n' +
+[0-0]     '        if (typeof elem.isConnected === "boolean" && !elem.isConnected) {\n' +
+[0-0]     '          throw new Error("stale element reference: element is not attached to the page document");\n' +
+[0-0]     '        }\n' +
+[0-0]     '        return { value: "" };\n' +
+[0-0]     '      }\n' +
+[0-0]     '    }).apply(null, arguments)\n' +
+[0-0]     '        ',
+[0-0]   args: [
+[0-0]     {
+[0-0]       'element-6066-11e4-a52e-4f735466cecf': '9d62e935-795a-4995-91e3-40cb2aae1d61'
+[0-0]     }
+[0-0]   ]
+[0-0] }
+[0-0] 2026-10-20T09:44:23.320Z INFO webdriver: COMMAND executeScript(<fn>, <object>)
+[0-0] 2026-10-20T09:44:23.320Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/execute/sync
+[0-0] 2026-10-20T09:44:23.320Z INFO webdriver: DATA {
+[0-0]   script: 'checkVisibility(...) [614 bytes]',
+[0-0]   args: [
+[0-0]     {
+[0-0]       'element-6066-11e4-a52e-4f735466cecf': '9d62e935-795a-4995-91e3-40cb2aae1d61'
+[0-0]     },
+[0-0]     {
+[0-0]       withinViewport: false,
+[0-0]       contentVisibilityAuto: true,
+[0-0]       opacityProperty: true,
+[0-0]       visibilityProperty: true
+[0-0]     }
+[0-0]   ]
+[0-0] }
+[0-0] 2026-10-20T09:44:23.322Z INFO webdriver: RESULT { value: 'block' }
+[0-0] 2026-10-20T09:44:23.322Z INFO webdriver: RESULT true
+[0-0] 2026-10-20T09:44:23.323Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.323Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.324Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.326Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.326Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.326Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.327Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Start reviewed checks"]")
+[0-0] 2026-10-20T09:44:23.327Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.327Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Start reviewed checks"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.328Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '1e037300-4adf-43ca-a8b8-0e6636ef0128'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.329Z INFO webdriver: COMMAND isElementEnabled("1e037300-4adf-43ca-a8b8-0e6636ef0128")
+[0-0] 2026-10-20T09:44:23.329Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/1e037300-4adf-43ca-a8b8-0e6636ef0128/enabled
+[0-0] 2026-10-20T09:44:23.329Z INFO webdriver: RESULT false
+[0-0] 2026-10-20T09:44:23.331Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.331Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.332Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.333Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.333Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.334Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.334Z INFO webdriver: COMMAND findElements("css selector", ".disclosure input[type="checkbox"]")
+[0-0] 2026-10-20T09:44:23.334Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.334Z INFO webdriver: DATA { using: 'css selector', value: '.disclosure input[type="checkbox"]' }
+[0-0] 2026-10-20T09:44:23.335Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '6eb4d6df-6f5d-48f8-9070-1107c13d3c7e'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.337Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.337Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.337Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.339Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.339Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.339Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.341Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.341Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.341Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.341Z INFO webdriver: COMMAND elementClick("6eb4d6df-6f5d-48f8-9070-1107c13d3c7e")
+[0-0] 2026-10-20T09:44:23.341Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/6eb4d6df-6f5d-48f8-9070-1107c13d3c7e/click
+[0-0] 2026-10-20T09:44:23.343Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:23.344Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.344Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.345Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.347Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.347Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.347Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.347Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Start reviewed checks"]")
+[0-0] 2026-10-20T09:44:23.347Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.347Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Start reviewed checks"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.349Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '69f1c018-7014-4ae2-a24f-88963c7c565a'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.351Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.351Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.352Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.354Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.354Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.354Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.356Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.356Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.356Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.356Z INFO webdriver: COMMAND elementClick("69f1c018-7014-4ae2-a24f-88963c7c565a")
+[0-0] 2026-10-20T09:44:23.356Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/69f1c018-7014-4ae2-a24f-88963c7c565a/click
+[0-0] 2026-10-20T09:44:23.358Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:23.362Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.362Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.363Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.364Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.364Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.365Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.365Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research progress"]")
+[0-0] 2026-10-20T09:44:23.365Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.365Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research progress"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.366Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'da703a62-f285-4db9-897c-9c47d9561357'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:23.367Z INFO webdriver: COMMAND getElementText("da703a62-f285-4db9-897c-9c47d9561357")
+[0-0] 2026-10-20T09:44:23.367Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/da703a62-f285-4db9-897c-9c47d9561357/text
+[0-0] 2026-10-20T09:44:23.367Z INFO webdriver: RESULT Research progressrunning · Checking Hacker News public user · completed sources remain savedCancel remaining checks
+[0-0] 2026-10-20T09:44:23.369Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.369Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.370Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.371Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.371Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.372Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.372Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.372Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.372Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.372Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:23.474Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.474Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.475Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.478Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.478Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.478Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.478Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.478Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.478Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.479Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:23.574Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.574Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.575Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.578Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.578Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.579Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.579Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.579Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.579Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.581Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:23.675Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.675Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.677Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.680Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.680Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.681Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.681Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.681Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.681Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.682Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:23.775Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.776Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.777Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.781Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.781Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.782Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.782Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.783Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.783Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.784Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:23.872Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.872Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.873Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.876Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.876Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.878Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.878Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.878Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.878Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.879Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:23.972Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.972Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.973Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.975Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:23.975Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:23.976Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:23.976Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:23.976Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:23.976Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:23.977Z INFO webdriver: RESULT []
+[0-0] 2026-10-20T09:44:24.074Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.074Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.075Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.078Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.078Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.078Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.078Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"] article")
+[0-0] 2026-10-20T09:44:24.079Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.079Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"] article'
+[0-0] }
+[0-0] 2026-10-20T09:44:24.081Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'f8f5bb81-89da-4dd3-b6a4-2f5da933d84f'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '1cd96a6e-8786-4a2a-877c-00cda14728f7'
+[0-0]   },
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '3f29c610-9d53-4bc9-ac00-dca847a26414'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.088Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.088Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.089Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.091Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.091Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.092Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.092Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research results"]")
+[0-0] 2026-10-20T09:44:24.092Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.092Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research results"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:24.093Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'fd99a0b2-8f7a-4ef6-b786-f911de33db95'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.094Z INFO webdriver: COMMAND getElementText("fd99a0b2-8f7a-4ef6-b786-f911de33db95")
+[0-0] 2026-10-20T09:44:24.094Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/fd99a0b2-8f7a-4ef6-b786-f911de33db95/text
+[0-0] 2026-10-20T09:44:24.095Z INFO webdriver: RESULT Results3 saved responses · 3 matchingRefresh resultsProfiles are leads, not identity proof. Each successful capture opens its source evidence.Outcomeall (3)found (1)not found (1)taken (0)available (0)invalid (0)unknown (0)blocked (1)error (0)unsupported (0)Result categoryAll categoriesPublic profilesResult sourceAll sourcesCodeberg public user (1)GitHub public user (1)Hacker News public user (1)3 matching responses across the whole run. Counts beside filters describe all saved responses.Select githubfoundCachedexampleSynthetic public profileObserved 2026-10-20T09:44:22Z · less than a minute ago· reused from captured evidenceOpen public source in browserInspect captured evidenceCopy source linkSource fields and limitations{
+[0-0]   "id": 123,
+[0-0]   "login": "example",
+[0-0]   "name": "Synthetic public profile"
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live.Select hackernewsnot foundCachedexampleObserved 2026-10-20T09:44:22Z · less than a minute ago· reused from captured evidenceInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "note": "The reviewed public endpoint did not find this profile. This does not establish that the handle is available to register.",
+[0-0]   "recipe_revision": 1
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live.Select codebergblockedexampleObserved 2026-10-20T09:44:23Z · less than a minute agoInspect captured evidenceCopy result IDSource fields and limitations{
+[0-0]   "status": 403
+[0-0] }Public profile existence is a lead, not identity proof. Rate limits and challenge pages remain unknown/blocked. Fixture replay, not live. Raw evidence preserved; JSON extraction unavailable.Previous responses1–3 of 3Next responses
+[0-0] 2026-10-20T09:44:24.096Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.096Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.097Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.099Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.099Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.099Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.099Z INFO webdriver: COMMAND findElements("xpath", "//article[.//label[contains(.,"Select github")]]//input")
+[0-0] 2026-10-20T09:44:24.099Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.099Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//article[.//label[contains(.,"Select github")]]//input'
+[0-0] }
+[0-0] 2026-10-20T09:44:24.101Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'a6dff0e1-8bf2-4a7a-b9e8-9509ac97fa44'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.103Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.103Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.104Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.105Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.105Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.106Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.108Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.108Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.108Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.108Z INFO webdriver: COMMAND elementClick("a6dff0e1-8bf2-4a7a-b9e8-9509ac97fa44")
+[0-0] 2026-10-20T09:44:24.108Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/a6dff0e1-8bf2-4a7a-b9e8-9509ac97fa44/click
+[0-0] 2026-10-20T09:44:24.109Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:24.112Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.112Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.113Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.114Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.114Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.115Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.115Z INFO webdriver: COMMAND findElements("xpath", "//label[contains(.,"plaintext copy")]/input")
+[0-0] 2026-10-20T09:44:24.115Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.115Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//label[contains(.,"plaintext copy")]/input'
+[0-0] }
+[0-0] 2026-10-20T09:44:24.116Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '2c827e14-ef06-4f3f-a780-1a7e7d5b5120'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.119Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.119Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.119Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.121Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.121Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.121Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.122Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.122Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.123Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.123Z INFO webdriver: COMMAND elementClick("2c827e14-ef06-4f3f-a780-1a7e7d5b5120")
+[0-0] 2026-10-20T09:44:24.123Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/2c827e14-ef06-4f3f-a780-1a7e7d5b5120/click
+[0-0] 2026-10-20T09:44:24.125Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:24.129Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.129Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.130Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.131Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.131Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.132Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.132Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Export selected findings"]")
+[0-0] 2026-10-20T09:44:24.132Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.132Z INFO webdriver: DATA {
+[0-0]   using: 'xpath',
+[0-0]   value: '//button[normalize-space(.)="Export selected findings"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:24.133Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '384a0a6a-43ec-478e-bccc-0513a6436790'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.136Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.136Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.136Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.138Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.138Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.139Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.140Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.140Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.141Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.141Z INFO webdriver: COMMAND elementClick("384a0a6a-43ec-478e-bccc-0513a6436790")
+[0-0] 2026-10-20T09:44:24.141Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/384a0a6a-43ec-478e-bccc-0513a6436790/click
+[0-0] 2026-10-20T09:44:24.142Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:24.250Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.250Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.252Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.255Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.255Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.256Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.256Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Collections"]")
+[0-0] 2026-10-20T09:44:24.256Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.256Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Collections"]' }
+[0-0] 2026-10-20T09:44:24.258Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '1dd56d2b-c913-4025-bfb1-49de75d1eee0'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.260Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.261Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.261Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.263Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.263Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.263Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.265Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.265Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.266Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.266Z INFO webdriver: COMMAND elementClick("1dd56d2b-c913-4025-bfb1-49de75d1eee0")
+[0-0] 2026-10-20T09:44:24.266Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/1dd56d2b-c913-4025-bfb1-49de75d1eee0/click
+[0-0] 2026-10-20T09:44:24.267Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:24.269Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.269Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.270Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.272Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.272Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.272Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.272Z INFO webdriver: COMMAND findElements("css selector", "section[aria-label="Research collections"]")
+[0-0] 2026-10-20T09:44:24.272Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.272Z INFO webdriver: DATA {
+[0-0]   using: 'css selector',
+[0-0]   value: 'section[aria-label="Research collections"]'
+[0-0] }
+[0-0] 2026-10-20T09:44:24.273Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '63f802bd-350a-4ed8-8628-fcc45c256556'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.274Z INFO webdriver: COMMAND getElementText("63f802bd-350a-4ed8-8628-fcc45c256556")
+[0-0] 2026-10-20T09:44:24.274Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/63f802bd-350a-4ed8-8628-fcc45c256556/text
+[0-0] 2026-10-20T09:44:24.275Z INFO webdriver: RESULT CollectionsSelect result cards to create or extend a collection. Archiving preserves its revision history.Reviewed leads1 result referencesCopy result referencesArchive
+[0-0] 2026-10-20T09:44:24.278Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.278Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.279Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.280Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.280Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.281Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.281Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Close case"]")
+[0-0] 2026-10-20T09:44:24.281Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.281Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Close case"]' }
+[0-0] 2026-10-20T09:44:24.282Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '58736466-1c9f-450b-bfac-8295c5b3db50'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.284Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.284Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.285Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.286Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.286Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.287Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.287Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Close case"]")
+[0-0] 2026-10-20T09:44:24.287Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.287Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Close case"]' }
+[0-0] 2026-10-20T09:44:24.288Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': 'c1e1326f-3040-4fd7-991b-133d8926b565'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.291Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.291Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.292Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.293Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.293Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.294Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.294Z INFO webdriver: COMMAND findElements("xpath", "//button[normalize-space(.)="Close case"]")
+[0-0] 2026-10-20T09:44:24.294Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/elements
+[0-0] 2026-10-20T09:44:24.294Z INFO webdriver: DATA { using: 'xpath', value: '//button[normalize-space(.)="Close case"]' }
+[0-0] 2026-10-20T09:44:24.295Z INFO webdriver: RESULT [
+[0-0]   {
+[0-0]     'element-6066-11e4-a52e-4f735466cecf': '8520bb28-66f9-4fad-9169-6f2e5c28cda6'
+[0-0]   }
+[0-0] ]
+[0-0] 2026-10-20T09:44:24.298Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.298Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.299Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.300Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.300Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.301Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.302Z INFO webdriver: COMMAND getTitle()
+[0-0] 2026-10-20T09:44:24.302Z INFO webdriver: [GET] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/title
+[0-0] 2026-10-20T09:44:24.303Z INFO webdriver: RESULT Kokin-OSINT
+[0-0] 2026-10-20T09:44:24.303Z INFO webdriver: COMMAND elementClick("8520bb28-66f9-4fad-9169-6f2e5c28cda6")
+[0-0] 2026-10-20T09:44:24.303Z INFO webdriver: [POST] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435/element/8520bb28-66f9-4fad-9169-6f2e5c28cda6/click
+[0-0] 2026-10-20T09:44:24.304Z INFO webdriver: RESULT null
+[0-0] 2026-10-20T09:44:24.307Z INFO webdriver: COMMAND deleteSession()
+[0-0] 2026-10-20T09:44:24.307Z INFO webdriver: [DELETE] http://127.0.0.1:4445/session/f5d1caa5-ef82-4e87-bafe-239d619d4435
+[0-0] 2026-10-20T09:44:24.308Z INFO webdriver: RESULT null
+[0-0] PASSED in undefined - file:///Users/kokinmartinez/Documents/ChatGPT/Kokin%20Osint/Kokin-OSINT/ui/tests/desktop/research.spec.mjs
+2026-10-20T09:44:24.417Z INFO @wdio/cli:launcher: Run onWorkerEnd hook
+
+ "spec" Reporter:
+------------------------------------------------------------------
+[webkit 605.1.15 macos #0-0] Running: webkit (v605.1.15) on macos
+[webkit 605.1.15 macos #0-0] Session ID: f5d1caa5-ef82-4e87-bafe-239d619d4435
+[webkit 605.1.15 macos #0-0]
+[webkit 605.1.15 macos #0-0] » tests/desktop/research.spec.mjs
+[webkit 605.1.15 macos #0-0] Research desktop vertical slice, synthetic broker fixtures
+[webkit 605.1.15 macos #0-0]    ✓ preserves evidence through a blocked source, cache reuse, collection and plaintext export
+[webkit 605.1.15 macos #0-0]
+[webkit 605.1.15 macos #0-0] 1 passing (3.9s)
+
+
+Spec Files:	 1 passed, 1 total (100% completed) in 00:00:04  
+
+2026-10-20T09:44:24.418Z INFO @wdio/local-runner: Shutting down spawned worker
+2026-10-20T09:44:24.670Z INFO @wdio/local-runner: Waiting for 0 to shut down gracefully
+2026-10-20T09:44:24.670Z INFO @wdio/local-runner: shutting down
+2026-10-20T09:44:24.670Z INFO @wdio/cli:launcher: Run onComplete hook
+2026-10-20T09:44:24.671Z INFO tauri-service:launcher: Stopping 1 embedded driver process(es)...

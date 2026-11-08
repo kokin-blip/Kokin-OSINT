@@ -6,7 +6,7 @@ evidence that supports it.
 
 > **Status: pre-alpha (v0.0.1), core-workflow implementation in progress.**
 > The desktop now exposes evidence import/extraction, public static collection,
-> analysis, search, activity and export/restore. The eleven-step desktop
+> contextual analysis, search, activity, named graph boards, cited reports and export/restore. The eleven-step desktop
 > workflow repeat passes offline on Mac; the personal-use release gate remains open.
 
 ## Current features
@@ -17,12 +17,19 @@ evidence that supports it.
 | Evidence | Native file import, deduplication, explicit HTML extraction, paginated observations and text-only source bytes with verified citations |
 | Collection | Offline by default; opt-in public static HTTP(S), disclosure, broker address/redirect checks, response caps and bounded timeouts |
 | Analysis | Evidence-grounded entities/identifiers/relationships, all seven confidence dimensions, assessments and merge preview/reject/split |
-| Workbench | Evidence, Entities, Search, Activity; shared detail/back history, paging, search filters and coverage on every result set |
-| Graph | Bounded per-hop expansion from entity detail, visible truncation, directed edges and evidence navigation; list alternative |
+| Workbench | Evidence, Entities, Search, Activity, Graph, Export, Sources, AI and Maps; shared detail/back history, paging, search filters and coverage on every result set |
+| Graph | Multiple starting records, bounded direction/kind expansion, saved encrypted boards, camera/layout/pins, selection, evidence navigation and list alternative |
+| Onboarding | Skippable introduction and encrypted real-case checklist; import and extraction remain separate |
+| Reports | Encrypted versioned drafts, cited findings, seven-dimensional assessments, graph illustrations, escaped Markdown/self-contained HTML export; plaintext disclosure |
 | Packages | Export with explicit omissions, verification and restore to a new folder; no package recovery key or digital signature |
+| Media | Located PDF text, EXIF/orientation, encrypted previews/hashes and optional English OCR in an isolated native worker |
+| Faces | Optional offline image/PDF/video face comparisons, suggested groups, reviewed person links, combined names/topics and local SearXNG discovery; [setup and limits](docs/increments/37-face-search.md) |
+| Sources | Disclosed DNS/RDAP, crt.sh, Wayback discovery and separate archived-page capture; raw responses enter Evidence first |
+| Local AI | Optional Ollama setup/import, cited suggestions and human review; pinned bge-small int8 semantic/hybrid search with encrypted vectors; lexical remains default |
+| Maps | Local PMTiles, explicit coarse-world installation, source-grounded coordinates, uncertainty, saved camera and cited map illustrations |
 | Operations | Background jobs, operation status/cancellation before atomic commit, serialized writes and case-generation checks |
 
-HTML remains the only extraction format. Collected markup is displayed as text.
+HTML/JSON/PDF and supported images have explicit extraction paths; scanned pages can use opt-in English OCR. Unsupported formats remain imported evidence with limitations. Collected markup is displayed as text.
 Recording exists as an explicit developer transport; arbitrary recordings still
 need secret review before publication. Case-folder entry remains typed; when creating
 a case, leaving it blank creates a unique folder under the OS application-data
@@ -32,16 +39,19 @@ case details. Opening an existing case still requires its folder path.
 ## Roadmap and verification
 
 [The authoritative roadmap](docs/ROADMAP.md) distinguishes implemented, backend
-only, planned and proposed capabilities. Graph exploration is available in entity
-details. PDF/images/OCR,
-DNS/RDAP → crt.sh → Wayback, hardware-aware optional AI/semantic search and offline
-maps follow the core reliability gate. PR #1 and licensing changes remain separate.
+only, planned and proposed capabilities. Graph exploration is available in the Graph workspace and entity
+details. Media, public sources, optional AI/semantic search and offline maps now have
+desktop controls. Ollama is separately installed and remains optional; Qwen inference
+and hardware recommendations need that runtime plus explicit model installation and
+real benchmarks. The pinned embedding resources passed real native retrieval tests.
+See [AI delivery](docs/increments/35-local-ai-and-semantic.md) and
+[map delivery](docs/increments/36-offline-maps.md). PR #1 is not adopted.
 
 The eleven-step workflow now passes through the desktop twice offline on Mac,
 including exact persisted identity/lineage comparison after reopen and restore.
-Native dialogs, integrated fault injection, Windows execution/manual checks,
-reference-machine performance, production test-driver exclusion and a tagged
-personal-use build remain release work. See [testing strategy](docs/testing/strategy.md)
+Windows, manual VoiceOver and visible production timing remain deferred. Experimental
+Mac verification and exact fault/benchmark scope are recorded in the increment reports;
+no new release is published by this implementation. See [testing strategy](docs/testing/strategy.md)
 and [graph/desktop report](docs/increments/30-graph-and-desktop-acceptance.md).
 Builds remain unsigned/unnotarized; no public-release readiness is claimed.
 
@@ -120,6 +130,15 @@ shim is a `/bin/sh` script, which on Windows pulls in the wrong perl (above).
 The first build compiles OpenSSL and SQLCipher from source and takes roughly
 ten to fifteen minutes. Subsequent builds are cached.
 
+For the current Apple Silicon media/AI bundle, also stage the reviewed native engines
+and notices with `scripts/prepare_media_mac.py`, `scripts/prepare_ai_mac.py`, `scripts/prepare_faces_mac.py` and
+`scripts/bundle_frontend_notices.py`. These are deliberate developer resource
+actions; installed pinned assets can be verified with `--offline`. Build the media
+workers with `cargo build -p kokin-media --features engine --bins` and relocate their vetted libraries using `scripts/bundle_media_mac.py`, then
+build Tauri with `--config src-tauri/media-packaging.conf.json` (or the equivalent
+relative path from `src-tauri/`). See [native review](docs/native/media-license-review.md) and [face/video review](docs/native/face-and-video-license-review.md).
+Models, OCR language data and map archives remain separate opt-in app resources.
+
 ## Layout
 
 ```
@@ -133,8 +152,12 @@ crates/
   kokin-graph/      evidence-grounded analysis and entity resolution
   kokin-search/     FTS5 search
   kokin-export/     case packaging and integrity verification
-  kokin-ai/         stub for planned hardware detection and local AI
-src-tauri/          desktop shell (thin — no business logic)
+  kokin-ai/         cited local suggestions, review, hardware and encrypted semantic retrieval
+  kokin-vector-adapter/ isolated typed static sqlite-vec initialization
+  kokin-media/      contained PDF/image/OCR worker
+  kokin-connectors/ closed public-source manifests and plans
+  kokin-maps/       bounded local PMTiles and coarse-world extraction
+src-tauri/          typed desktop commands and case/global operation orchestration
 ui/                 Svelte frontend
 docs/adr/           architecture decision records
 docs/               threat model, data model, limitations, benchmarks
@@ -184,3 +207,13 @@ nothing.
 ## Licence
 
 Source-available. See `LICENSE`.
+
+### Guided workspace compatibility
+
+Boards, report revisions and case guidance use append-only schema migration 8.
+Older builds that support schema 7 cannot open an upgraded case. Existing package
+snapshots preserve these records without a container-format change. Reports are
+plaintext exports; packages remain the restorable encrypted format.
+
+See [guided investigation implementation](docs/increments/ui-guided-investigation.md)
+for verification, performance scope and outstanding release gates.

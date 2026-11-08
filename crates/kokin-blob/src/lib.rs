@@ -29,6 +29,7 @@
 //! any export containing it verifies as `PARTIAL`, never `OK`.
 
 use std::io::{Read, Write};
+mod staging;
 use std::path::{Path, PathBuf};
 
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
@@ -52,6 +53,12 @@ pub const DEFAULT_MAX_BLOB_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 pub enum BlobError {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
+
+    #[error("staging cleanup failed after {operation}: {cleanup}")]
+    Cleanup {
+        operation: String,
+        cleanup: std::io::Error,
+    },
 
     #[error("key error: {0}")]
     Key(#[from] kokin_keys::KeyError),
@@ -150,98 +157,8 @@ impl BlobStore {
     /// Writing content that is already stored returns
     /// [`PutOutcome::AlreadyPresent`]; see that type for why dedupe cannot be
     /// silent here.
-    pub fn put(&self, mut source: impl Read, cmk: &CaseMasterKey) -> Result<PutOutcome> {
-        let blob_key = Secret::generate()?;
-        let cipher = XChaCha20Poly1305::new(&Key::from(*blob_key.expose()));
-
-        // One random base nonce per blob; each chunk uses base ^ counter in the
-        // trailing bytes. The 192-bit nonce is wide enough that a random base
-        // needs no bookkeeping across blobs.
-        let mut base_nonce = [0u8; NONCE_LEN];
-        getrandom_fill(&mut base_nonce)?;
-
-        let temp_path = self
-            .root
-            .join(format!(".incoming-{}", hex(&base_nonce[..8])));
-        std::fs::create_dir_all(&self.root)?;
-
-        let mut hasher = blake3::Hasher::new();
-        let mut total: u64 = 0;
-        let mut chunk_index: u64 = 0;
-        let mut buf = vec![0u8; CHUNK_SIZE];
-
-        // Scoped so the file is closed before the rename below.
-        {
-            let mut out = std::fs::File::create(&temp_path)?;
-            out.write_all(&base_nonce)?;
-
-            loop {
-                let n = read_full(&mut source, &mut buf)?;
-                if n == 0 {
-                    break;
-                }
-
-                total += n as u64;
-                if total > self.max_blob_bytes {
-                    drop(out);
-                    let _ = std::fs::remove_file(&temp_path);
-                    return Err(BlobError::TooLarge {
-                        limit: self.max_blob_bytes,
-                    });
-                }
-
-                hasher.update(&buf[..n]);
-
-                let nonce = chunk_nonce(&base_nonce, chunk_index);
-                let sealed = cipher
-                    .encrypt(
-                        &XNonce::from(nonce),
-                        Payload {
-                            msg: &buf[..n],
-                            // The chunk index is authenticated, so chunks cannot
-                            // be reordered or dropped without detection.
-                            aad: &chunk_index.to_le_bytes(),
-                        },
-                    )
-                    .map_err(|e| BlobError::Crypto(e.to_string()))?;
-
-                out.write_all(&(sealed.len() as u32).to_le_bytes())?;
-                out.write_all(&sealed)?;
-                chunk_index += 1;
-            }
-
-            out.flush()?;
-        }
-
-        let content_hash = hasher.finalize().to_hex().to_string();
-        let final_path = self.path_for(&content_hash, cmk);
-
-        if let Some(parent) = final_path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-
-        if final_path.exists() {
-            // These bytes are already stored, under a different per-blob key.
-            // Discard what we just wrote and tell the caller to reuse the ref it
-            // already has: overwriting would silently break every existing ref
-            // to this content, and returning a ref carrying our new key would
-            // hand back something that cannot decrypt the stored file.
-            let _ = std::fs::remove_file(&temp_path);
-            return Ok(PutOutcome::AlreadyPresent {
-                content_hash,
-                size: total,
-            });
-        }
-
-        std::fs::rename(&temp_path, &final_path)?;
-
-        let wrapped_key = kokin_keys::wrap_cmk(&blob_key, cmk, content_hash.as_bytes())?;
-
-        Ok(PutOutcome::Stored(BlobRef {
-            content_hash,
-            size: total,
-            wrapped_key,
-        }))
+    pub fn put(&self, source: impl Read, cmk: &CaseMasterKey) -> Result<PutOutcome> {
+        staging::put(self, source, cmk, &staging::Filesystem)
     }
 
     /// Read a blob back, verifying every chunk and the whole-content hash.

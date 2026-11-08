@@ -1,0 +1,151 @@
+{
+  "date": "2026-10-20",
+  "phase": 3,
+  "exit_criteria_passed": false,
+  "slice_acceptance_passed": true,
+  "scope": "phase-3-contract.md",
+  "checks": [
+    {
+      "name": "workspace",
+      "command": "KOKIN_NETWORK=deny cargo test --workspace --all-targets --offline",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-workspace.log",
+      "sha256": "66890fffba139a5f1d40fc7db93871949673107b099268fb6c7da8417dfad0b4"
+    },
+    {
+      "name": "query-tests",
+      "command": "KOKIN_NETWORK=deny cargo test -p kokin-osint --test image_query --offline -- --nocapture",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-query-tests.log",
+      "sha256": "9ae65045769508844d90082f6c3a216414b43bcd57c5bbbc3b10146293992d71"
+    },
+    {
+      "name": "engine",
+      "command": "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig KOKIN_NETWORK=deny cargo test -p kokin-media --features engine --lib --offline",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-engine.log",
+      "sha256": "faf4eee3abee0d2456c1158bfd3b1eab9f23a3711cfc8d89a4ec9cffe12087fa"
+    },
+    {
+      "name": "worker",
+      "command": "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig KOKIN_NETWORK=deny cargo test -p kokin-media --features engine --test worker --offline -- --ignored (matching packaged worker/native; installed reviewed English data)",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-worker.log",
+      "sha256": "e4ef9dd481f4c19b994c19b80886fa9d87979f31f80daa8a54ead7c5ec45b8fc"
+    },
+    {
+      "name": "clippy",
+      "command": "KOKIN_NETWORK=deny cargo clippy --workspace --all-targets --offline -- -D warnings",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-clippy.log",
+      "sha256": "656085dbbeee61d6596b23283b6db9328031c9c50cb077dad61daa7d9acd0241"
+    },
+    {
+      "name": "ui",
+      "command": "npm --prefix ui run test",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-ui.log",
+      "sha256": "1e3d08e8758280fbff84a8d19e34197e84291f7f9dde0700595a29fa1a584268"
+    },
+    {
+      "name": "types",
+      "command": "npm --prefix ui run check",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-types.log",
+      "sha256": "3fc74609855d685bc4597f059da11d27432dfd0b6c10b7f06ecd885b06a7091d"
+    },
+    {
+      "name": "macos",
+      "command": "cd ui && npx wdio run ./wdio.images.conf.mjs",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-macos.log",
+      "sha256": "8af1dbec9b8dcd4e4ea5187810ba98a845ba0c0778874fffcd416ffb7826f454"
+    },
+    {
+      "name": "app",
+      "command": "VITE_DESKTOP_TEST=1 ui/node_modules/.bin/tauri build --debug --features desktop-test --bundles app --config src-tauri/media-desktop-test.conf.json",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-app.log",
+      "sha256": "73005a3ae1cf39c33e2771a327c67f18e18fc0b172fcf058caf5fa53e87996c4"
+    },
+    {
+      "name": "production-ui",
+      "command": "npm --prefix ui run build",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-production-ui.log",
+      "sha256": "9c2b4e45efbbc6452783d3b622badde41a0228a89a1469cac82bbc5a087a41cd"
+    },
+    {
+      "name": "production-tree",
+      "command": "KOKIN_NETWORK=deny cargo tree -p kokin-osint --edges normal --offline",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-production-tree.log",
+      "sha256": "cf24a80ab9191ab7b9d14578f0439b3f20eb8820d7af64a5a4c73126126d69ed"
+    },
+    {
+      "name": "crossrefs",
+      "command": "python3 scripts/lint_crossrefs.py",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-crossrefs.log",
+      "sha256": "71cc29a37d9adda94877d5520b5b50b552986673f233f7e54c35dd41dcfbe2f6"
+    },
+    {
+      "name": "citations",
+      "command": "python3 scripts/lint_research.py",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-citations.log",
+      "sha256": "791511e6e913b1fc827baecbe96bbf38d211668712d317e7d820ddb24ca41e35"
+    },
+    {
+      "name": "sql",
+      "command": "python3 scripts/lint_sql_ordering.py",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-sql.log",
+      "sha256": "71345b8e4f2f0d998909bd8faaf2b8a1bd748f6c57335eb173148da4eeff3bd3"
+    },
+    {
+      "name": "dependencies",
+      "command": "python3 scripts/lint_dependency_patches.py",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-dependencies.log",
+      "sha256": "b59e2a7e8c0b19d51f3a6bbf172506850440f58cebd54f0e8e264060be31cc63"
+    },
+    {
+      "name": "format",
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-format.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "diff",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "log": "validation-logs/phase3-diff.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "rust_full_regression_passed": 453,
+  "rust_ignored": 13,
+  "test_executables": 52,
+  "focused_final_source_tests": "3 encrypted query/clipboard/10,001-candidate tests pass, including source/page/stale face selection, recorded recipe citation, nested derivative shredding and package restore; 6 native engine unit tests pass with 1 dedicated fault test still ignored; 4 separately invoked contained-worker tests pass.",
+  "frontend_tests": 94,
+  "frontend_type_errors": 0,
+  "frontend_type_warnings": 0,
+  "macos_acceptance": "Passed in 6 seconds using the real packaged app, synthetic PDF evidence, existing contained worker, duplicate imports, local exact search, crop/rotate/mirror/color recipe, encrypted derived PNG, persisted preparation source/recipe view, original preservation, zero entity/relationship creation and 900-point dark/light editor views without document overflow. OS clipboard/drop gestures and VoiceOver remain manual release QA.",
+  "visual_check": "Two bounded inspection rounds; final expanded editor light/dark screenshots reviewed. Detector returned no findings on the media components; it is not a completeness or accessibility certificate.",
+  "native_resource": "Existing reviewed engines and installed English OCR data SHA256 7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2. No download/install of a new resource.",
+  "benchmark": "../benchmarks/image-query-phase3-encrypted-disk-mac.json",
+  "benchmark_limits": "10,001 synthetic artifact references to one PNG in an encrypted disk case; exact hash scan/projection/pagination. This does not measure image decoding, face/visual inference or web retrieval.",
+  "boundaries": "phase-3-boundaries.json",
+  "paid_requests": 0,
+  "image_uploads": 0,
+  "new_models_downloaded": 0,
+  "new_dependencies": 0,
+  "new_keys_created": 0,
+  "production_exclusion": "Production frontend rebuilt after desktop-test acceptance; no driver markers in built JS and no driver dependency in the default normal-edge cargo tree. The debug acceptance .app remains test-only, not a production release.",
+  "phase_4_advanced": false,
+  "remaining": "Phase 3 remains open: validated CLIP/separate visual-text indexes and semantic categories, reviewed HEIC/AVIF, C2PA, representative experimental detector evaluation, additional category/content/language/exclusion/pixel-size/grouping controls and broader native/platform acceptance. No proprietary corpus, automatic image upload or provider parity claimed.",
+  "release_gates": "Windows runtime/native support, manual OS gestures/VoiceOver, remaining dedicated native fault/model gates, production release packaging/signing and separately authorized provider smoke tests. Existing vendor lifetime warnings and the preexisting map chunk-size warning remain; no new license/advisory-audit claim.",
+  "subsequent_verification": "Final response metadata uses artifact_created_utc, never a fabricated L0 capture date. The 3 focused backend tests, strict clippy, frontend type check and production frontend build passed after that naming correction. The automated desktop workflow uses unchanged controls/other result fields."
+}

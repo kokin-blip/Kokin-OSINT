@@ -2,11 +2,10 @@
 //! The connection is pinned to the vetted address while TLS verifies the host.
 use crate::http::{Fixture, HttpCapability, HttpError, HttpRequest, HttpResponse, ReplayHttp};
 use crate::{
-    reconfirm_before_connect, vet_request, Attribution, CappedReader, EgressPolicy, NetworkMode,
-    RateLimiter, Resolver,
+    reconfirm_before_connect, vet_request, Attribution, EgressPolicy, NetworkMode, RateLimiter,
+    Resolver,
 };
 use std::collections::BTreeMap;
-use std::io::Read;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -29,6 +28,7 @@ pub struct LiveHttp {
     online: Arc<AtomicBool>,
     cancelled: Arc<AtomicBool>,
     limiter: Arc<Mutex<RateLimiter>>,
+    follow_redirects: bool,
 }
 impl LiveHttp {
     pub fn new(
@@ -44,7 +44,13 @@ impl LiveHttp {
             online,
             cancelled,
             limiter,
+            follow_redirects: true,
         }
+    }
+    /// A single-call research plan must not spend undeclared calls on redirects.
+    pub fn without_redirects(mut self) -> Self {
+        self.follow_redirects = false;
+        self
     }
     fn check(&self) -> Result<(), HttpError> {
         if self.cancelled.load(Ordering::SeqCst) {
@@ -58,21 +64,50 @@ impl LiveHttp {
         Ok(())
     }
 }
+fn validate_request(request: &HttpRequest) -> Result<(), HttpError> {
+    if request.method != "GET"
+        || request.body.is_some()
+        || request.headers.iter().any(|(key, value)| {
+            !key.eq_ignore_ascii_case("accept")
+                || ![
+                    "application/json",
+                    "application/dns-json",
+                    "application/rdap+json",
+                ]
+                .contains(&value.as_str())
+        })
+    {
+        return Err(HttpError::Refused(
+            "static collection accepts an unauthenticated GET only".into(),
+        ));
+    }
+    Ok(())
+}
 impl HttpCapability for LiveHttp {
     fn send(&self, request: &HttpRequest) -> Result<HttpResponse, HttpError> {
         self.check()?;
-        if request.method != "GET" || request.body.is_some() || !request.headers.is_empty() {
-            return Err(HttpError::Refused(
-                "static collection accepts an unauthenticated GET only".into(),
-            ));
-        }
+        validate_request(request)?;
         let mut url =
             url::Url::parse(&request.url).map_err(|_| HttpError::Refused("invalid URL".into()))?;
+        let _permit = crate::scheduler::shared()
+            .acquire(
+                url.host_str()
+                    .ok_or_else(|| HttpError::Refused("missing host".into()))?,
+                &self.cancelled,
+                &self.online,
+            )
+            .map_err(HttpError::Refused)?;
         if !url.username().is_empty() || url.password().is_some() {
             return Err(HttpError::Refused(
                 "URLs containing credentials are refused".into(),
             ));
         }
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|_| HttpError::Refused("HTTP runtime could not start".into()))?;
+        runtime.block_on(async {
+        let work=async {
         let mut redirects = Vec::new();
         for _ in 0..=5 {
             self.check()?;
@@ -103,7 +138,7 @@ impl HttpCapability for LiveHttp {
                     HttpError::Refused("rate limit reached; wait before collecting again".into())
                 })?;
             self.check()?;
-            let client = reqwest::blocking::Client::builder()
+            let client = reqwest::Client::builder()
                 .no_proxy()
                 .redirect(reqwest::redirect::Policy::none())
                 .connect_timeout(Duration::from_secs(10))
@@ -112,12 +147,15 @@ impl HttpCapability for LiveHttp {
                 .user_agent("Kokin-OSINT/0.0.1 static-collector")
                 .build()
                 .map_err(|_| HttpError::Refused("HTTP client could not start".into()))?;
-            let response = client
-                .get(url.as_str())
-                .send()
+            let mut outgoing = client.get(url.as_str());
+            for (key, value) in &request.headers {
+                outgoing = outgoing.header(key, value);
+            }
+            let mut response = outgoing
+                .send().await
                 .map_err(|_| HttpError::Refused("request failed or timed out".into()))?;
             self.check()?;
-            if response.status().is_redirection() {
+            if response.status().is_redirection() && self.follow_redirects {
                 let location = response
                     .headers()
                     .get(reqwest::header::LOCATION)
@@ -155,18 +193,12 @@ impl HttpCapability for LiveHttp {
                 })
                 .filter_map(|(k, v)| v.to_str().ok().map(|v| (k.as_str().into(), v.into())))
                 .collect::<BTreeMap<_, _>>();
-            let mut reader = CappedReader::new(response, self.policy.max_response_bytes);
-            let mut body = Vec::new();
-            let mut chunk = [0u8; 16 * 1024];
-            loop {
+            if response.content_length().is_some_and(|n|n>self.policy.max_response_bytes){return Err(HttpError::Refused("response exceeds its byte cap".into()));}
+            let mut body=Vec::new();
+            while let Some(chunk)=response.chunk().await.map_err(|_|HttpError::Refused("response could not be read".into()))?{
                 self.check()?;
-                let n = reader.read(&mut chunk).map_err(|_| {
-                    HttpError::Refused("response exceeded its byte cap or could not be read".into())
-                })?;
-                if n == 0 {
-                    break;
-                }
-                body.extend_from_slice(&chunk[..n]);
+                if body.len()+chunk.len()>self.policy.max_response_bytes as usize{return Err(HttpError::Refused("response exceeds its byte cap".into()));}
+                body.extend_from_slice(&chunk);
             }
             return Ok(HttpResponse {
                 status,
@@ -178,6 +210,10 @@ impl HttpCapability for LiveHttp {
             });
         }
         Err(HttpError::Refused("too many redirects".into()))
+        };
+        tokio::pin!(work);
+        loop{self.check()?;tokio::select!{result=&mut work=>return result,_=tokio::time::sleep(Duration::from_millis(50))=>{}}}
+        })
     }
 }
 
@@ -326,5 +362,37 @@ mod tests {
             .send(&HttpRequest::get("https://example.org/?token=x"))
             .is_err());
         let _ = std::fs::remove_dir_all(dir);
+    }
+}
+
+#[cfg(test)]
+mod connector_headers {
+    use super::*;
+    #[test]
+    fn only_reviewed_accept_values_can_cross_the_public_boundary() {
+        for accept in [
+            "application/json",
+            "application/dns-json",
+            "application/rdap+json",
+        ] {
+            assert!(validate_request(
+                &HttpRequest::get("https://example.org").with_header("Accept", accept)
+            )
+            .is_ok());
+        }
+        for (name, value) in [
+            ("Authorization", "secret"),
+            ("Cookie", "session"),
+            ("Host", "private.local"),
+            ("Accept", "text/html, */*"),
+        ] {
+            assert!(validate_request(
+                &HttpRequest::get("https://example.org").with_header(name, value)
+            )
+            .is_err());
+        }
+        let mut post = HttpRequest::get("https://example.org");
+        post.method = "POST".into();
+        assert!(validate_request(&post).is_err());
     }
 }

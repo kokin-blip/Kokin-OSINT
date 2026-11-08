@@ -1,0 +1,11 @@
+   Compiling rusqlite v0.40.2
+   Compiling kokin-store v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-store)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.21s
+     Running unittests src/lib.rs (target/debug/deps/kokin_store-e6272a8ae6f952e9)
+
+running 1 test
+research_10k_projection_ms=327 arch=aarch64 scope=in-memory-SQLite-synthetic-results
+test research::tests::ten_thousand_case_results_keep_bounded_pages_and_selected_export ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 46 filtered out; finished in 0.35s
+

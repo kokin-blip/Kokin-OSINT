@@ -1,0 +1,45 @@
+# Expansion delivery status
+
+Phase 1 is implemented within the approved personal desktop scope; see [its explicit contract](phase-1-contract.md) and [acceptance receipt](phase-1-validation.json). **The eight-phase expansion and service parity are not complete.** Every original entry remains tracked in [the 142-entry matrix](feature-matrix.md); mixed features stay partial until all retained clauses pass acceptance.
+
+## Working native behavior
+
+The final hybrid direction is implemented: local case research is the default, with optional official APIs for broader coverage. The first-party in-process research API opens no socket; local text matches do not imply account/identity findings or provider-scale coverage. See [the hybrid contract and REA evidence](phase-2-hybrid.md).
+
+- Sources → Research and tools: explicit prepare/authorize/start workflow; typing does not initiate research. Plans are case-generation-bound, five-minute, single-use and digest checked; outgoing request fingerprints, provider options and uploaded-image hash/size disclosures are bound to authorization.
+- Independent GitHub, Codeberg and Hacker News public JSON profile checks; GitHub-specific invalid-handle handling. A missing profile is not a claimable handle. Challenges/rate limits, unexpected JSON, failed requests and unsupported workflows remain distinct. Domain DNS/RDAP/CT reuse the reviewed existing connectors.
+- Four concurrent broker requests globally and one per destination, with queued cancellation; one native operation can run alongside up to four network jobs. Native inference stays serial. Research checks do not follow redirects, so a one-call plan cannot consume an undeclared redirect chain.
+- Raw responses are L0 encrypted evidence before versioned JSON extraction. Partial results commit independently, with captured-evidence links and no automatic entities or relationships. Cards cap structured fields at 64 KiB and disclose when full evidence must be inspected.
+- Case-encrypted run history and eight-hour definitive-answer reuse, after authenticating the captured source blob. Unknown/error/blocked states do not become cached definitive answers. Copies retain the original observation time and do not refresh the reusable cache. Reopening marks interrupted runs interrupted without retrying.
+- Pinned, attributed MIT Framework snapshot: 1,166 entries, searchable paginated list and category tree; tool details, private favorites, half-star ratings, notes and issue drafts. Entries open only HTTP(S) destinations in an external browser. Metadata is separate from connector health.
+- Local validation for eight selector classes; international phone format requires an explicit country prefix. Wallet validation now checks EIP-55 mixed-case, BTC mainnet Base58Check/SegWit and TRON Base58Check; all-lower/all-upper Ethereum inputs retain an explicit no-input-checksum caveat. Email local-part and original spelling are preserved.
+- Paste and UTF-8 file previews for CSV, TSV, JSON, text, Markdown and logs; local candidate extraction and authenticated PDF/OCR evidence previews are described in [the Phase 2 contract](phase-2-contract.md). Quoted cells, column mapping, duplicate counts, row errors, per-row type overrides, 15-query selection and 50-row preview pages. All unselected rows remain in the local preview. File previews are bounded to 2 MB/20,000 rows/64 columns; they do not upload or implicitly add source files to Evidence.
+- Research collections support creation, adding selected result references and archival. Revision conflicts are rejected. Selected CSV/JSON exports require plaintext consent and publish atomically without overwriting a destination; CSV formula entry points are neutralized. Package/reopen/restore retain research state.
+
+## Phase 3 local media continuation
+
+The Evidence media inspector now exposes explicit local image preparation and duplicate search. Prepared PNGs preserve originals, record an encrypted L1 recipe/lineage, and remain distinct from L0 captures and L2 identities. Exact/pHash searches page 50 candidates and disclose actual 500/5,000/20,000-record scan budgets, available metadata and incomplete coverage. Source shredding also revokes nested prepared-image and preview keys. Read [the complete current scope and remaining work](phase-3-contract.md); Phase 3 remains open.
+
+## Provider-backed work: partial, optional
+
+Native adapters exist for fixed official OSINT Industries v2, Lenso and EYEMATCH POST endpoints, plus the explicit OI GET credit endpoint. Credentials are read from a macOS Keychain Generic Password with service `com.kokin.osint` and account `osint_industries`, `lenso` or `eyematch`; the webview receives only a presence flag. Windows credential setup is explicitly unsupported. Keys are not stored in cases or packages; responses that echo the credential are refused before capture.
+
+Plans disclose call limits; OSINT Industries plans also show the documented 1/4-credit upper bound. Lenso/EYEMATCH show billed page calls, not an invented monetary/credit quota. Each page requires another reviewed request. Face eligibility is explicit; there is no fallback provider or automatic paid retry. Native async transport drops on cancellation/offline; an already accepted request may still be billed. Image bytes are read only from a selected encrypted JPEG/PNG/WEBP artifact, at most 10 MiB. Immutable request metadata records the transmitted body digest and image artifact reference, omitting duplicate base64 image bytes so source shredding is not defeated by request metadata.
+
+**No live provider check, API entitlement, regional eligibility or stream framing has been verified.** The documented OI spec-format and credit-response contracts now have bounded typed projections, evidence pointers and offline tests; a positive account assertion still does not identify a person or establish ownership/breach membership. Credit lookup is a separate explicit no-selector GET. These are provider-backed offline contracts, not a completed Phase 4 live integration gate.
+
+## Manual workflows
+
+PimEyes, InstantUsername, WhatsMyName and unsupported consumer functions use an explicitly labeled browser handoff followed by user-selected Evidence import. A handoff sends no query/image. This is not automated proprietary coverage. No unknown-license `.io` catalog, GPL InstantUsername source or undocumented endpoint is bundled.
+
+## Work still required
+
+- Phase 1 is closed for Apple Silicon desktop fixture acceptance: whole-run source/category/outcome filtering and counts, versioned declarative recipes, freshness ceilings, directory details/provenance, focus return, private notes and 900-point light/dark views pass. Coverage remains three native username checks. Windows, manual VoiceOver and production packaging remain release gates.
+- Phase 2 selector/bulk implementation is complete within [its explicit contract](phase-2-contract.md): a first-party local case API by default, optional disclosed providers, validated mixed rows, durable parent import/run groups, file selection/drop tokens, image reference pickers, authenticated PDF/OCR candidates, normalized native/OI cards, correlated field/date filters, explicit OI credit lookup and authenticated human-review staging. Parsing/classification/projection run before serialized source publication. The 142-entry matrix retains partial/blocked clauses for unsupported breach sources and later provider/investigation gates. Phase 3 is now in progress under its separate contract.
+- Phase 3 is in progress: native crop/rotation/mirror/color recipes, evidence-linked prepared PNGs, selected-face crop/opaque obscuring, clipboard and existing broker/file/drop paths, and paged exact/pHash search with real scan budgets/metadata filters are implemented. See [the Phase 3 contract](phase-3-contract.md) and [receipt](phase-3-validation.json). Validated CLIP and separate visual/text indexes, semantic categories, HEIC/AVIF, C2PA and evaluated experimental detection remain pending. No category or provider parity is claimed.
+- Phase 4 usage/balance adapters, source-module contracts, streaming and separately authorized live checks.
+- Phase 5 collection open/move/copy, graph presentation groups/cards/annotations, cross-filtered timeline and common-model XLSX/DOCX/PDF renderers.
+- Phase 6 monitoring/runtime/menu bar, notification inbox, local suppression, exclusion propagation and removal dossiers. Schema document kinds reserve storage only; they are not operational features. This slice does not schedule monitoring, persist unlock keys or add background startup.
+- Phase 7 bounded selected-source crawler, Chromium capture extension/native messaging and versioned CLI/native JSON automation.
+
+Apple Silicon macOS research acceptance uses synthetic broker fixtures. Windows builds, provider smoke tests, manual VoiceOver and production release packaging remain separate gates. Phase 1 light/dark and narrow-window checks passed on macOS. See [validation](validation.md).

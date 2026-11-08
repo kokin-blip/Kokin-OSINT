@@ -8,7 +8,9 @@ Core library/artifact/subject views, search controls and activity are now extrac
 
 Settings/display preferences, shared keyboard/mouse inspector sizing, dark/light/system appearance, reduced-motion handling and the first measured motion layer are now implemented. Focus, contrast, narrow/scaled layout and bounded responsiveness/memory probes pass on Mac; see ../increments/ui-night-ledger-settings-layout.md for scope and measurement limits.
 
-Next: command palette and graph pan/zoom/focus; broader visual regression coverage; manual screen-reader/Windows checks; production cold-start, total-memory and large-case performance gates. Keep focused tests and offline desktop acceptance between changes.
+Continuation 2026-10-12: command palette and graph pan/zoom/fit/focus are implemented, with explicit planned local AI status in Settings. See ../increments/ui-night-ledger-commands-graph.md for preservation and verification evidence. Production process profiling has begun; it does not establish visible startup or leak freedom.
+
+Next: broader visual regression coverage; manual VoiceOver checks (deferred by the user); visible production startup/input/frame timing and large-case/repeated-navigation performance gates. Windows build and checks are deferred at the user's request. An unlocked production case-gate/Settings/Escape smoke check passes; precise visible startup/frame/input measurements remain open. Keep focused tests and offline desktop acceptance between changes.
 
 ## Goal and visual truth
 
@@ -33,3 +35,13 @@ Verify late entity/evidence responses after navigation or unmount cannot populat
 ## Defaults and limitations
 
 Native app behavior takes precedence over decorative mockup details. Case summary counts require existing complete read/coverage APIs; do not count just one paginated page as the whole case. Activity excerpt comes from actual case history and retains the tamper-evident disclaimer. Case-card imagery is a local decorative asset, not evidence. Figma Pro raster previews define composition but grant no reusable component source. No public deployment, PR adoption, backend rewrite, licensing-policy change or new network mechanism is included. Windows verification and hardware measurements require the actual available environment; report unavailable proof candidly.
+
+## Guided investigation continuation (2026-10-12)
+
+The accepted [delivery plan](05-investigation-delivery.md) supersedes the original
+seed-only Graph and package-only Export scope. Six destinations, case-scoped
+operations, contextual forms/pickers, encrypted boards and report revisions,
+optional case guidance and readable exports are implemented. See
+[verification report](../increments/ui-guided-investigation.md) for exact proof
+and remaining gates. The original frontend foundation required no migration;
+this workspace extension appends migration 8 and additive typed commands.

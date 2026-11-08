@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-20",
+  "layout": {
+    "documentWidth": 900,
+    "theme": "light",
+    "viewport": [
+      900,
+      768
+    ]
+  },
+  "keyboard": [
+    "selector slash focus",
+    "tool-detail focus and return"
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "privateNotes": true,
+  "network": "synthetic replay only"
+}

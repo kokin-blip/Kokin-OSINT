@@ -1,4 +1,10 @@
 <script lang="ts">
+ import {onMount} from 'svelte';
+ import {localPerformance} from './lib/stores/performance.svelte';
+ onMount(()=>()=>localPerformance.stop());
+  import Welcome from './lib/features/onboarding/Welcome.svelte';
+  import {preferences} from './lib/stores/preferences.svelte';
+  let gate=$state<{begin:()=>void}|undefined>();
   import SettingsDialog from './lib/features/settings/SettingsDialog.svelte';
   import {installPreferences} from './lib/stores/preferences.svelte';
   installPreferences();
@@ -69,7 +75,8 @@
   {#if session.phase.kind === "starting"}
     <p role="status" aria-live="polite">Starting…</p>
   {:else if session.phase.kind === "closed"}
-    <CaseGate {session} />
+    {#if !preferences.value.introDismissed}<Welcome onstart={()=>gate?.begin()}/>{/if}
+    <CaseGate bind:this={gate} {session} />
     <Restore/>
   {:else if session.phase.kind === "recovery-key"}
     <RecoveryKey

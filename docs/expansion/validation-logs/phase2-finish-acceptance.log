@@ -1,0 +1,40 @@
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> vendor/tokenizers/src/models/unigram/model.rs:359:17
+    |
+359 |     pub fn iter(&self) -> UnigramIterator {
+    |                 ^^^^^     ^^^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                 |
+    |                 the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+    = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+    |
+359 |     pub fn iter(&self) -> UnigramIterator<'_> {
+    |                                          ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/tokenizers/src/models/unigram/trie.rs:33:36
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<Label, T>
+   |                                    ^^^^^                  ^^^^^^^^^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                    |
+   |                                    the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+   |
+33 |     pub fn common_prefix_search<T>(&self, iterator: T) -> TrieIterator<'_, Label, T>
+   |                                                                        +++
+
+warning: `tokenizers` (lib) generated 2 warnings (run `cargo fix --lib -p tokenizers` to apply 2 suggestions)
+   Compiling kokin-osint v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.13s
+     Running tests/research_phase2.rs (target/debug/deps/research_phase2-8ed267ef3c01c1c2)
+
+running 1 test
+phase2_encrypted_disk={"architecture":"aarch64","date":"2026-10-20","filter_and_page_ms":18,"insert_10000_ms":260,"matching":1000,"page_size":50,"scope":"SQLCipher encrypted disk; 10000 synthetic result projections across ten runs; page/filter scans one 1000-result run; network/native model excluded"}
+test hybrid_imports_provider_cards_and_encrypted_disk_pages ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.04s
+

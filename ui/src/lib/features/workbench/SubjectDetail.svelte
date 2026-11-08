@@ -5,8 +5,8 @@
         <dl>{#each subject.fields as [key,value]}<dt>{key.replaceAll("_"," ")}</dt>
 <dd>{#if ["entity","from_entity","to_entity"].includes(key)}<button type="button" onclick={()=>onopen('entity',value)}>{value}</button>{:else}{value}{/if}</dd>{/each}</dl>
         <h4>Supporting and opposing evidence</h4>{#each subject.evidence as e}<button type="button" onclick={()=>onevidence(e.evidence_kind,e.evidence_id)}>{e.role}: {e.evidence_kind} {e.evidence_id}</button>{/each}
-        <h4>Confidence dimensions</h4>{#each subject.confidence as dimension}<p>
-<strong>{dimension.title}</strong>: {dimension.agreement}</p>{#each dimension.values as value}<p>{value.label} · {value.actor} · {value.assessed_utc}<br/>{value.contributing_factors_json}</p>{/each}{/each}</section>
+        {#if subject.confidence.length}<h4>Confidence dimensions</h4>{#each subject.confidence as dimension}<p>
+<strong>{dimension.title}</strong>: {dimension.agreement}</p>{#each dimension.values as value}<p>{value.label} · {value.actor} · {value.assessed_utc}<br/>{value.contributing_factors_json}</p>{/each}{/each}{/if}</section>
 
 <style>
 

@@ -116,16 +116,39 @@ impl EntryName {
     }
 }
 
+// Keep the real container writer under the same fault tests as packaging.
+struct Output(File);
+impl Write for Output {
+    fn write(&mut self, data: &[u8]) -> std::io::Result<usize> {
+        #[cfg(test)]
+        let data = crate::faults::write(data)?;
+        self.0.write(data)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.0.flush()
+    }
+}
+impl Seek for Output {
+    fn seek(&mut self, position: SeekFrom) -> std::io::Result<u64> {
+        self.0.seek(position)
+    }
+}
+impl Output {
+    fn sync_all(&self) -> std::io::Result<()> {
+        self.0.sync_all()
+    }
+}
+
 /// Writes entries in the order they are given.
 pub struct Writer {
-    out: BufWriter<File>,
+    out: BufWriter<Output>,
     entries: u32,
     count_at: u64,
 }
 
 impl Writer {
     pub fn create(path: &Path) -> Result<Self> {
-        let file = File::create(path)?;
+        let file = Output(File::create(path)?);
         let mut out = BufWriter::new(file);
         out.write_all(MAGIC)?;
         let count_at = MAGIC.len() as u64;
@@ -199,7 +222,7 @@ impl Writer {
 
 /// An open entry. Bytes written here are hashed as they go.
 pub struct EntryWriter<'a> {
-    out: &'a mut BufWriter<File>,
+    out: &'a mut BufWriter<Output>,
     hasher: blake3::Hasher,
     name: String,
     declared: u64,

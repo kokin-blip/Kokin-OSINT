@@ -1,0 +1,40 @@
+{
+  "method": "Offline desktop-test build; driver-inclusive mount/navigation time, no production FPS/input claim",
+  "mount": {
+    "documentOverflow": false,
+    "edges": 1000,
+    "elapsedMs": 781,
+    "nodes": 300
+  },
+  "navigationMs": [
+    87,
+    82.00000000000364,
+    84.00000000000364,
+    98,
+    96.00000000000364,
+    84.99999999999636,
+    88,
+    83,
+    82,
+    82.00000000000364
+  ],
+  "hostMemoryBefore": [
+    {
+      "pid": 11191,
+      "rssKiB": 136768
+    }
+  ],
+  "hostMemoryAfterNavigation": [
+    {
+      "pid": 11191,
+      "rssKiB": 147216
+    }
+  ],
+  "hostMemoryClosed": [
+    {
+      "pid": 11191,
+      "rssKiB": 212656
+    }
+  ],
+  "webkitMemory": "Ownership unavailable through ps; not attributed to this app"
+}

@@ -1,0 +1,62 @@
+{
+  "backup_directory": "/private/tmp/kokin-expansion-pre-format",
+  "files": [
+    {
+      "path": "crates/kokin-connectors/src/lib.rs",
+      "sha256": "531b6aa7222bd9d1d28ad7987cf7c65195b27358e1b44c8060509ff9362552c3"
+    },
+    {
+      "path": "crates/kokin-export/src/lib.rs",
+      "sha256": "275300eedd3756410b05971e5ab23852bf2a9fefac70bbcaa4378f82078ca961"
+    },
+    {
+      "path": "crates/kokin-ingest/src/lib.rs",
+      "sha256": "8294e8ec671ce2797778e8c230e3fa3d7a47880820fa9e0ebf3bb7e494efabfa"
+    },
+    {
+      "path": "crates/kokin-media/src/engine.rs",
+      "sha256": "041715f732d07c0decf0b2560d09c7ff43a94743856493135c6e074ea0c56ffa"
+    },
+    {
+      "path": "crates/kokin-media/tests/faces.rs",
+      "sha256": "62d74cec4d76b7c03eee5fdf46fb5abad7d6442e9fb97644a5c567581406be9a"
+    },
+    {
+      "path": "crates/kokin-net/src/discovery.rs",
+      "sha256": "17a0fa717a6c78bccc5153036e0daafa3f58a6308d8dde7f3125b2cdf8f92404"
+    },
+    {
+      "path": "crates/kokin-net/src/lib.rs",
+      "sha256": "611337013b46ff9753e7b3955e036a7ff769132ca5ead634e72fca317d8110ce"
+    },
+    {
+      "path": "crates/kokin-net/src/local.rs",
+      "sha256": "34b05808395c9cc094745a3c368a9739752cd2df425c4b6d8779db4215cd2838"
+    },
+    {
+      "path": "crates/kokin-net/src/map_resource.rs",
+      "sha256": "89b24e1b93634b8ef5689c2379c86b9d0cd4c1bfa5d69aef9ac1e6ce2ff91669"
+    },
+    {
+      "path": "crates/kokin-store/src/lib.rs",
+      "sha256": "d229db46bff68c25fe79f6ed00c2891d61fc2d351d02826309c46ae63d1354f7"
+    },
+    {
+      "path": "src-tauri/src/lib.rs",
+      "sha256": "2090a300d3735fd431eedea930e1566b154807d8f532e0bb596926d7ef3bb9d4"
+    },
+    {
+      "path": "src-tauri/src/operations.rs",
+      "sha256": "0b5be795803fdd387d4401b56027b8d79c98e3f85da7c44d11a50a2cf9c9bdf4"
+    },
+    {
+      "path": "src-tauri/src/resources.rs",
+      "sha256": "99423809f9ccd0f0fd0e720686673269ba46b5171fe13865cc62131a203406ac"
+    },
+    {
+      "path": "src-tauri/tests/bindings.rs",
+      "sha256": "f858f1b5715d04b3dcfc0d99c6deb568a2f7932964e68cdcadacb78180c5d667"
+    }
+  ],
+  "purpose": "Preserve the exact current source before applying the existing CI formatter; no semantic code changes intended."
+}

@@ -1088,6 +1088,123 @@ const MIGRATIONS: &[&str] = &[
         SELECT RAISE(ABORT, 'er_decision is append-only: deleting a judgement erases that it was made');
     END;
     "#,
+    // 8: UI workspace revisions live under SQLCipher, never in browser storage.
+    r#"
+    CREATE TABLE workspace_revision (
+        workspace_id TEXT NOT NULL,
+        revision INTEGER NOT NULL CHECK(revision > 0),
+        kind TEXT NOT NULL CHECK(kind IN ('board','report','guide')),
+        name TEXT NOT NULL,
+        payload_json TEXT NOT NULL CHECK(json_valid(payload_json)),
+        archived INTEGER NOT NULL CHECK(archived IN (0,1)),
+        updated_utc TEXT NOT NULL,
+        PRIMARY KEY(workspace_id, revision)
+    ) STRICT;
+    CREATE INDEX workspace_kind ON workspace_revision(kind,workspace_id,revision);
+    CREATE TRIGGER workspace_revision_no_update BEFORE UPDATE ON workspace_revision
+    BEGIN SELECT RAISE(ABORT, 'workspace revisions are append-only'); END;
+    CREATE TRIGGER workspace_revision_no_delete BEFORE DELETE ON workspace_revision
+    BEGIN SELECT RAISE(ABORT, 'archive a workspace with a new revision'); END;
+    "#,
+    // 9: encrypted, append-only media derivatives; original artifacts never change.
+    r#"
+    CREATE TABLE media_derivative (
+        id TEXT PRIMARY KEY NOT NULL,
+        artifact_id TEXT NOT NULL REFERENCES artifact(id),
+        run_id TEXT NOT NULL REFERENCES transform_run(id),
+        page INTEGER NOT NULL CHECK(page >= 0),
+        pages INTEGER NOT NULL CHECK(pages > 0),
+        thumbnail_hash TEXT NOT NULL REFERENCES blob(content_hash),
+        snapshot_hash TEXT NOT NULL REFERENCES blob(content_hash),
+        perceptual_hash TEXT,
+        engine TEXT NOT NULL,
+        created_utc TEXT NOT NULL
+    ) STRICT;
+    CREATE INDEX media_artifact ON media_derivative(artifact_id,page);
+    CREATE TRIGGER media_derivative_no_update BEFORE UPDATE ON media_derivative
+        BEGIN SELECT RAISE(ABORT,'media lineage is append-only'); END;
+    CREATE TRIGGER media_derivative_no_delete BEFORE DELETE ON media_derivative
+        BEGIN SELECT RAISE(ABORT,'media lineage is append-only'); END;
+    "#,
+    // 10: cited AI suggestions/review and rebuildable encrypted embeddings.
+    r#"
+    CREATE TABLE ai_suggestion (
+      id TEXT PRIMARY KEY NOT NULL,
+      model TEXT NOT NULL, model_digest TEXT NOT NULL,
+      prompt_hash TEXT NOT NULL, context_hash TEXT NOT NULL,
+      kind TEXT NOT NULL CHECK(kind IN ('cited_summary','entity_candidate','relationship_candidate')),
+      payload_json TEXT NOT NULL CHECK(json_valid(payload_json)),
+      cited_observation_ids_json TEXT NOT NULL CHECK(json_valid(cited_observation_ids_json) AND json_type(cited_observation_ids_json)='array' AND json_array_length(cited_observation_ids_json)>0),
+      created_utc TEXT NOT NULL
+    ) STRICT;
+    CREATE TABLE ai_suggestion_citation (
+      suggestion_id TEXT NOT NULL REFERENCES ai_suggestion(id),
+      observation_id TEXT NOT NULL REFERENCES observation(id),
+      PRIMARY KEY(suggestion_id,observation_id)
+    ) STRICT;
+    CREATE TABLE ai_review (
+      id TEXT PRIMARY KEY NOT NULL, suggestion_id TEXT NOT NULL REFERENCES ai_suggestion(id),
+      actor TEXT NOT NULL CHECK(actor='user:local'),
+      decision TEXT NOT NULL CHECK(decision IN ('reviewed','rejected')),
+      rationale TEXT NOT NULL CHECK(length(trim(rationale))>0), created_utc TEXT NOT NULL
+    ) STRICT;
+    CREATE INDEX ai_review_suggestion ON ai_review(suggestion_id,created_utc);
+    CREATE TABLE embedding_meta (
+      singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+      model_identity TEXT NOT NULL, dimensions INTEGER NOT NULL CHECK(dimensions=384),
+      indexed_utc TEXT NOT NULL, quality_gate INTEGER NOT NULL DEFAULT 0 CHECK(quality_gate IN(0,1))
+    ) STRICT;
+    CREATE TABLE observation_embedding (
+      observation_id TEXT PRIMARY KEY NOT NULL REFERENCES observation(id),
+      model_identity TEXT NOT NULL, value_hash TEXT NOT NULL,
+      vector BLOB NOT NULL CHECK(length(vector)=1536)
+    ) STRICT;
+    CREATE TRIGGER ai_suggestion_no_update BEFORE UPDATE ON ai_suggestion BEGIN SELECT RAISE(ABORT,'AI suggestions are append-only'); END;
+    CREATE TRIGGER ai_suggestion_no_delete BEFORE DELETE ON ai_suggestion BEGIN SELECT RAISE(ABORT,'AI suggestions are append-only'); END;
+    CREATE TRIGGER ai_citation_no_update BEFORE UPDATE ON ai_suggestion_citation BEGIN SELECT RAISE(ABORT,'AI citations are append-only'); END;
+    CREATE TRIGGER ai_citation_no_delete BEFORE DELETE ON ai_suggestion_citation BEGIN SELECT RAISE(ABORT,'AI citations are append-only'); END;
+    CREATE TRIGGER ai_review_no_update BEFORE UPDATE ON ai_review BEGIN SELECT RAISE(ABORT,'AI review is append-only'); END;
+    CREATE TRIGGER ai_review_no_delete BEFORE DELETE ON ai_review BEGIN SELECT RAISE(ABORT,'AI review is append-only'); END;
+    "#,
+    // 11: grounded point locations and encrypted map camera/layer preferences.
+    r#"
+    CREATE TABLE grounded_location (
+      id TEXT PRIMARY KEY NOT NULL,
+      observation_id TEXT NOT NULL REFERENCES observation(id),
+      entity_id TEXT REFERENCES entity(id), label TEXT NOT NULL CHECK(length(trim(label))>0),
+      longitude REAL NOT NULL CHECK(longitude>=-180 AND longitude<=180),
+      latitude REAL NOT NULL CHECK(latitude>=-90 AND latitude<=90),
+      uncertainty TEXT NOT NULL CHECK(length(trim(uncertainty))>0),
+      rationale TEXT NOT NULL CHECK(length(trim(rationale))>0),
+      actor TEXT NOT NULL CHECK(actor='user:local'),created_utc TEXT NOT NULL
+    ) STRICT;
+    CREATE INDEX location_observation ON grounded_location(observation_id);
+    CREATE INDEX location_entity ON grounded_location(entity_id);
+    CREATE TRIGGER location_no_update BEFORE UPDATE ON grounded_location BEGIN SELECT RAISE(ABORT,'location facts are append-only'); END;
+    CREATE TRIGGER location_no_delete BEFORE DELETE ON grounded_location BEGIN SELECT RAISE(ABORT,'location facts are append-only'); END;
+    CREATE TABLE map_state_revision (
+      revision INTEGER PRIMARY KEY NOT NULL CHECK(revision>0),
+      payload_json TEXT NOT NULL CHECK(json_valid(payload_json)),updated_utc TEXT NOT NULL
+    ) STRICT;
+    CREATE TRIGGER map_state_no_update BEFORE UPDATE ON map_state_revision BEGIN SELECT RAISE(ABORT,'map preferences are revisioned'); END;
+    CREATE TRIGGER map_state_no_delete BEFORE DELETE ON map_state_revision BEGIN SELECT RAISE(ABORT,'map preferences are revisioned'); END;
+    "#,
+    // 12: analyst-rendered map illustrations, not new source observations.
+    r#"
+    CREATE TABLE map_illustration (
+      id TEXT PRIMARY KEY NOT NULL,content_hash TEXT NOT NULL REFERENCES blob(content_hash),
+      archive_id TEXT NOT NULL,attribution TEXT NOT NULL,
+      location_ids_json TEXT NOT NULL CHECK(json_valid(location_ids_json)),created_utc TEXT NOT NULL
+    ) STRICT;
+    CREATE TRIGGER map_illustration_no_update BEFORE UPDATE ON map_illustration BEGIN SELECT RAISE(ABORT,'illustrations are append-only'); END;
+    CREATE TRIGGER map_illustration_no_delete BEFORE DELETE ON map_illustration BEGIN SELECT RAISE(ABORT,'illustrations are append-only'); END;
+    "#,
+    // 13: case-local face derivatives, review history and source-shred cleanup.
+    include_str!("faces_schema.sql"),
+    // 14: encrypted operational research projections and revisioned analyst work.
+    include_str!("research_schema.sql"),
+    // 15: query-image transformation lineage and descendant source shredding.
+    include_str!("image_query_schema.sql"),
 ];
 
 /// The schema version this build writes and understands.
@@ -1172,6 +1289,24 @@ mod tests {
 
     fn memory_db() -> Connection {
         Connection::open_in_memory().unwrap()
+    }
+
+    #[test]
+    fn workspace_migration_failure_keeps_the_previous_schema_version() {
+        let conn = memory_db();
+        for sql in MIGRATIONS.iter().take(7) {
+            conn.execute_batch(sql).unwrap();
+        }
+        conn.execute_batch("PRAGMA user_version=7;CREATE TABLE workspace_revision(broken TEXT)")
+            .unwrap();
+        assert!(migrate(&conn).is_err());
+        let version: i64 = conn
+            .query_row("PRAGMA user_version", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(version, 7);
+        conn.execute_batch("DROP TABLE workspace_revision").unwrap();
+        migrate(&conn).unwrap();
+        assert_eq!(target_version(), 15);
     }
 
     #[test]
@@ -1893,8 +2028,8 @@ mod tests {
 
         assert_eq!(
             target_version(),
-            7,
-            "this test pins the v6 -> v7 migration; a later one needs its own"
+            15,
+            "this test verifies the v6 -> v7 invariant after later additive migrations"
         );
 
         migrate(&conn).unwrap();

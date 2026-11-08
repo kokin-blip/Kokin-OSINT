@@ -382,16 +382,31 @@ pub struct ExcerptView {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "agreement", rename_all = "snake_case")]
 pub enum QuoteView {
+    StructuredExact {
+        excerpt: ExcerptView,
+        basis: String,
+    },
+    /// Matches a verified encrypted media transformation, not original byte text.
+    DerivedExact {
+        excerpt: ExcerptView,
+        basis: String,
+    },
     /// The bytes at the locator are exactly the recorded value.
-    Exact { excerpt: ExcerptView },
+    Exact {
+        excerpt: ExcerptView,
+    },
     /// The recorded value appears within the bytes at the locator. Normal: a
     /// locator commonly spans an element while the value is its text or one
     /// attribute.
-    Contains { excerpt: ExcerptView },
+    Contains {
+        excerpt: ExcerptView,
+    },
     /// The bytes at the locator do not contain the recorded value. Either the
     /// extractor recorded the wrong range or the value was transformed on its
     /// way to the row; either way the citation does not support the claim.
-    Differs { excerpt: ExcerptView },
+    Differs {
+        excerpt: ExcerptView,
+    },
     /// The locator names a range this artifact does not have.
     OutOfRange {
         byte_length: i64,
@@ -404,14 +419,21 @@ pub enum QuoteView {
     /// compared for `contains` but never for `differs`, because the value might
     /// be in the part that was dropped. Rather than emit a verdict that is sound
     /// in one direction only, the check declines.
-    TooLarge { bytes: i64, limit: i64 },
+    TooLarge {
+        bytes: i64,
+        limit: i64,
+    },
     /// A locator scheme this build cannot resolve. Not a fault — see
     /// [`LocatorView`] — and the raw locator is still shown.
-    UnknownScheme { scheme: String },
+    UnknownScheme {
+        scheme: String,
+    },
     /// The bytes are not available to check against. Carries the
     /// [`DocumentContent`] state that explains why, so a shredded document and a
     /// damaged one do not both read as "no quote".
-    Unavailable { document_state: String },
+    Unavailable {
+        document_state: String,
+    },
 }
 
 /// Everything the case knows about how an observation came to exist.
@@ -956,4 +978,600 @@ pub struct GraphView {
     pub edges: Vec<GraphEdgeView>,
     pub truncated: bool,
     pub completed_hops: usize,
+    pub truncation_reasons: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct AddEvidenceRequest {
+    pub subject_kind: String,
+    pub subject_id: String,
+    pub evidence: Vec<GroundingInput>,
+}
+
+#[derive(Serialize)]
+pub struct WorkspaceView {
+    pub id: String,
+    pub kind: String,
+    pub name: String,
+    pub revision: i64,
+    pub payload: serde_json::Value,
+    pub archived: bool,
+    pub updated_utc: String,
+}
+impl From<kokin_store::workspace::Workspace> for WorkspaceView {
+    fn from(w: kokin_store::workspace::Workspace) -> Self {
+        Self {
+            id: w.id,
+            kind: w.kind,
+            name: w.name,
+            revision: w.revision,
+            payload: w.payload,
+            archived: w.archived,
+            updated_utc: w.updated_utc,
+        }
+    }
+}
+#[derive(Serialize)]
+pub struct WorkspacePage {
+    pub rows: Vec<WorkspaceSummaryView>,
+    pub total: i64,
+    pub offset: usize,
+    pub limit: usize,
+}
+#[derive(Serialize)]
+pub struct GuideStatus {
+    pub artifacts: i64,
+    pub complete: i64,
+    pub entities: i64,
+    pub relationships: i64,
+    pub human_assessments: i64,
+    pub boards: i64,
+    pub reports: i64,
+}
+#[derive(Deserialize)]
+pub struct WorkspaceSaveRequest {
+    pub id: String,
+    pub kind: String,
+    pub name: String,
+    pub expected_revision: i64,
+    pub payload: serde_json::Value,
+    #[serde(default)]
+    pub archived: bool,
+}
+#[derive(Deserialize)]
+pub struct ReportPayload {
+    #[serde(default)]
+    pub map_illustrations: Vec<String>,
+    pub version: u32,
+    #[serde(default)]
+    pub summary: String,
+    #[serde(default)]
+    pub findings: Vec<Finding>,
+    #[serde(default)]
+    pub limitations: String,
+    #[serde(default)]
+    pub boards: Vec<String>,
+}
+#[derive(Deserialize)]
+pub struct Finding {
+    pub heading: String,
+    pub text: String,
+    #[serde(default)]
+    pub citations: Vec<Citation>,
+}
+#[derive(Deserialize)]
+pub struct Citation {
+    pub kind: String,
+    pub id: String,
+    pub role: String,
+}
+
+#[derive(Serialize)]
+pub struct WorkspaceSummaryView {
+    pub id: String,
+    pub kind: String,
+    pub name: String,
+    pub revision: i64,
+    pub archived: bool,
+    pub updated_utc: String,
+}
+impl From<kokin_store::workspace::Workspace> for WorkspaceSummaryView {
+    fn from(w: kokin_store::workspace::Workspace) -> Self {
+        Self {
+            id: w.id,
+            kind: w.kind,
+            name: w.name,
+            revision: w.revision,
+            archived: w.archived,
+            updated_utc: w.updated_utc,
+        }
+    }
+}
+
+/// A verified encrypted media derivative, never source markup.
+#[derive(Debug, Clone, Serialize)]
+pub struct MediaView {
+    pub artifact_id: String,
+    pub page: u16,
+    pub pages: u16,
+    pub preview_png: String,
+    pub engine: String,
+    pub limitations: Vec<String>,
+    pub duplicate_candidates: Vec<String>,
+    pub candidate_scan_truncated: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct OcrResourceView {
+    pub size_bytes: u64,
+    pub destination: String,
+    pub installed: bool,
+    pub license: String,
+    pub sha256: String,
+}
+
+/// Versioned media work requests; mode is fixed by the command kind.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MediaProcessRequest {
+    #[serde(default = "media_protocol_version")]
+    pub version: u32,
+    pub artifact_id: String,
+    #[serde(default)]
+    pub page: u16,
+    #[serde(default)]
+    pub ocr: bool,
+}
+fn media_protocol_version() -> u32 {
+    1
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SourceRequest {
+    pub version: u32,
+    pub connector: String,
+    pub input: String,
+    pub record_type: String,
+    pub page: u32,
+    pub timestamp: String,
+    pub consent: bool,
+}
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SourceDisclosureView {
+    pub connector: String,
+    pub destinations: Vec<String>,
+    pub transmitted_fields: Vec<String>,
+    pub request_urls: Vec<String>,
+    pub normalized_input: String,
+    pub limitation: String,
+    pub max_response_bytes: u64,
+    pub health: String,
+    pub fixtures_version: u32,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SourceResultView {
+    pub artifact_id: String,
+    pub run_id: Option<String>,
+    pub observations: usize,
+    pub size_bytes: u64,
+    pub deduplicated: bool,
+    pub from_fixture: bool,
+    pub http_status: u16,
+    pub capture_completeness: String,
+    pub limitation: String,
+    pub complete: bool,
+    pub processing_error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ResourceView {
+    pub id: String,
+    pub file: String,
+    pub bytes: u64,
+    pub sha256: String,
+    pub url: String,
+    pub license: String,
+    pub destination: String,
+    pub present: bool,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct ResourceJobView {
+    pub operation_id: String,
+    pub resource_id: String,
+    pub status: String,
+    pub stage: String,
+    pub transferred: u64,
+    pub bytes: u64,
+    pub error: Option<String>,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ResourceInstallRequest {
+    pub version: u32,
+    pub resource_id: String,
+    pub mode: String,
+    pub consent: bool,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AiRequest {
+    pub version: u32,
+    pub endpoint: String,
+    pub model: String,
+    pub task: String,
+    pub observation_ids: Vec<String>,
+    pub consent: bool,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct AiSuggestionView {
+    pub id: String,
+    pub model: String,
+    pub model_digest: String,
+    pub kind: String,
+    pub text: String,
+    pub cited_observation_ids: Vec<String>,
+    pub proposed_name: Option<String>,
+    pub proposed_type: Option<String>,
+    pub relationship_kind: Option<String>,
+    pub created_utc: String,
+    pub review: Option<String>,
+    pub review_rationale: Option<String>,
+    pub review_actor: Option<String>,
+    pub review_utc: Option<String>,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct AiPageView {
+    pub rows: Vec<AiSuggestionView>,
+    pub total: i64,
+    pub offset: usize,
+    pub limit: usize,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AiReviewRequest {
+    pub id: String,
+    pub decision: String,
+    pub rationale: String,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct AiModelView {
+    pub name: String,
+    pub digest: String,
+    pub bytes: u64,
+    pub reviewed_artifact: bool,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct AiStatusView {
+    pub architecture: String,
+    pub cpu_threads: usize,
+    pub total_memory_bytes: Option<u64>,
+    pub available_memory_bytes: Option<u64>,
+    pub free_storage_bytes: Option<u64>,
+    pub memory_kind: String,
+    pub accelerator_status: String,
+    pub ollama_status: String,
+    pub models: Vec<AiModelView>,
+    pub loaded_models: serde_json::Value,
+    pub recommendation: Option<String>,
+    pub faster: Option<String>,
+    pub higher_quality: Option<String>,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SemanticRequest {
+    pub version: u32,
+    pub mode: String,
+    pub search: SearchRequest,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SemanticStatusView {
+    pub indexed: i64,
+    pub observations: i64,
+    pub model_identity: Option<String>,
+    pub resources_present: bool,
+    pub quality_gate: bool,
+    pub limitation: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SemanticView {
+    pub results: SearchView,
+    pub indexed: i64,
+    pub candidate_limit: usize,
+    pub truncated: bool,
+    pub notice: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MapArchiveView {
+    pub id: String,
+    pub bytes: u64,
+    pub min_zoom: u8,
+    pub max_zoom: u8,
+    pub tile_type: u8,
+    pub bounds: Vec<f64>,
+    pub attribution: String,
+    pub layers: Vec<String>,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct MapSelectionView {
+    pub selection: String,
+    pub filename: String,
+    pub bytes: u64,
+    pub min_zoom: u8,
+    pub max_zoom: u8,
+    pub destination: String,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MapImportRequest {
+    pub selection: String,
+    pub attribution: String,
+    pub consent: bool,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct LocationView {
+    pub id: String,
+    pub observation_id: String,
+    pub entity_id: Option<String>,
+    pub label: String,
+    pub longitude: f64,
+    pub latitude: f64,
+    pub uncertainty: String,
+    pub rationale: String,
+    pub created_utc: String,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct LocationPageView {
+    pub rows: Vec<LocationView>,
+    pub total: i64,
+    pub offset: usize,
+    pub limit: usize,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocationRequest {
+    pub observation_id: String,
+    pub entity_id: Option<String>,
+    pub label: String,
+    pub longitude: f64,
+    pub latitude: f64,
+    pub uncertainty: String,
+    pub rationale: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MapStateView {
+    pub revision: i64,
+    pub archive_id: Option<String>,
+    pub longitude: f64,
+    pub latitude: f64,
+    pub zoom: f64,
+    pub bearing: f64,
+    pub pitch: f64,
+    pub show_locations: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MapIllustrationRequest {
+    pub image: String,
+    pub archive_id: String,
+    pub attribution: String,
+    pub location_ids: Vec<String>,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct MapIllustrationView {
+    pub id: String,
+    pub created_utc: String,
+    pub archive_id: String,
+    pub attribution: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WorldSelectionView {
+    pub selection: String,
+    pub url: String,
+    pub etag: String,
+    pub download_bytes: u64,
+    pub maximum_output_bytes: u64,
+    pub destination: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AiModelInstallRequest {
+    pub version: u32,
+    pub model: String,
+    pub endpoint: String,
+    pub consent: bool,
+}
+
+// Face comparisons use their own versioned vectors and explicit review history.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FaceAnalysisRequest {
+    pub version: u32,
+    pub artifact_ids: Vec<String>,
+    pub page: u16,
+    pub start_ms: u64,
+    pub end_ms: Option<u64>,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct FaceStatusView {
+    pub eligible_artifacts: i64,
+    pub analyzed_artifacts: i64,
+    pub faces: i64,
+    pub auto_analyze: bool,
+    pub resources_present: bool,
+    pub native_available: bool,
+    pub model_identity: String,
+    pub limitation: String,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct FaceView {
+    pub id: String,
+    pub artifact_id: String,
+    pub run_id: String,
+    pub model_identity: String,
+    pub bbox: Vec<f32>,
+    pub image_size: Vec<u32>,
+    pub page: u16,
+    pub timestamp_ms: Option<u64>,
+    pub detection_score: f32,
+    pub crop_png: Option<String>,
+    pub stale: bool,
+    pub entity_id: Option<String>,
+    pub entity_name: Option<String>,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct FacePageView {
+    pub faces: Vec<FaceView>,
+    pub total: i64,
+    pub offset: usize,
+    pub limitations: Vec<String>,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FaceSearchRequest {
+    pub version: u32,
+    pub face_id: String,
+    pub query: String,
+    pub text_mode: String,
+    pub both: bool,
+    pub threshold: f32,
+    pub offset: usize,
+    pub limit: usize,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct FaceMatchView {
+    pub face: FaceView,
+    pub similarity: f32,
+    pub occurrences: Vec<FaceView>,
+    pub occurrence_count: usize,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct FaceSearchView {
+    pub matches: Vec<FaceMatchView>,
+    pub total: usize,
+    pub offset: usize,
+    pub related: SearchView,
+    pub coverage: FaceStatusView,
+    pub truncated: bool,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FaceReviewRequest {
+    pub face_id: String,
+    pub entity_id: Option<String>,
+    pub group_id: Option<String>,
+    pub decision: String,
+    pub rationale: String,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct FaceGroupView {
+    pub id: String,
+    pub faces: Vec<FaceView>,
+    pub member_total: i64,
+    pub member_offset: usize,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DiscoveryRequest {
+    pub query: String,
+    pub page: u16,
+    pub consent: bool,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct DiscoveryHitView {
+    pub title: String,
+    pub url: String,
+    pub snippet: String,
+}
+#[derive(Debug, Clone, Serialize)]
+pub struct DiscoveryView {
+    pub hits: Vec<DiscoveryHitView>,
+    pub artifact_id: String,
+    pub query: String,
+    pub limitation: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct FacePreviewView {
+    pub preview_png: String,
+    pub face: FaceView,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FacePersonRequest {
+    pub face_id: String,
+    pub name: String,
+    pub rationale: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct FaceGroupMembersView {
+    pub group_id: String,
+    pub page: FacePageView,
+}
+
+/// Local query preparation; no bytes, paths or network destination come from UI.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImagePrepareRequest {
+    pub version: u32,
+    pub artifact_id: String,
+    pub page: u16,
+    pub recipe: kokin_media::image_query::Recipe,
+    pub selected_face_id: Option<String>,
+    pub obscure_other_faces: bool,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct ImageSearchRequest {
+    pub version: u32,
+    pub artifact_id: String,
+    pub page: u16,
+    pub mode: String,
+    pub max_distance: u32,
+    pub scan_limit: usize,
+    pub offset: usize,
+    pub sort: String,
+    pub domain: String,
+    pub date_from: String,
+    pub date_to: String,
+    pub title: String,
+    pub min_bytes: Option<u64>,
+    pub max_bytes: Option<u64>,
+}
+impl Default for ImageSearchRequest {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            artifact_id: String::new(),
+            page: 0,
+            mode: "duplicates".into(),
+            max_distance: 8,
+            scan_limit: 5000,
+            offset: 0,
+            sort: "best".into(),
+            domain: String::new(),
+            date_from: String::new(),
+            date_to: String::new(),
+            title: String::new(),
+            min_bytes: None,
+            max_bytes: None,
+        }
+    }
+}
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ClipboardImageRequest {
+    pub version: u32,
+    pub media_type: String,
+    pub base64: String,
 }

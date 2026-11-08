@@ -1,0 +1,8 @@
+
+> kokin-osint-ui@0.0.1 check
+> svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: /Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/ui
+Getting Svelte diagnostics...
+
+svelte-check found 0 errors and 0 warnings

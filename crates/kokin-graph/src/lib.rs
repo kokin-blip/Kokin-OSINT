@@ -292,6 +292,32 @@ pub struct NewEntity<'a> {
     pub notes: &'a str,
 }
 
+/// Add supporting, opposing or contextual evidence without rewriting a claim.
+pub fn add_evidence(
+    conn: &mut Connection,
+    subject: Subject<'_>,
+    evidence: &[Grounding<'_>],
+) -> Result<()> {
+    require_exists(conn, subject.kind, subject.id)?;
+    if evidence.is_empty() {
+        return Err(GraphError::Ungrounded {
+            what: subject.kind.as_str(),
+        });
+    }
+    let tx = conn.transaction()?;
+    let now = kokin_store::now_utc_rfc3339();
+    link_evidence(&tx, subject.kind, subject.id, evidence, &now)?;
+    audit(
+        &tx,
+        "evidence.linked",
+        subject.kind.as_str(),
+        subject.id,
+        evidence.len(),
+    )?;
+    tx.commit()?;
+    Ok(())
+}
+
 /// Create an entity, grounded in the evidence given.
 ///
 /// The `evidence` slice may not be empty. It is checked here so the caller gets

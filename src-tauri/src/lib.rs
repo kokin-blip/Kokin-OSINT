@@ -24,21 +24,36 @@ compile_error!("desktop-test must never be enabled in release binaries");
 #[cfg(feature = "desktop-test")]
 pub mod desktop_test;
 
+pub mod ai;
+pub mod discovery;
 pub mod error;
+pub mod faces;
+pub mod image_query;
+pub mod maps;
+pub mod media;
 pub mod operations;
 pub mod read;
+pub mod reports;
+pub mod research;
+pub mod research_import;
+pub mod research_preview;
+pub mod resources;
+pub mod semantic;
 pub mod session;
+pub mod sources;
 pub mod views;
+pub mod workspace;
 pub mod write;
 
 pub use error::{CommandError, ErrorCode};
 pub use session::Session;
 pub use views::{
-    ArtifactRowView, AssessRequest, CaseView, CoverageView, DocumentContent, DocumentView,
-    EntityRowView, EntityView, EvidenceListView, ExtractRequest, ExtractView, GroundingInput,
-    HitView, IngestFileRequest, IngestView, LineageView, MergeRequest, NewCaseView,
-    NewEntityRequest, NewIdentifierRequest, NewRelationshipRequest, ObservationView, QuoteView,
-    RejectRequest, ResolutionView, SearchRequest, SearchView, SessionView, SplitRequest, WriteView,
+    ArtifactRowView, AssessRequest, CaseView, ClipboardImageRequest, CoverageView, DocumentContent,
+    DocumentView, EntityRowView, EntityView, EvidenceListView, ExtractRequest, ExtractView,
+    GroundingInput, HitView, ImagePrepareRequest, ImageSearchRequest, IngestFileRequest,
+    IngestView, LineageView, MergeRequest, NewCaseView, NewEntityRequest, NewIdentifierRequest,
+    NewRelationshipRequest, ObservationView, QuoteView, RejectRequest, ResolutionView,
+    SearchRequest, SearchView, SessionView, SplitRequest, WriteView,
 };
 
 use std::path::PathBuf;
@@ -103,9 +118,14 @@ fn open_case_with_recovery_key(
 async fn close_case(app: tauri::AppHandle) -> Result<(), CommandError> {
     use tauri::Manager;
     app.state::<operations::Operations>().cancel_all();
-    tauri::async_runtime::spawn_blocking(move || app.state::<Session>().close())
-        .await
-        .map_err(|_| CommandError::new(ErrorCode::Internal, "case close failed"))?
+    app.state::<research::ResearchPlans>().clear();
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = app.state::<Session>().close();
+        app.state::<research::ResearchPlans>().clear();
+        result
+    })
+    .await
+    .map_err(|_| CommandError::new(ErrorCode::Internal, "case close failed"))?
 }
 
 #[tauri::command]
@@ -331,9 +351,96 @@ pub fn run() {
         .plugin(tauri_plugin_wdio::init())
         .plugin(tauri_plugin_wdio_webdriver::init());
     builder
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
+                use tauri::{Emitter, Manager};
+                let session = window.state::<Session>();
+                let generation = session.generation();
+                // Only the native event supplies filesystem paths. The webview receives a
+                // single-use, expiring selection and must explicitly preview/import it.
+                if session.with_generation(generation, |_| Ok(())).is_ok() {
+                    if let Ok(payload) = window
+                        .state::<operations::Operations>()
+                        .select_drop(paths, generation)
+                    {
+                        let _ = window.emit("research-file-drop", payload);
+                    }
+                }
+            }
+        })
         .manage(Session::default())
+        .manage(faces::FacePreviews::default())
         .manage(operations::Operations::default())
+        .manage(research::ResearchPlans::default())
+        .manage(resources::ResourceJobs::default())
+        .manage(maps::MapResources::default())
         .invoke_handler(tauri::generate_handler![
+            faces::face_read,
+            faces::face_group_members,
+            faces::person_faces,
+            faces::face_person_create,
+            faces::face_preview,
+            faces::face_status,
+            faces::face_auto_analyze,
+            faces::face_page,
+            faces::face_search,
+            faces::face_review,
+            faces::face_groups,
+            discovery::discovery_health,
+            discovery::research_browser,
+            sources::source_disclosure,
+            image_query::image_query_info,
+            image_query::image_query_search,
+            research::research_registry,
+            research::research_local_search,
+            research::research_import_session,
+            research::research_table,
+            research::research_table_map,
+            research::research_table_suggestions,
+            research::research_table_candidates,
+            research::research_candidates,
+            research::research_evidence_preview,
+            research::research_import_preview,
+            research::research_open_url,
+            research::research_provider_status,
+            research::research_directory,
+            research::research_selector,
+            research::research_bulk,
+            research::research_prepare,
+            research::research_runs,
+            research::research_results,
+            research::research_review_candidate,
+            research::research_documents,
+            research::research_document_save,
+            maps::map_illustrations,
+            maps::map_archives,
+            maps::map_select,
+            maps::map_world_review,
+            maps::map_world_install,
+            maps::map_import,
+            maps::map_range,
+            maps::location_page,
+            maps::location_create,
+            maps::map_state_read,
+            maps::map_state_save,
+            ai::ai_status,
+            ai::ai_model_install,
+            ai::ai_page,
+            ai::ai_review,
+            semantic::semantic_status,
+            semantic::semantic_search,
+            resources::resource_jobs,
+            resources::resource_list,
+            resources::resource_install,
+            resources::resource_status,
+            resources::resource_cancel,
+            workspace::guide_status,
+            workspace::workspace_page,
+            workspace::workspace_read,
+            media::media_read,
+            media::ocr_resource_info,
+            media::install_ocr_resource,
+            workspace::workspace_save,
             #[cfg(feature = "desktop-test")]
             desktop_test::test_control,
             evidence_target,

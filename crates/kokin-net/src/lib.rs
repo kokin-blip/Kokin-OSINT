@@ -26,10 +26,16 @@
 //! that any bypass of this guard halts connector work, so the guard is built and
 //! attacked before anything can depend on it.
 
+pub mod discovery;
 pub mod guard;
 pub mod http;
 pub mod live;
+pub mod local;
+pub mod map_resource;
+pub mod provider;
 pub mod resolver;
+pub mod resources;
+pub mod scheduler;
 pub mod url_norm;
 
 use std::net::IpAddr;
@@ -38,7 +44,7 @@ use std::time::Instant;
 pub use guard::Refusal;
 pub use http::{HttpCapability, HttpError, HttpRequest, HttpResponse, ReplayHttp};
 pub use resolver::{Resolver, StaticResolver};
-pub use url_norm::{normalise, NormalisedUrl};
+pub use url_norm::{browser_handoff, normalise, NormalisedUrl};
 
 /// Whether this process may touch the network at all.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

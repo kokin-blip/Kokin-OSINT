@@ -1,0 +1,73 @@
+   Compiling ring v0.17.14
+   Compiling rustls-webpki v0.103.15
+   Compiling rustls v0.23.45
+   Compiling tokio-rustls v0.26.6
+   Compiling hyper-rustls v0.27.10
+   Compiling reqwest v0.12.28
+   Compiling kokin-net v0.0.1 (/Users/kokinmartinez/Documents/ChatGPT/Kokin Osint/Kokin-OSINT/crates/kokin-net)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.77s
+     Running unittests src/lib.rs (target/debug/deps/kokin_net-8c71b2682ea8f8e7)
+
+running 59 tests
+test guard::tests::ordinary_public_addresses_are_allowed ... ok
+test guard::tests::the_metadata_endpoint_is_named_in_the_refusal ... ok
+test guard::tests::the_poc_p4_addresses_are_all_refused ... ok
+test guard::tests::cross_host_redirects_are_never_followed ... ok
+test guard::tests::only_http_and_https_are_fetchable ... ok
+test guard::tests::ipv4_mapped_loopback_is_refused ... ok
+test guard::tests::host_matching_ignores_case_and_a_trailing_dot ... ok
+test guard::tests::an_exact_host_allowlist_does_not_match_a_prefix ... ok
+test guard::tests::a_leading_dot_allows_subdomains_only ... ok
+test http::tests::a_malformed_url_fails_before_any_lookup ... ok
+test discovery::tests::queries_cannot_change_destination ... ok
+test http::tests::a_missing_fixture_is_an_error_and_not_a_live_request ... ok
+test http::tests::volatile_headers_do_not_change_the_key ... ok
+test http::tests::tracking_parameters_do_not_change_the_fixture_key ... ok
+test http::tests::a_keyed_header_does_change_the_key ... ok
+test http::tests::the_method_participates_in_the_key ... ok
+test live::connector_headers::only_reviewed_accept_values_can_cross_the_public_boundary ... ok
+test http::tests::different_urls_have_different_keys ... ok
+test local::tests::endpoint_does_not_resolve_names_or_allow_redirect_targets ... ok
+test local::tests::requests_have_no_tools_remote_pull_or_cloud_model_path ... ok
+test provider::tests::an_echoed_credential_cannot_enter_case_evidence ... ok
+test live::tests::offline_and_cancelled_requests_fail_before_dns ... ok
+test provider::tests::no_credentials_are_read_for_invalid_or_offline_requests ... ok
+test resolver::tests::the_offline_resolver_always_refuses ... ok
+test resolver::tests::an_unknown_host_is_an_error_not_an_empty_answer ... ok
+test tests::a_disallowed_host_is_refused_before_any_resolution ... ok
+test tests::a_denied_network_makes_no_request_and_says_so ... ok
+test resolver::tests::a_static_answer_round_trips_and_ignores_case ... ok
+test resolver::tests::an_answer_can_change_to_model_rebinding ... ok
+test tests::a_disallowed_scheme_is_refused_before_any_resolution ... ok
+test tests::a_permitted_host_resolving_to_loopback_is_refused ... ok
+test tests::a_permitted_public_host_is_vetted ... ok
+test http::tests::a_replayed_response_is_marked_as_coming_from_a_fixture ... ok
+test http::tests::a_recorded_fixture_replays ... ok
+test tests::a_response_within_the_cap_reads_normally ... ok
+test tests::a_zero_rate_never_permits_a_request_and_does_not_divide_by_zero ... ok
+test http::tests::a_corrupt_fixture_file_is_named_as_such ... ok
+test tests::dns_rebinding_between_vetting_and_connecting_is_caught ... ok
+test tests::every_resolved_address_must_pass_not_just_one ... ok
+test tests::network_mode_defaults_to_deny ... ok
+test live::tests::raw_byte_recordings_replay_without_cookie_headers ... ok
+test tests::the_byte_cap_stops_at_the_limit_rather_than_after_it ... ok
+test http::tests::a_fixture_recorded_without_tracking_serves_a_request_with_it ... ok
+test tests::the_rate_limiter_allows_a_burst_then_refuses ... ok
+test tests::the_rate_limiter_refills_over_time ... ok
+test url_norm::handoff_tests::catalog_cannot_invoke_a_shell_file_or_credential_url ... ok
+test url_norm::tests::a_malformed_url_is_an_error_not_a_guess ... ok
+test url_norm::tests::a_meaningful_parameter_is_never_stripped ... ok
+test url_norm::tests::a_url_without_a_host_is_rejected_here ... ok
+test url_norm::tests::an_empty_path_becomes_the_root_path ... ok
+test url_norm::tests::fragments_are_dropped_because_they_never_reach_the_server ... ok
+test url_norm::tests::host_case_and_default_ports_are_normalised ... ok
+test url_norm::tests::parameter_order_does_not_change_identity ... ok
+test url_norm::tests::scheme_host_and_port_are_reported_for_the_guard ... ok
+test url_norm::tests::the_same_page_reached_two_ways_has_one_identity ... ok
+test url_norm::tests::tracking_parameters_are_stripped_from_identity_but_kept_verbatim ... ok
+test url_norm::tests::utm_style_prefixes_are_handled_as_families ... ok
+test scheduler::tests::four_destinations_run_but_a_fifth_or_same_host_waits_and_cancels ... ok
+test provider::tests::cancellation_drops_a_transport_waiting_for_a_response ... ok
+
+test result: ok. 59 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+

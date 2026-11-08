@@ -47,6 +47,11 @@ mod package;
 mod verify;
 
 pub use package::{import, package, ImportReport, PackageOptions, PackageReport};
+pub mod research;
+
+#[cfg(test)]
+mod faults;
+
 pub use verify::{verify, EntryStatus, Verdict, VerifyReport};
 
 #[doc = include_str!("../README.md")]
